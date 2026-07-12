@@ -1,0 +1,13 @@
+{
+  "desktop": {
+    "app": {
+      "name": "Facet",
+      "identifier": "net.ytakahashi.facet"
+    },
+    "backend": "webview"
+  },
+  "tasks": {
+    "desktop": "deno desktop --exclude node_modules .",
+    "desktop:hmr": "deno desktop --hmr --exclude node_modules ."
+  }
+}
