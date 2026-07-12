@@ -6,8 +6,11 @@
     },
     "backend": "webview"
   },
+  "imports": {
+    "@std/http/file-server": "jsr:@std/http@^1/file-server"
+  },
   "tasks": {
-    "desktop": "deno desktop --exclude node_modules .",
-    "desktop:hmr": "deno desktop --hmr --exclude node_modules ."
+    "desktop": "deno task build && deno desktop --exclude node_modules --include dist main.ts",
+    "desktop:hmr": "deno task build && deno desktop --hmr --exclude node_modules --include dist main.ts"
   }
 }
