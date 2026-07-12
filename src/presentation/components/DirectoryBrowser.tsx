@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
-import { useDirectoryBrowsing } from "../directoryBrowsingContext.ts";
-import { useBoardStore } from "../store/boardStoreContext.ts";
+import { useBoardStore, useDirectoryBrowsing } from "../context/appContext.ts";
 
 function joinPath(directory: string, name: string): string {
   return directory.endsWith("/")

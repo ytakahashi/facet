@@ -1,4 +1,4 @@
-import { useBoardStore } from "./store/boardStoreContext.ts";
+import { useBoardStore } from "./context/appContext.ts";
 import { DirectoryBrowser } from "./components/DirectoryBrowser.tsx";
 import { KanbanBoard } from "./components/KanbanBoard.tsx";
 import "./App.css";
