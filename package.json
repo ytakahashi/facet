@@ -7,11 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "yaml": "2.9.0"
   },
   "devDependencies": {
     "@types/node": "26.1.1",
@@ -20,6 +22,7 @@
     "@vitejs/plugin-react": "6.0.3",
     "oxlint": "1.73.0",
     "typescript": "7.0.2",
-    "vite": "8.1.4"
+    "vite": "8.1.4",
+    "vitest": "4.1.10"
   }
 }
