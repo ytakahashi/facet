@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FileSystemPort } from "../domain/fileSystemPort.ts";
+import type { DirEntry, FileSystemPort } from "../domain/fileSystemPort.ts";
 import { YamlBoardRepository } from "./yamlBoardRepository.ts";
 
 class FakeFileSystemPort implements FileSystemPort {
@@ -7,6 +7,14 @@ class FakeFileSystemPort implements FileSystemPort {
 
   constructor(files: Record<string, string>) {
     this.files = new Map(Object.entries(files));
+  }
+
+  readDir(): Promise<DirEntry[]> {
+    throw new Error("not needed for this test");
+  }
+
+  homeDirectory(): Promise<string> {
+    throw new Error("not needed for this test");
   }
 
   readTextFile(path: string): Promise<string> {

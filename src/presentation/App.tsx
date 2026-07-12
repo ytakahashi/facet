@@ -1,5 +1,5 @@
 import { useBoardStore } from "./store/boardStoreContext.ts";
-import { BoardDropZone } from "./components/BoardDropZone.tsx";
+import { DirectoryBrowser } from "./components/DirectoryBrowser.tsx";
 import { KanbanBoard } from "./components/KanbanBoard.tsx";
 import "./App.css";
 
@@ -11,7 +11,7 @@ function App() {
     return <KanbanBoard board={board} />;
   }
 
-  return <BoardDropZone />;
+  return <DirectoryBrowser />;
 }
 
 export default App;
