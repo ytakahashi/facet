@@ -71,6 +71,7 @@ export class YamlBoardRepository implements BoardRepository {
 
     return {
       path: rawCard.path,
+      absolutePath: resolved.ok ? resolved.absolutePath : undefined,
       titleOverride: rawCard.title,
       priority: rawCard.priority as Card["priority"],
       labels: rawCard.labels ?? [],

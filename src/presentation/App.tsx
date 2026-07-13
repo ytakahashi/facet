@@ -1,14 +1,21 @@
-import { useBoardStore } from "./context/appContext.ts";
+import { useBoardStore, useMarkdownViewer } from "./context/appContext.ts";
 import { DirectoryBrowser } from "./components/DirectoryBrowser.tsx";
 import { KanbanBoard } from "./components/KanbanBoard.tsx";
+import { MarkdownViewer } from "./components/MarkdownViewer.tsx";
 import "./App.css";
 
 function App() {
   const status = useBoardStore((state) => state.status);
   const board = useBoardStore((state) => state.board);
+  const markdownStatus = useMarkdownViewer((state) => state.status);
 
   if (status === "loaded" && board) {
-    return <KanbanBoard board={board} />;
+    return (
+      <div className="board-workspace">
+        <KanbanBoard board={board} />
+        {markdownStatus !== "idle" && <MarkdownViewer />}
+      </div>
+    );
   }
 
   return <DirectoryBrowser />;

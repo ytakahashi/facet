@@ -1,0 +1,41 @@
+import { describe, expect, it } from "vitest";
+import type { DirEntry, FileSystemPort } from "../domain/fileSystemPort.ts";
+import { viewMarkdown } from "./viewMarkdown.ts";
+
+class FakeFileSystemPort implements FileSystemPort {
+  private readonly files: Map<string, string>;
+
+  constructor(files: Record<string, string>) {
+    this.files = new Map(Object.entries(files));
+  }
+
+  readDir(): Promise<DirEntry[]> {
+    throw new Error("not needed for this test");
+  }
+
+  homeDirectory(): Promise<string> {
+    throw new Error("not needed for this test");
+  }
+
+  readTextFile(path: string): Promise<string> {
+    const content = this.files.get(path);
+    if (content === undefined) {
+      return Promise.reject(new Error(`file not found: ${path}`));
+    }
+    return Promise.resolve(content);
+  }
+}
+
+describe("viewMarkdown", () => {
+  it("reads the file at the given path through the file system", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/improve-search.md": "# Improve search",
+    });
+
+    const result = await viewMarkdown("/board/improve-search.md", {
+      fileSystem,
+    });
+
+    expect(result).toBe("# Improve search");
+  });
+});

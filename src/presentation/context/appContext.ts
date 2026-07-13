@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 import type { StoreApi, UseBoundStore } from "zustand";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import type { BoardState } from "../store/boardStore.ts";
+import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 
 export interface DirectoryBrowsing {
   listDirectory(path: string): Promise<DirEntry[]>;
@@ -16,6 +17,7 @@ export interface DirectoryBrowsing {
 export interface AppDependencies {
   boardStore: UseBoundStore<StoreApi<BoardState>>;
   directoryBrowsing: DirectoryBrowsing;
+  markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
 }
 
 const AppContext = createContext<AppDependencies | null>(null);
@@ -36,4 +38,10 @@ export function useBoardStore<T>(selector: (state: BoardState) => T): T {
 
 export function useDirectoryBrowsing(): DirectoryBrowsing {
   return useAppDependencies().directoryBrowsing;
+}
+
+export function useMarkdownViewer<T>(
+  selector: (state: MarkdownViewerState) => T,
+): T {
+  return useAppDependencies().markdownViewer(selector);
 }

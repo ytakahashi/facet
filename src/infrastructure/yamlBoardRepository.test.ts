@@ -56,6 +56,7 @@ columns:
           cards: [
             {
               path: "improve-search.md",
+              absolutePath: "/board/improve-search.md",
               priority: "high",
               labels: ["search"],
               displayTitle: "Improve search",
@@ -82,8 +83,10 @@ columns:
     const repository = new YamlBoardRepository(fileSystem);
 
     const board = await repository.load("/board/development.board.yaml");
+    const card = board.columns[0].cards[0];
 
-    expect(board.columns[0].cards[0].displayTitle).toBe("missing-card");
+    expect(card.displayTitle).toBe("missing-card");
+    expect(card.absolutePath).toBe("/board/missing-card.md");
   });
 
   it("uses the YAML title override even when the markdown has a different H1", async () => {

@@ -1,8 +1,17 @@
 import type { Card as CardModel } from "../../domain/card.ts";
+import { useMarkdownViewer } from "../context/appContext.ts";
 
 export function Card({ card }: { card: CardModel }) {
+  const isSelected = useMarkdownViewer((state) =>
+    state.selectedPath === card.path
+  );
+  const selectCard = useMarkdownViewer((state) => state.selectCard);
+
   return (
-    <div className="card">
+    <div
+      className={`card${isSelected ? " card--selected" : ""}`}
+      onClick={() => void selectCard(card)}
+    >
       {card.priority && (
         <span className={`card__priority card__priority--${card.priority}`}>
           {card.priority}

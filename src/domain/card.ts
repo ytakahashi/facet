@@ -3,6 +3,7 @@ import type { Priority } from "./priority.ts";
 
 export interface Card {
   path: string;
+  absolutePath?: string;
   titleOverride?: string;
   priority?: Priority;
   labels: Label[];

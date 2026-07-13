@@ -2,8 +2,10 @@ import { DenoFileSystemAdapter } from "../infrastructure/denoFileSystemAdapter.t
 import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
 import { getHomeDirectory, listDirectory } from "../usecase/browseDirectory.ts";
 import { openBoard as openBoardUseCase } from "../usecase/openBoard.ts";
+import { viewMarkdown } from "../usecase/viewMarkdown.ts";
 import type { AppDependencies } from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
+import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
 
 const fileSystem = new DenoFileSystemAdapter();
 const boardRepository = new YamlBoardRepository(fileSystem);
@@ -16,4 +18,7 @@ export const appDependencies: AppDependencies = {
     listDirectory: (path) => listDirectory(path, { fileSystem }),
     homeDirectory: () => getHomeDirectory({ fileSystem }),
   },
+  markdownViewer: createMarkdownViewerStore((path) =>
+    viewMarkdown(path, { fileSystem })
+  ),
 };
