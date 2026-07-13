@@ -10,7 +10,7 @@
     "@std/http/file-server": "jsr:@std/http@^1/file-server"
   },
   "tasks": {
-    "desktop": "deno task build && deno desktop --allow-read --allow-env --allow-net --exclude node_modules --include dist main.ts",
-    "desktop:hmr": "deno task build && deno desktop --hmr --allow-read --allow-env --allow-net --exclude node_modules --include dist main.ts"
+    "desktop": "deno task build && deno desktop --allow-read --allow-write --allow-env --allow-net --exclude node_modules --include dist main.ts",
+    "desktop:hmr": "deno task build && deno desktop --hmr --allow-read --allow-write --allow-env --allow-net --exclude node_modules --include dist main.ts"
   }
 }

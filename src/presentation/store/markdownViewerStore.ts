@@ -6,26 +6,52 @@ export type MarkdownStatus = "idle" | "loading" | "loaded" | "error";
 
 export interface MarkdownViewerState {
   selectedPath?: string;
+  absolutePath?: string;
   status: MarkdownStatus;
-  content?: string;
-  error?: string;
+  content?: string; // last saved/loaded content (baseline)
+  draft?: string; // current textarea value
+  error?: string; // load error
+  isSaving: boolean;
+  saveError?: string;
   selectCard: (card: Card) => Promise<void>;
+  updateDraft: (content: string) => void;
+  save: () => Promise<void>;
   close: () => void;
 }
 
 export type ViewMarkdown = (path: string) => Promise<string>;
+export type SaveMarkdown = (path: string, content: string) => Promise<void>;
+export type ConfirmDiscard = () => boolean;
+
+function isDirty(state: Pick<MarkdownViewerState, "draft" | "content">) {
+  return state.draft !== undefined && state.draft !== state.content;
+}
 
 export function createMarkdownViewerStore(
   viewMarkdown: ViewMarkdown,
+  saveMarkdown: SaveMarkdown,
+  confirmDiscard: ConfirmDiscard,
 ): UseBoundStore<StoreApi<MarkdownViewerState>> {
-  return create<MarkdownViewerState>((set) => ({
+  return create<MarkdownViewerState>((set, get) => ({
     status: "idle",
+    isSaving: false,
     selectCard: async (card: Card) => {
+      const state = get();
+      if (card.path === state.selectedPath) {
+        return;
+      }
+      if (isDirty(state) && !confirmDiscard()) {
+        return;
+      }
+
       set({
         selectedPath: card.path,
+        absolutePath: card.absolutePath,
         status: "loading",
         content: undefined,
+        draft: undefined,
         error: undefined,
+        saveError: undefined,
       });
 
       if (!card.absolutePath) {
@@ -38,7 +64,7 @@ export function createMarkdownViewerStore(
 
       try {
         const content = await viewMarkdown(card.absolutePath);
-        set({ status: "loaded", content });
+        set({ status: "loaded", content, draft: content });
       } catch (error) {
         set({
           status: "error",
@@ -46,12 +72,40 @@ export function createMarkdownViewerStore(
         });
       }
     },
+    updateDraft: (content: string) => {
+      set({ draft: content });
+    },
+    save: async () => {
+      const { absolutePath, draft } = get();
+      if (!absolutePath || draft === undefined) {
+        return;
+      }
+
+      set({ isSaving: true, saveError: undefined });
+      try {
+        await saveMarkdown(absolutePath, draft);
+        set({ isSaving: false, content: draft });
+      } catch (error) {
+        set({
+          isSaving: false,
+          saveError: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
     close: () => {
+      const state = get();
+      if (isDirty(state) && !confirmDiscard()) {
+        return;
+      }
+
       set({
         selectedPath: undefined,
+        absolutePath: undefined,
         status: "idle",
         content: undefined,
+        draft: undefined,
         error: undefined,
+        saveError: undefined,
       });
     },
   }));

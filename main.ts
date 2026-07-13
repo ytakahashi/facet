@@ -2,6 +2,14 @@ const win = new Deno.BrowserWindow({ title: "Facet" });
 
 win.bind("readTextFile", (path: unknown) => Deno.readTextFile(path as string));
 
+win.bind(
+  "writeTextFile",
+  async (path: unknown, content: unknown) => {
+    await Deno.writeTextFile(path as string, content as string);
+    return null;
+  },
+);
+
 win.bind("readDir", async (path: unknown) => {
   const entries = [];
   for await (const entry of Deno.readDir(path as string)) {

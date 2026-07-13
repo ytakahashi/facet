@@ -1,0 +1,38 @@
+import { describe, expect, it } from "vitest";
+import type { DirEntry, FileSystemPort } from "../domain/fileSystemPort.ts";
+import { saveMarkdown } from "./saveMarkdown.ts";
+
+class FakeFileSystemPort implements FileSystemPort {
+  readonly writes: Array<{ path: string; content: string }> = [];
+
+  readTextFile(): Promise<string> {
+    throw new Error("not needed for this test");
+  }
+
+  writeTextFile(path: string, content: string): Promise<void> {
+    this.writes.push({ path, content });
+    return Promise.resolve();
+  }
+
+  readDir(): Promise<DirEntry[]> {
+    throw new Error("not needed for this test");
+  }
+
+  homeDirectory(): Promise<string> {
+    throw new Error("not needed for this test");
+  }
+}
+
+describe("saveMarkdown", () => {
+  it("writes the content to the given path through the file system", async () => {
+    const fileSystem = new FakeFileSystemPort();
+
+    await saveMarkdown("/board/improve-search.md", "# Improve search", {
+      fileSystem,
+    });
+
+    expect(fileSystem.writes).toEqual([
+      { path: "/board/improve-search.md", content: "# Improve search" },
+    ]);
+  });
+});

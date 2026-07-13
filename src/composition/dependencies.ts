@@ -3,6 +3,7 @@ import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
 import { getHomeDirectory, listDirectory } from "../usecase/browseDirectory.ts";
 import { openBoard as openBoardUseCase } from "../usecase/openBoard.ts";
 import { viewMarkdown } from "../usecase/viewMarkdown.ts";
+import { saveMarkdown } from "../usecase/saveMarkdown.ts";
 import type { AppDependencies } from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
@@ -18,7 +19,9 @@ export const appDependencies: AppDependencies = {
     listDirectory: (path) => listDirectory(path, { fileSystem }),
     homeDirectory: () => getHomeDirectory({ fileSystem }),
   },
-  markdownViewer: createMarkdownViewerStore((path) =>
-    viewMarkdown(path, { fileSystem })
+  markdownViewer: createMarkdownViewerStore(
+    (path) => viewMarkdown(path, { fileSystem }),
+    (path, content) => saveMarkdown(path, content, { fileSystem }),
+    () => confirm("Discard unsaved changes to this Markdown file?"),
   ),
 };

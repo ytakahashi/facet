@@ -24,6 +24,10 @@ class FakeFileSystemPort implements FileSystemPort {
     }
     return Promise.resolve(content);
   }
+
+  writeTextFile(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
 }
 
 describe("YamlBoardRepository", () => {

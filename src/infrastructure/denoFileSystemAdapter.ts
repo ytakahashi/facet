@@ -5,6 +5,10 @@ export class DenoFileSystemAdapter implements FileSystemPort {
     return bindings.readTextFile(path);
   }
 
+  writeTextFile(path: string, content: string): Promise<void> {
+    return bindings.writeTextFile(path, content);
+  }
+
   readDir(path: string): Promise<DirEntry[]> {
     return bindings.readDir(path);
   }
