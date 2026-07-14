@@ -1,11 +1,14 @@
+import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
 import type { DirEntry, FileSystemPort } from "../domain/fileSystemPort.ts";
+import type { Board } from "../domain/board.ts";
 import { YamlBoardRepository } from "./yamlBoardRepository.ts";
 
 class FakeFileSystemPort implements FileSystemPort {
   private readonly files: Map<string, string>;
+  readonly writes: Array<{ path: string; content: string }> = [];
 
-  constructor(files: Record<string, string>) {
+  constructor(files: Record<string, string> = {}) {
     this.files = new Map(Object.entries(files));
   }
 
@@ -25,8 +28,9 @@ class FakeFileSystemPort implements FileSystemPort {
     return Promise.resolve(content);
   }
 
-  writeTextFile(): Promise<void> {
-    throw new Error("not needed for this test");
+  writeTextFile(path: string, content: string): Promise<void> {
+    this.writes.push({ path, content });
+    return Promise.resolve();
   }
 }
 
@@ -113,5 +117,56 @@ columns:
     const board = await repository.load("/board/development.board.yaml");
 
     expect(board.columns[0].cards[0].displayTitle).toBe("Custom title");
+  });
+});
+
+describe("YamlBoardRepository.save", () => {
+  it("writes the board as YAML, dropping derived fields", async () => {
+    const fileSystem = new FakeFileSystemPort();
+    const repository = new YamlBoardRepository(fileSystem);
+    const board: Board = {
+      version: 1,
+      name: "Development",
+      columns: [
+        {
+          id: "doing",
+          name: "Doing",
+          cards: [
+            {
+              path: "improve-search.md",
+              absolutePath: "/board/improve-search.md",
+              titleOverride: "Custom title",
+              priority: "high",
+              labels: ["search"],
+              displayTitle: "Custom title",
+            },
+          ],
+        },
+      ],
+    };
+
+    await repository.save("/board/development.board.yaml", board);
+
+    expect(fileSystem.writes).toHaveLength(1);
+    const written = fileSystem.writes[0];
+    expect(written.path).toBe("/board/development.board.yaml");
+    expect(parse(written.content)).toEqual({
+      version: 1,
+      name: "Development",
+      columns: [
+        {
+          id: "doing",
+          name: "Doing",
+          cards: [
+            {
+              path: "improve-search.md",
+              title: "Custom title",
+              priority: "high",
+              labels: ["search"],
+            },
+          ],
+        },
+      ],
+    });
   });
 });

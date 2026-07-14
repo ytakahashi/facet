@@ -16,6 +16,10 @@ class FakeBoardRepository implements BoardRepository {
     return Promise.resolve(this.board);
   }
 
+  save(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
+
   get requestedPath(): string | undefined {
     return this.loadedPath;
   }

@@ -1,4 +1,4 @@
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
 import type { Board, Column } from "../domain/board.ts";
 import type { BoardRepository } from "../domain/boardRepository.ts";
 import { directoryOf, resolveCardPath } from "../domain/boardPath.ts";
@@ -81,6 +81,28 @@ export class YamlBoardRepository implements BoardRepository {
         rawCard.path,
       ),
     };
+  }
+
+  // Reserializes from the parsed domain model rather than patching the
+  // original document, so any comments or custom formatting in the file
+  // are lost on save. Acceptable because board.yaml isn't meant to be
+  // hand-maintained with comments - the app owns the file once it exists.
+  async save(path: string, board: Board): Promise<void> {
+    const raw: RawBoard = {
+      version: board.version,
+      name: board.name,
+      columns: board.columns.map((column) => ({
+        id: column.id,
+        name: column.name,
+        cards: column.cards.map((card) => ({
+          path: card.path,
+          ...(card.titleOverride ? { title: card.titleOverride } : {}),
+          ...(card.priority ? { priority: card.priority } : {}),
+          labels: card.labels,
+        })),
+      })),
+    };
+    await this.fileSystem.writeTextFile(path, stringify(raw));
   }
 
   private async tryReadTextFile(path: string): Promise<string | undefined> {
