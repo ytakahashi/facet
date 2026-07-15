@@ -21,6 +21,14 @@ class FakeFileSystemPort implements FileSystemPort {
   homeDirectory(): Promise<string> {
     throw new Error("not needed for this test");
   }
+
+  exists(): Promise<boolean> {
+    throw new Error("not needed for this test");
+  }
+
+  mkdir(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
 }
 
 describe("saveMarkdown", () => {

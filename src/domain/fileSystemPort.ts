@@ -8,4 +8,6 @@ export interface FileSystemPort {
   writeTextFile(path: string, content: string): Promise<void>;
   readDir(path: string): Promise<DirEntry[]>;
   homeDirectory(): Promise<string>;
+  exists(path: string): Promise<boolean>;
+  mkdir(path: string): Promise<void>;
 }

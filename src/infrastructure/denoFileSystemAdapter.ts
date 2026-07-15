@@ -16,4 +16,12 @@ export class DenoFileSystemAdapter implements FileSystemPort {
   homeDirectory(): Promise<string> {
     return bindings.homeDirectory();
   }
+
+  exists(path: string): Promise<boolean> {
+    return bindings.exists(path);
+  }
+
+  mkdir(path: string): Promise<void> {
+    return bindings.mkdir(path);
+  }
 }

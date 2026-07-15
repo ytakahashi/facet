@@ -26,6 +26,14 @@ class FakeFileSystemPort implements FileSystemPort {
   homeDirectory(): Promise<string> {
     return Promise.resolve(this.home);
   }
+
+  exists(): Promise<boolean> {
+    throw new Error("not needed for this test");
+  }
+
+  mkdir(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
 }
 
 describe("listDirectory", () => {

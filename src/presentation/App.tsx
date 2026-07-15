@@ -2,6 +2,7 @@ import { useBoardStore, useMarkdownViewer } from "./context/appContext.ts";
 import { DirectoryBrowser } from "./components/DirectoryBrowser.tsx";
 import { KanbanBoard } from "./components/KanbanBoard.tsx";
 import { MarkdownViewer } from "./components/MarkdownViewer.tsx";
+import { RecentBoardList } from "./components/RecentBoardList.tsx";
 import "./App.css";
 
 function App() {
@@ -18,7 +19,12 @@ function App() {
     );
   }
 
-  return <DirectoryBrowser />;
+  return (
+    <div className="start-screen">
+      <RecentBoardList />
+      <DirectoryBrowser />
+    </div>
+  );
 }
 
 export default App;

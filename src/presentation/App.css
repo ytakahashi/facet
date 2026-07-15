@@ -1,3 +1,65 @@
+.start-screen {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.recent-board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 24px 0;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.recent-board-list h2 {
+  margin: 0;
+}
+
+.recent-board-list__entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recent-board-list__entry {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface);
+  }
+}
+
+.recent-board-list__entry-name {
+  font-size: 14px;
+  color: var(--color-text-strong);
+  font-weight: 500;
+}
+
+.recent-board-list__entry-path {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .directory-browser {
   flex-grow: 1;
   display: flex;

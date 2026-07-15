@@ -32,6 +32,14 @@ class FakeFileSystemPort implements FileSystemPort {
     this.writes.push({ path, content });
     return Promise.resolve();
   }
+
+  exists(): Promise<boolean> {
+    throw new Error("not needed for this test");
+  }
+
+  mkdir(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
 }
 
 describe("YamlBoardRepository", () => {

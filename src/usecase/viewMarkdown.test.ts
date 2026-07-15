@@ -28,6 +28,14 @@ class FakeFileSystemPort implements FileSystemPort {
   writeTextFile(): Promise<void> {
     throw new Error("not needed for this test");
   }
+
+  exists(): Promise<boolean> {
+    throw new Error("not needed for this test");
+  }
+
+  mkdir(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
 }
 
 describe("viewMarkdown", () => {

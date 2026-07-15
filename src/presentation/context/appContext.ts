@@ -9,6 +9,10 @@ export interface DirectoryBrowsing {
   homeDirectory(): Promise<string>;
 }
 
+export interface RecentBoards {
+  list(): Promise<string[]>;
+}
+
 // One context for every service a component might need, instead of one
 // context per service. Components still only see a narrow, purpose-specific
 // hook (useBoardStore/useDirectoryBrowsing below) - this is just where those
@@ -18,6 +22,7 @@ export interface AppDependencies {
   boardStore: UseBoundStore<StoreApi<BoardState>>;
   directoryBrowsing: DirectoryBrowsing;
   markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
+  recentBoards: RecentBoards;
 }
 
 const AppContext = createContext<AppDependencies | null>(null);
@@ -44,4 +49,8 @@ export function useMarkdownViewer<T>(
   selector: (state: MarkdownViewerState) => T,
 ): T {
   return useAppDependencies().markdownViewer(selector);
+}
+
+export function useRecentBoards(): RecentBoards {
+  return useAppDependencies().recentBoards;
 }

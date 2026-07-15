@@ -20,6 +20,20 @@ win.bind("readDir", async (path: unknown) => {
 
 win.bind("homeDirectory", async () => Deno.env.get("HOME") ?? "/");
 
+win.bind("exists", async (path: unknown) => {
+  try {
+    await Deno.stat(path as string);
+    return true;
+  } catch {
+    return false;
+  }
+});
+
+win.bind("mkdir", async (path: unknown) => {
+  await Deno.mkdir(path as string, { recursive: true });
+  return null;
+});
+
 const distDir = new URL("./dist", import.meta.url).pathname;
 
 // Loaded lazily (not as a static top-level import) to work around a Deno
