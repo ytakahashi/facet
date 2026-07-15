@@ -16,7 +16,10 @@ export interface MarkdownViewerState {
   selectCard: (card: Card) => Promise<void>;
   updateDraft: (content: string) => void;
   save: () => Promise<void>;
-  close: () => void;
+  // Returns whether the viewer was actually closed, so a caller that's about
+  // to replace the whole board (e.g. switching boards from the menu) can
+  // abort the switch when the user declines to discard unsaved changes.
+  close: () => boolean;
 }
 
 export type ViewMarkdown = (path: string) => Promise<string>;
@@ -95,7 +98,7 @@ export function createMarkdownViewerStore(
     close: () => {
       const state = get();
       if (isDirty(state) && !confirmDiscard()) {
-        return;
+        return false;
       }
 
       set({
@@ -107,6 +110,7 @@ export function createMarkdownViewerStore(
         error: undefined,
         saveError: undefined,
       });
+      return true;
     },
   }));
 }

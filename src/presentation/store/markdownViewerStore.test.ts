@@ -75,8 +75,9 @@ describe("createMarkdownViewerStore", () => {
     );
     await useMarkdownViewer.getState().selectCard(card);
 
-    useMarkdownViewer.getState().close();
+    const result = useMarkdownViewer.getState().close();
 
+    expect(result).toBe(true);
     expect(useMarkdownViewer.getState().status).toBe("idle");
     expect(useMarkdownViewer.getState().selectedPath).toBeUndefined();
     expect(useMarkdownViewer.getState().content).toBeUndefined();
@@ -220,8 +221,9 @@ describe("createMarkdownViewerStore", () => {
     await useMarkdownViewer.getState().selectCard(card);
     useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
 
-    useMarkdownViewer.getState().close();
+    const result = useMarkdownViewer.getState().close();
 
+    expect(result).toBe(false);
     expect(useMarkdownViewer.getState().status).toBe("loaded");
     expect(useMarkdownViewer.getState().draft).toBe(
       "# Improve search (edited)",

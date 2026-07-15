@@ -34,6 +34,39 @@ win.bind("mkdir", async (path: unknown) => {
   return null;
 });
 
+// Pass-through: the menu structure (labels, ids, nesting) is built entirely
+// on the frontend side, so this side stays free of any knowledge about menu
+// contents.
+win.bind("setApplicationMenu", async (menu: unknown) => {
+  win.setApplicationMenu(menu as Deno.MenuItem[]);
+  return null;
+});
+
+// There is no Deno -> webview push API, so menu clicks are delivered to the
+// frontend via long-polling: the frontend awaits nextMenuClick() and this
+// resolves it (or queues the click id) whenever "menuclick" fires.
+const pendingMenuClicks: string[] = [];
+let menuClickWaiter: ((id: string) => void) | null = null;
+
+win.addEventListener("menuclick", (e) => {
+  if (menuClickWaiter) {
+    menuClickWaiter(e.detail.id);
+    menuClickWaiter = null;
+  } else {
+    pendingMenuClicks.push(e.detail.id);
+  }
+});
+
+win.bind("nextMenuClick", () => {
+  const queued = pendingMenuClicks.shift();
+  if (queued !== undefined) {
+    return Promise.resolve(queued);
+  }
+  return new Promise<string>((resolve) => {
+    menuClickWaiter = resolve;
+  });
+});
+
 const distDir = new URL("./dist", import.meta.url).pathname;
 
 // Loaded lazily (not as a static top-level import) to work around a Deno

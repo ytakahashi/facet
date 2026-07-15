@@ -1,3 +1,4 @@
+import { DenoApplicationMenu } from "../infrastructure/denoApplicationMenu.ts";
 import { DenoFileSystemAdapter } from "../infrastructure/denoFileSystemAdapter.ts";
 import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
 import { YamlConfigRepository } from "../infrastructure/yamlConfigRepository.ts";
@@ -14,10 +15,29 @@ import { createMarkdownViewerStore } from "../presentation/store/markdownViewerS
 const fileSystem = new DenoFileSystemAdapter();
 const boardRepository = new YamlBoardRepository(fileSystem);
 const configRepository = new YamlConfigRepository(fileSystem);
+const applicationMenu = new DenoApplicationMenu(fileSystem);
+
+async function refreshRecentMenu(): Promise<void> {
+  try {
+    await applicationMenu.setRecentBoards(
+      await listRecentBoards({ configRepository }),
+    );
+  } catch (error) {
+    console.warn("Failed to refresh the application menu:", error);
+  }
+}
 
 export const appDependencies: AppDependencies = {
   boardStore: createBoardStore(
-    (path) => openBoardUseCase(path, { boardRepository, configRepository }),
+    async (path) => {
+      const board = await openBoardUseCase(path, {
+        boardRepository,
+        configRepository,
+      });
+      // Best-effort: the menu rebuild must never block opening the board.
+      void refreshRecentMenu();
+      return board;
+    },
     (path, board) => saveBoard(path, board, { boardRepository }),
   ),
   directoryBrowsing: {
@@ -33,3 +53,16 @@ export const appDependencies: AppDependencies = {
     list: () => listRecentBoards({ configRepository }),
   },
 };
+
+// Called once at startup (outside React) to set the initial menu and wire
+// native "Open Recent" clicks to the board/markdown stores.
+export function startApplicationMenu(): void {
+  void refreshRecentMenu();
+  applicationMenu.onOpenRecent((path) => {
+    // Abort the switch if the user declines to discard an unsaved draft.
+    if (!appDependencies.markdownViewer.getState().close()) {
+      return;
+    }
+    void appDependencies.boardStore.getState().openBoard(path);
+  });
+}
