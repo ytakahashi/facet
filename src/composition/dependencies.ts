@@ -3,11 +3,13 @@ import { DenoFileSystemAdapter } from "../infrastructure/denoFileSystemAdapter.t
 import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
 import { YamlConfigRepository } from "../infrastructure/yamlConfigRepository.ts";
 import { getHomeDirectory, listDirectory } from "../usecase/browseDirectory.ts";
+import { createBoardDirectory } from "../usecase/createBoardDirectory.ts";
 import { listRecentBoards } from "../usecase/listRecentBoards.ts";
 import { openBoard as openBoardUseCase } from "../usecase/openBoard.ts";
 import { saveBoard } from "../usecase/saveBoard.ts";
 import { viewMarkdown } from "../usecase/viewMarkdown.ts";
 import { saveMarkdown } from "../usecase/saveMarkdown.ts";
+import { createMarkdownCard } from "../usecase/createMarkdownCard.ts";
 import type { AppDependencies } from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
@@ -39,10 +41,13 @@ export const appDependencies: AppDependencies = {
       return board;
     },
     (path, board) => saveBoard(path, board, { boardRepository }),
+    (input) => createMarkdownCard(input, { fileSystem }),
   ),
   directoryBrowsing: {
     listDirectory: (path) => listDirectory(path, { fileSystem }),
     homeDirectory: () => getHomeDirectory({ fileSystem }),
+    createDirectory: (parentDirectory, name) =>
+      createBoardDirectory(parentDirectory, name, { fileSystem }),
   },
   markdownViewer: createMarkdownViewerStore(
     (path) => viewMarkdown(path, { fileSystem }),

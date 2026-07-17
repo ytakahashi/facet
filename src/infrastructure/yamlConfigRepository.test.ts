@@ -34,6 +34,10 @@ class FakeFileSystemPort implements FileSystemPort {
     return Promise.resolve();
   }
 
+  createTextFile(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
+
   exists(path: string): Promise<boolean> {
     return Promise.resolve(this.files.has(path));
   }

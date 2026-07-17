@@ -23,6 +23,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       vi.fn(),
+      vi.fn(),
     );
 
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -34,6 +35,7 @@ describe("createBoardStore", () => {
   it("moves to error with the failure message when openBoard rejects", async () => {
     const useBoardStore = createBoardStore(
       () => Promise.reject(new Error("board file not found")),
+      vi.fn(),
       vi.fn(),
     );
 
@@ -49,6 +51,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -69,6 +72,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -92,6 +96,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -116,6 +121,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
     useBoardStore.getState().moveCard(
@@ -132,5 +138,95 @@ describe("createBoardStore", () => {
     );
 
     expect(saveBoard).toHaveBeenCalledTimes(2);
+  });
+
+  it("creates a Markdown card, appends it, and saves the updated board", async () => {
+    const board = makeBoard();
+    const card = {
+      path: "new-card.md",
+      absolutePath: "/board/new-card.md",
+      labels: [],
+      displayTitle: "New card",
+    };
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const createMarkdownCard = vi.fn().mockResolvedValue(card);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      createMarkdownCard,
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const result = await useBoardStore.getState().addNewCard({
+      columnId: "doing",
+      directory: "/board",
+      fileName: "new-card",
+      title: "New card",
+    });
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    expect(result).toEqual(card);
+    expect(createMarkdownCard).toHaveBeenCalledWith({
+      boardPath: "/board/development.board.yaml",
+      directory: "/board",
+      fileName: "new-card",
+      title: "New card",
+    });
+    expect(useBoardStore.getState().board?.columns[0].cards).toEqual([
+      { path: "a.md", labels: [], displayTitle: "A" },
+      card,
+    ]);
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("rejects a duplicate path before creating the Markdown file", async () => {
+    const board = makeBoard();
+    const createMarkdownCard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      vi.fn(),
+      createMarkdownCard,
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().addNewCard({
+        columnId: "done",
+        directory: "/board",
+        fileName: "a.md",
+        title: "A",
+      });
+
+    await expect(act).rejects.toThrow("already on this board");
+    expect(createMarkdownCard).not.toHaveBeenCalled();
+  });
+
+  it("does not change or save the board when Markdown creation fails", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const createMarkdownCard = vi.fn().mockRejectedValue(
+      new Error("file already exists"),
+    );
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      createMarkdownCard,
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().addNewCard({
+        columnId: "done",
+        directory: "/board",
+        fileName: "new.md",
+        title: "New",
+      });
+
+    await expect(act).rejects.toThrow("file already exists");
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
   });
 });

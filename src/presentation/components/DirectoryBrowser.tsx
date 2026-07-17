@@ -1,20 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import { useBoardStore, useDirectoryBrowsing } from "../context/appContext.ts";
-
-function joinPath(directory: string, name: string): string {
-  return directory.endsWith("/")
-    ? `${directory}${name}`
-    : `${directory}/${name}`;
-}
-
-function parentOf(path: string): string {
-  if (path === "/") {
-    return "/";
-  }
-  const index = path.lastIndexOf("/");
-  return index <= 0 ? "/" : path.slice(0, index);
-}
+import {
+  joinPath,
+  parentWithinRoot,
+  sortDirectoryEntries,
+} from "./pathNavigation.ts";
 
 function isBoardFile(name: string): boolean {
   return name.endsWith(".yaml") || name.endsWith(".yml");
@@ -78,19 +69,14 @@ export function DirectoryBrowser() {
     }
   }
 
-  const sortedEntries = [...entries].sort((a, b) => {
-    if (a.isDirectory !== b.isDirectory) {
-      return a.isDirectory ? -1 : 1;
-    }
-    return a.name.localeCompare(b.name);
-  });
+  const sortedEntries = sortDirectoryEntries(entries);
 
   return (
     <div className="directory-browser">
       <div className="directory-browser__path">
         <button
           type="button"
-          onClick={() => path && void navigate(parentOf(path))}
+          onClick={() => path && void navigate(parentWithinRoot(path, "/"))}
           disabled={!path || path === "/"}
         >
           Up

@@ -1,4 +1,8 @@
-import type { DirEntry, FileSystemPort } from "../domain/fileSystemPort.ts";
+import {
+  type DirEntry,
+  FileAlreadyExistsError,
+  type FileSystemPort,
+} from "../domain/fileSystemPort.ts";
 
 export class DenoFileSystemAdapter implements FileSystemPort {
   readTextFile(path: string): Promise<string> {
@@ -7,6 +11,13 @@ export class DenoFileSystemAdapter implements FileSystemPort {
 
   writeTextFile(path: string, content: string): Promise<void> {
     return bindings.writeTextFile(path, content);
+  }
+
+  async createTextFile(path: string, content: string): Promise<void> {
+    const result = await bindings.createTextFile(path, content);
+    if (!result.created) {
+      throw new FileAlreadyExistsError(path);
+    }
   }
 
   readDir(path: string): Promise<DirEntry[]> {

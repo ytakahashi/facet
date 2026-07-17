@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { directoryOf, resolveCardPath } from "./boardPath.ts";
+import {
+  directoryOf,
+  normalizeCardPath,
+  resolveCardPath,
+  toRelativeCardPath,
+} from "./boardPath.ts";
 
 describe("resolveCardPath", () => {
   it("resolves a plain relative path under the board directory", () => {
@@ -46,5 +51,45 @@ describe("directoryOf", () => {
     );
 
     expect(directory).toBe("/boards/my-project");
+  });
+});
+
+describe("toRelativeCardPath", () => {
+  it("returns a path relative to the board directory", () => {
+    const result = toRelativeCardPath(
+      "/boards/my-project",
+      "/boards/my-project/ideas/card.md",
+    );
+
+    expect(result).toEqual({ ok: true, path: "ideas/card.md" });
+  });
+
+  it("rejects a sibling directory with the same path prefix", () => {
+    const result = toRelativeCardPath(
+      "/boards/my-project",
+      "/boards/my-project-old/card.md",
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "outside-board-directory",
+    });
+  });
+
+  it("rejects the board directory itself", () => {
+    const result = toRelativeCardPath(
+      "/boards/my-project",
+      "/boards/my-project",
+    );
+
+    expect(result).toEqual({ ok: false, reason: "not-a-file" });
+  });
+});
+
+describe("normalizeCardPath", () => {
+  it("normalizes dot segments and repeated slashes", () => {
+    const result = normalizeCardPath("./ideas//later/../card.md");
+
+    expect(result).toBe("ideas/card.md");
   });
 });
