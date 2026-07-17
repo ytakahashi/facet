@@ -3,6 +3,13 @@ export interface DirEntry {
   isDirectory: boolean;
 }
 
+export class FileAlreadyExistsError extends Error {
+  constructor(path: string) {
+    super(`File already exists: ${path}`);
+    this.name = "FileAlreadyExistsError";
+  }
+}
+
 export interface FileSystemPort {
   readTextFile(path: string): Promise<string>;
   writeTextFile(path: string, content: string): Promise<void>;

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FileSystemPort } from "../domain/fileSystemPort.ts";
+import { FileAlreadyExistsError } from "../domain/fileSystemPort.ts";
 import { createMarkdownCard } from "./createMarkdownCard.ts";
 
 function makeFileSystem(
@@ -79,7 +80,7 @@ describe("createMarkdownCard", () => {
 
   it("reports an exclusive-create race as an already-exists error", async () => {
     const createTextFile = vi.fn().mockRejectedValue(
-      new Error("Already exists (os error 17)"),
+      new FileAlreadyExistsError("/board/card.md"),
     );
     const fileSystem = makeFileSystem({ createTextFile });
     const input = {
@@ -93,5 +94,22 @@ describe("createMarkdownCard", () => {
 
     await expect(act).rejects.toThrow("A file already exists");
     expect(createTextFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves a create failure that is not an already-exists race", async () => {
+    const createTextFile = vi.fn().mockRejectedValue(
+      new Error("Permission denied"),
+    );
+    const fileSystem = makeFileSystem({ createTextFile });
+    const input = {
+      boardPath: "/board/development.board.yaml",
+      directory: "/board",
+      fileName: "card.md",
+      title: "Card",
+    };
+
+    const act = () => createMarkdownCard(input, { fileSystem });
+
+    await expect(act).rejects.toThrow("Permission denied");
   });
 });

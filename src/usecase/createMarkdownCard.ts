@@ -1,7 +1,10 @@
 import type { Card } from "../domain/card.ts";
 import { createCardReference } from "../domain/card.ts";
 import { initialMarkdown, resolveNewMarkdownPath } from "../domain/cardFile.ts";
-import type { FileSystemPort } from "../domain/fileSystemPort.ts";
+import {
+  FileAlreadyExistsError,
+  type FileSystemPort,
+} from "../domain/fileSystemPort.ts";
 
 export interface CreateMarkdownCardInput {
   boardPath: string;
@@ -32,13 +35,14 @@ export async function createMarkdownCard(
   try {
     await fileSystem.createTextFile(path.absolutePath, markdown);
   } catch (cause) {
-    // The exists() check above is only for a friendly error message; a
-    // concurrent writer can still win the race against createNew: true.
-    // Deno's raw error for that case isn't user-facing, so normalize it to
-    // the same message as the upfront check.
-    throw new Error(`A file already exists at ${path.absolutePath}`, {
-      cause,
-    });
+    if (cause instanceof FileAlreadyExistsError) {
+      // The exists() check above is only for a friendly error message; a
+      // concurrent writer can still win the race against createNew: true.
+      throw new Error(`A file already exists at ${path.absolutePath}`, {
+        cause,
+      });
+    }
+    throw cause;
   }
   return createCardReference(path.relativePath, path.absolutePath, markdown);
 }

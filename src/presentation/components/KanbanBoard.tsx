@@ -18,6 +18,13 @@ export function KanbanBoard({ board }: { board: Board }) {
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
 
   useEffect(() => {
+    // A board can change in-place through Open Recent. Never carry a dialog
+    // target from the previous board into the newly loaded board.
+    setIsAddCardOpen(false);
+    setAddToColumnId(undefined);
+  }, [boardPath]);
+
+  useEffect(() => {
     return monitorForElements({
       onDrop({ source, location }) {
         const move = resolveMove(source, location.current.dropTargets);
