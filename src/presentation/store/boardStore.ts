@@ -3,14 +3,23 @@ import type { StoreApi, UseBoundStore } from "zustand";
 import type { Board, CardLocation } from "../../domain/board.ts";
 import {
   addCard as addCardDomain,
+  CardAlreadyExistsError,
   containsCardPath,
   moveCard as moveCardDomain,
 } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
-import { resolveNewMarkdownPath } from "../../domain/cardFile.ts";
+import {
+  CardFileValidationError,
+  resolveNewMarkdownPath,
+} from "../../domain/cardFile.ts";
 import type { CreateMarkdownCardInput } from "../../usecase/createMarkdownCard.ts";
 import type { SaveBoard } from "../../usecase/boardSaveQueue.ts";
 import { createBoardSaveQueue } from "../../usecase/boardSaveQueue.ts";
+import {
+  cardFileValidationToUseCaseError,
+  UseCaseError,
+} from "../../usecase/useCaseError.ts";
+import { toUiError } from "../errors/toUiError.ts";
 
 export type BoardStatus = "empty" | "loading" | "loaded" | "error";
 
@@ -49,7 +58,8 @@ export function createBoardStore(
     const saveQueue = createBoardSaveQueue(saveBoard, {
       onSaving: () => set({ isSaving: true, saveError: undefined }),
       onSaved: () => set({ isSaving: false }),
-      onError: (message) => set({ isSaving: false, saveError: message }),
+      onError: (error) =>
+        set({ isSaving: false, saveError: toUiError(error).message }),
     });
 
     return {
@@ -63,7 +73,7 @@ export function createBoardStore(
         } catch (error) {
           set({
             status: "error",
-            error: error instanceof Error ? error.message : String(error),
+            error: toUiError(error).message,
           });
         }
       },
@@ -77,18 +87,28 @@ export function createBoardStore(
       addNewCard: async (input: NewCardInput) => {
         const initial = get();
         if (!initial.board || !initial.path) {
+          // Invariant violation, not a recoverable user error: AddCardDialog
+          // is only ever mounted once a board is open (see KanbanBoard.tsx).
           throw new Error("Open a board before adding a card.");
         }
 
-        const target = resolveNewMarkdownPath(
-          initial.path,
-          input.directory,
-          input.fileName,
-        );
-        if (containsCardPath(initial.board, target.relativePath)) {
-          throw new Error(
-            `This Markdown is already on this board: ${target.relativePath}`,
+        let target: ReturnType<typeof resolveNewMarkdownPath>;
+        try {
+          target = resolveNewMarkdownPath(
+            initial.path,
+            input.directory,
+            input.fileName,
           );
+        } catch (cause) {
+          if (cause instanceof CardFileValidationError) {
+            throw cardFileValidationToUseCaseError(cause);
+          }
+          throw cause;
+        }
+        if (containsCardPath(initial.board, target.relativePath)) {
+          throw new UseCaseError("card.already-on-board", {
+            path: target.relativePath,
+          });
         }
 
         const card = await createMarkdownCard({
@@ -100,9 +120,21 @@ export function createBoardStore(
 
         const current = get();
         if (!current.board || current.path !== initial.path) {
-          throw new Error("The board changed while the Markdown was created.");
+          throw new UseCaseError("card.board-changed");
         }
-        const nextBoard = addCardDomain(current.board, input.columnId, card);
+        let nextBoard: Board;
+        try {
+          nextBoard = addCardDomain(current.board, input.columnId, card);
+        } catch (cause) {
+          if (cause instanceof CardAlreadyExistsError) {
+            throw new UseCaseError(
+              "card.already-on-board",
+              { path: card.path },
+              { cause },
+            );
+          }
+          throw cause;
+        }
         set({ board: nextBoard });
         saveQueue.save(current.path, nextBoard);
         return card;

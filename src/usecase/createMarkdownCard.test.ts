@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FileSystemPort } from "../domain/fileSystemPort.ts";
-import { FileAlreadyExistsError } from "../domain/fileSystemPort.ts";
+import {
+  FileSystemError,
+  type FileSystemPort,
+} from "../domain/fileSystemPort.ts";
 import { createMarkdownCard } from "./createMarkdownCard.ts";
 
 function makeFileSystem(
@@ -58,7 +60,10 @@ describe("createMarkdownCard", () => {
 
     const act = () => createMarkdownCard(input, { fileSystem });
 
-    await expect(act).rejects.toThrow("A file already exists");
+    await expect(act).rejects.toMatchObject({
+      code: "card.file-already-exists",
+      details: { path: "/board/card.md" },
+    });
     expect(createTextFile).not.toHaveBeenCalled();
   });
 
@@ -74,13 +79,13 @@ describe("createMarkdownCard", () => {
 
     const act = () => createMarkdownCard(input, { fileSystem });
 
-    await expect(act).rejects.toThrow("Title is required.");
+    await expect(act).rejects.toMatchObject({ code: "card.title-required" });
     expect(exists).not.toHaveBeenCalled();
   });
 
   it("reports an exclusive-create race as an already-exists error", async () => {
     const createTextFile = vi.fn().mockRejectedValue(
-      new FileAlreadyExistsError("/board/card.md"),
+      new FileSystemError("already-exists", "create-file", "/board/card.md"),
     );
     const fileSystem = makeFileSystem({ createTextFile });
     const input = {
@@ -92,7 +97,9 @@ describe("createMarkdownCard", () => {
 
     const act = () => createMarkdownCard(input, { fileSystem });
 
-    await expect(act).rejects.toThrow("A file already exists");
+    await expect(act).rejects.toMatchObject({
+      code: "card.file-already-exists",
+    });
     expect(createTextFile).toHaveBeenCalledTimes(1);
   });
 
@@ -110,6 +117,9 @@ describe("createMarkdownCard", () => {
 
     const act = () => createMarkdownCard(input, { fileSystem });
 
-    await expect(act).rejects.toThrow("Permission denied");
+    await expect(act).rejects.toMatchObject({
+      code: "card.create-failed",
+      cause: expect.objectContaining({ message: "Permission denied" }),
+    });
   });
 });

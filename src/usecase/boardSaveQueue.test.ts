@@ -38,7 +38,8 @@ describe("createBoardSaveQueue", () => {
   });
 
   it("reports the error message and does not throw when saving fails", async () => {
-    const saveBoard = vi.fn().mockRejectedValue(new Error("disk full"));
+    const saveError = new Error("disk full");
+    const saveBoard = vi.fn().mockRejectedValue(saveError);
     const onError = vi.fn();
     const queue = createBoardSaveQueue(saveBoard, {
       onSaving: vi.fn(),
@@ -47,7 +48,7 @@ describe("createBoardSaveQueue", () => {
     });
 
     queue.save("/board.yaml", makeBoard("Development"));
-    await vi.waitFor(() => expect(onError).toHaveBeenCalledWith("disk full"));
+    await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(saveError));
   });
 
   it("runs a request that arrives while a save is in flight once the in-flight one settles", async () => {

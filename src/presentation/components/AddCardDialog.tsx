@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { directoryOf } from "../../domain/boardPath.ts";
 import { suggestMarkdownFileName } from "../../domain/cardFile.ts";
 import { useBoardStore, useMarkdownViewer } from "../context/appContext.ts";
+import type { UiError } from "../errors/toUiError.ts";
+import { toUiError } from "../errors/toUiError.ts";
 import { BoardDirectoryPicker } from "./BoardDirectoryPicker.tsx";
 
 interface AddCardDialogProps {
@@ -9,10 +11,6 @@ interface AddCardDialogProps {
   columnId: string;
   open: boolean;
   onClose: () => void;
-}
-
-function toMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 export function AddCardDialog({
@@ -30,7 +28,7 @@ export function AddCardDialog({
   const [fileNameEdited, setFileNameEdited] = useState(false);
   const [directory, setDirectory] = useState(boardDirectory);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<UiError>();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -49,6 +47,7 @@ export function AddCardDialog({
 
   function handleTitleChange(nextTitle: string) {
     setTitle(nextTitle);
+    if (error?.field === "title") setError(undefined);
     if (!fileNameEdited) {
       setFileName(nextTitle.trim() ? suggestMarkdownFileName(nextTitle) : "");
     }
@@ -64,7 +63,7 @@ export function AddCardDialog({
       onClose();
       void selectCard(card);
     } catch (submitError) {
-      setError(toMessage(submitError));
+      setError(toUiError(submitError));
       setIsSubmitting(false);
     }
   }
@@ -81,8 +80,9 @@ export function AddCardDialog({
     >
       <form onSubmit={handleSubmit}>
         <h2>Add new Markdown</h2>
-        {error && <p className="add-card-dialog__error" role="alert">{error}
-        </p>}
+        {error && !error.field && (
+          <p className="add-card-dialog__error" role="alert">{error.message}</p>
+        )}
         <label>
           <span>Title</span>
           <input
@@ -93,6 +93,11 @@ export function AddCardDialog({
             autoFocus
             required
           />
+          {error?.field === "title" && (
+            <span className="add-card-dialog__error" role="alert">
+              {error.message}
+            </span>
+          )}
         </label>
         <label>
           <span>File name</span>
@@ -102,18 +107,32 @@ export function AddCardDialog({
             onChange={(event) => {
               setFileNameEdited(true);
               setFileName(event.target.value);
+              if (error?.field === "fileName") setError(undefined);
             }}
             disabled={isSubmitting}
             required
           />
+          {error?.field === "fileName" && (
+            <span className="add-card-dialog__error" role="alert">
+              {error.message}
+            </span>
+          )}
         </label>
         <fieldset disabled={isSubmitting}>
           <legend>Directory</legend>
           <BoardDirectoryPicker
             root={boardDirectory}
             value={directory}
-            onChange={setDirectory}
+            onChange={(path) => {
+              setDirectory(path);
+              if (error?.field === "directory") setError(undefined);
+            }}
           />
+          {error?.field === "directory" && (
+            <p className="add-card-dialog__error" role="alert">
+              {error.message}
+            </p>
+          )}
         </fieldset>
         <div className="add-card-dialog__actions">
           <button type="button" onClick={onClose} disabled={isSubmitting}>

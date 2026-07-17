@@ -4,12 +4,18 @@ import { saveMarkdown } from "./saveMarkdown.ts";
 
 class FakeFileSystemPort implements FileSystemPort {
   readonly writes: Array<{ path: string; content: string }> = [];
+  private readonly writeError?: Error;
+
+  constructor(writeError?: Error) {
+    this.writeError = writeError;
+  }
 
   readTextFile(): Promise<string> {
     throw new Error("not needed for this test");
   }
 
   writeTextFile(path: string, content: string): Promise<void> {
+    if (this.writeError) return Promise.reject(this.writeError);
     this.writes.push({ path, content });
     return Promise.resolve();
   }
@@ -46,5 +52,19 @@ describe("saveMarkdown", () => {
     expect(fileSystem.writes).toEqual([
       { path: "/board/improve-search.md", content: "# Improve search" },
     ]);
+  });
+
+  it("maps write failures to a Markdown save error", async () => {
+    const fileSystem = new FakeFileSystemPort(new Error("disk full"));
+
+    const act = () =>
+      saveMarkdown("/board/improve-search.md", "# Improve search", {
+        fileSystem,
+      });
+
+    await expect(act).rejects.toMatchObject({
+      code: "markdown.save-failed",
+      details: { path: "/board/improve-search.md" },
+    });
   });
 });

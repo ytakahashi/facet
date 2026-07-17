@@ -54,4 +54,15 @@ describe("viewMarkdown", () => {
 
     expect(result).toBe("# Improve search");
   });
+
+  it("maps read failures to a Markdown load error", async () => {
+    const fileSystem = new FakeFileSystemPort({});
+
+    const act = () => viewMarkdown("/board/missing.md", { fileSystem });
+
+    await expect(act).rejects.toMatchObject({
+      code: "markdown.load-failed",
+      details: { path: "/board/missing.md" },
+    });
+  });
 });

@@ -97,12 +97,16 @@ describe("openBoard", () => {
     const boardRepository = new FakeBoardRepository(undefined);
     const configRepository = new FakeConfigRepository();
 
-    await expect(
+    const act = () =>
       openBoard("/board/missing.board.yaml", {
         boardRepository,
         configRepository,
-      }),
-    ).rejects.toThrow();
+      });
+
+    await expect(act).rejects.toMatchObject({
+      code: "board.open-failed",
+      details: { path: "/board/missing.board.yaml" },
+    });
     expect(configRepository.savedConfig).toEqual(emptyAppConfig());
   });
 

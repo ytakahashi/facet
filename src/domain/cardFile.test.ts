@@ -30,7 +30,7 @@ describe("normalizeMarkdownFileName", () => {
   it("rejects a path instead of a single file name", () => {
     const act = () => normalizeMarkdownFileName("notes/card.md");
 
-    expect(act).toThrow("Enter a single valid file name.");
+    expect(act).toThrow(expect.objectContaining({ kind: "invalid-file-name" }));
   });
 });
 
@@ -44,7 +44,7 @@ describe("initialMarkdown", () => {
   it("rejects an empty title", () => {
     const act = () => initialMarkdown("  ");
 
-    expect(act).toThrow("Title is required.");
+    expect(act).toThrow(expect.objectContaining({ kind: "title-required" }));
   });
 });
 
@@ -71,6 +71,8 @@ describe("resolveNewMarkdownPath", () => {
         "card.md",
       );
 
-    expect(act).toThrow("Choose a directory inside the board directory.");
+    expect(act).toThrow(
+      expect.objectContaining({ kind: "outside-board-directory" }),
+    );
   });
 });

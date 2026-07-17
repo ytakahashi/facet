@@ -3,10 +3,32 @@ export interface DirEntry {
   isDirectory: boolean;
 }
 
-export class FileAlreadyExistsError extends Error {
-  constructor(path: string) {
-    super(`File already exists: ${path}`);
-    this.name = "FileAlreadyExistsError";
+export type FileSystemErrorKind = "already-exists" | "operation-failed";
+export type FileSystemOperation =
+  | "read-file"
+  | "write-file"
+  | "create-file"
+  | "read-directory"
+  | "create-directory"
+  | "get-home-directory"
+  | "check-existence";
+
+export class FileSystemError extends Error {
+  readonly kind: FileSystemErrorKind;
+  readonly operation: FileSystemOperation;
+  readonly path?: string;
+
+  constructor(
+    kind: FileSystemErrorKind,
+    operation: FileSystemOperation,
+    path?: string,
+    options?: ErrorOptions,
+  ) {
+    super(`${operation}:${kind}`, options);
+    this.name = "FileSystemError";
+    this.kind = kind;
+    this.operation = operation;
+    this.path = path;
   }
 }
 

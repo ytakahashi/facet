@@ -37,7 +37,7 @@ describe("createBoardDirectory", () => {
     const act = () =>
       createBoardDirectory("/board", "ideas/later", { fileSystem });
 
-    await expect(act).rejects.toThrow("single valid directory name");
+    await expect(act).rejects.toMatchObject({ code: "directory.invalid-name" });
     expect(mkdir).not.toHaveBeenCalled();
   });
 
@@ -50,7 +50,10 @@ describe("createBoardDirectory", () => {
 
     const act = () => createBoardDirectory("/board", "ideas", { fileSystem });
 
-    await expect(act).rejects.toThrow("already exists");
+    await expect(act).rejects.toMatchObject({
+      code: "directory.already-exists",
+      details: { path: "/board/ideas" },
+    });
     expect(mkdir).not.toHaveBeenCalled();
   });
 });

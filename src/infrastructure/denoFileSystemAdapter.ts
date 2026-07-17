@@ -1,38 +1,78 @@
 import {
   type DirEntry,
-  FileAlreadyExistsError,
+  FileSystemError,
+  type FileSystemOperation,
   type FileSystemPort,
 } from "../domain/fileSystemPort.ts";
 
+async function runFileSystemOperation<T>(
+  operation: FileSystemOperation,
+  path: string | undefined,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (cause) {
+    if (cause instanceof FileSystemError) throw cause;
+    throw new FileSystemError("operation-failed", operation, path, { cause });
+  }
+}
+
 export class DenoFileSystemAdapter implements FileSystemPort {
   readTextFile(path: string): Promise<string> {
-    return bindings.readTextFile(path);
+    return runFileSystemOperation(
+      "read-file",
+      path,
+      () => bindings.readTextFile(path),
+    );
   }
 
   writeTextFile(path: string, content: string): Promise<void> {
-    return bindings.writeTextFile(path, content);
+    return runFileSystemOperation(
+      "write-file",
+      path,
+      () => bindings.writeTextFile(path, content),
+    );
   }
 
   async createTextFile(path: string, content: string): Promise<void> {
-    const result = await bindings.createTextFile(path, content);
-    if (!result.created) {
-      throw new FileAlreadyExistsError(path);
-    }
+    return runFileSystemOperation("create-file", path, async () => {
+      const result = await bindings.createTextFile(path, content);
+      if (!result.created) {
+        throw new FileSystemError("already-exists", "create-file", path);
+      }
+    });
   }
 
   readDir(path: string): Promise<DirEntry[]> {
-    return bindings.readDir(path);
+    return runFileSystemOperation(
+      "read-directory",
+      path,
+      () => bindings.readDir(path),
+    );
   }
 
   homeDirectory(): Promise<string> {
-    return bindings.homeDirectory();
+    return runFileSystemOperation(
+      "get-home-directory",
+      undefined,
+      () => bindings.homeDirectory(),
+    );
   }
 
   exists(path: string): Promise<boolean> {
-    return bindings.exists(path);
+    return runFileSystemOperation(
+      "check-existence",
+      path,
+      () => bindings.exists(path),
+    );
   }
 
   mkdir(path: string): Promise<void> {
-    return bindings.mkdir(path);
+    return runFileSystemOperation(
+      "create-directory",
+      path,
+      () => bindings.mkdir(path),
+    );
   }
 }

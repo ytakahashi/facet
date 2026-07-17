@@ -5,7 +5,7 @@ export type SaveBoard = (path: string, board: Board) => Promise<void>;
 export interface BoardSaveQueueCallbacks {
   onSaving: () => void;
   onSaved: () => void;
-  onError: (message: string) => void;
+  onError: (error: unknown) => void;
 }
 
 export interface BoardSaveQueue {
@@ -32,7 +32,7 @@ export function createBoardSaveQueue(
       await saveBoard(path, board);
       callbacks.onSaved();
     } catch (error) {
-      callbacks.onError(error instanceof Error ? error.message : String(error));
+      callbacks.onError(error);
     } finally {
       isSaving = false;
       if (pending) {

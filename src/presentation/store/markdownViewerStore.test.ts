@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Card } from "../../domain/card.ts";
+import { UseCaseError } from "../../usecase/useCaseError.ts";
+import { toUiError } from "../errors/toUiError.ts";
 import { createMarkdownViewerStore } from "./markdownViewerStore.ts";
 
 function makeCard(overrides: Partial<Card> = {}): Card {
@@ -37,10 +39,13 @@ describe("createMarkdownViewerStore", () => {
     expect(useMarkdownViewer.getState().draft).toBe("# Improve search");
   });
 
-  it("moves to error with the failure message when viewMarkdown rejects", async () => {
+  it("moves to error with the toUiError message when viewMarkdown rejects", async () => {
     const card = makeCard();
+    const loadFailedError = new UseCaseError("markdown.load-failed", {
+      path: "/board/improve-search.md",
+    });
     const useMarkdownViewer = createMarkdownViewerStore(
-      () => Promise.reject(new Error("file not found")),
+      () => Promise.reject(loadFailedError),
       vi.fn(),
       alwaysDiscard,
     );
@@ -48,7 +53,9 @@ describe("createMarkdownViewerStore", () => {
     await useMarkdownViewer.getState().selectCard(card);
 
     expect(useMarkdownViewer.getState().status).toBe("error");
-    expect(useMarkdownViewer.getState().error).toBe("file not found");
+    expect(useMarkdownViewer.getState().error).toBe(
+      toUiError(loadFailedError).message,
+    );
   });
 
   it("moves to error without calling viewMarkdown when the card has no absolute path", async () => {
@@ -125,7 +132,10 @@ describe("createMarkdownViewerStore", () => {
 
   it("keeps the draft and reports an error when saving fails", async () => {
     const card = makeCard();
-    const saveMarkdown = vi.fn().mockRejectedValue(new Error("disk full"));
+    const saveFailedError = new UseCaseError("markdown.save-failed", {
+      path: "/board/improve-search.md",
+    });
+    const saveMarkdown = vi.fn().mockRejectedValue(saveFailedError);
     const useMarkdownViewer = createMarkdownViewerStore(
       () => Promise.resolve("# Improve search"),
       saveMarkdown,
@@ -136,7 +146,9 @@ describe("createMarkdownViewerStore", () => {
 
     await useMarkdownViewer.getState().save();
 
-    expect(useMarkdownViewer.getState().saveError).toBe("disk full");
+    expect(useMarkdownViewer.getState().saveError).toBe(
+      toUiError(saveFailedError).message,
+    );
     expect(useMarkdownViewer.getState().content).toBe("# Improve search");
     expect(useMarkdownViewer.getState().draft).toBe(
       "# Improve search (edited)",

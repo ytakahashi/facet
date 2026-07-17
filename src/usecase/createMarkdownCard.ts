@@ -1,10 +1,18 @@
 import type { Card } from "../domain/card.ts";
 import { createCardReference } from "../domain/card.ts";
-import { initialMarkdown, resolveNewMarkdownPath } from "../domain/cardFile.ts";
 import {
-  FileAlreadyExistsError,
+  CardFileValidationError,
+  initialMarkdown,
+  resolveNewMarkdownPath,
+} from "../domain/cardFile.ts";
+import {
+  FileSystemError,
   type FileSystemPort,
 } from "../domain/fileSystemPort.ts";
+import {
+  cardFileValidationToUseCaseError,
+  UseCaseError,
+} from "./useCaseError.ts";
 
 export interface CreateMarkdownCardInput {
   boardPath: string;
@@ -21,28 +29,53 @@ export async function createMarkdownCard(
   input: CreateMarkdownCardInput,
   { fileSystem }: CreateMarkdownCardDeps,
 ): Promise<Card> {
-  const markdown = initialMarkdown(input.title);
-  const path = resolveNewMarkdownPath(
-    input.boardPath,
-    input.directory,
-    input.fileName,
-  );
+  let markdown: string;
+  let path: ReturnType<typeof resolveNewMarkdownPath>;
+  try {
+    markdown = initialMarkdown(input.title);
+    path = resolveNewMarkdownPath(
+      input.boardPath,
+      input.directory,
+      input.fileName,
+    );
+  } catch (cause) {
+    if (cause instanceof CardFileValidationError) {
+      throw cardFileValidationToUseCaseError(cause);
+    }
+    throw cause;
+  }
 
-  if (await fileSystem.exists(path.absolutePath)) {
-    throw new Error(`A file already exists at ${path.absolutePath}`);
+  let exists: boolean;
+  try {
+    exists = await fileSystem.exists(path.absolutePath);
+  } catch (cause) {
+    throw new UseCaseError(
+      "card.create-failed",
+      { path: path.absolutePath },
+      { cause },
+    );
+  }
+  if (exists) {
+    throw new UseCaseError("card.file-already-exists", {
+      path: path.absolutePath,
+    });
   }
 
   try {
     await fileSystem.createTextFile(path.absolutePath, markdown);
   } catch (cause) {
-    if (cause instanceof FileAlreadyExistsError) {
-      // The exists() check above is only for a friendly error message; a
-      // concurrent writer can still win the race against createNew: true.
-      throw new Error(`A file already exists at ${path.absolutePath}`, {
-        cause,
-      });
+    if (cause instanceof FileSystemError && cause.kind === "already-exists") {
+      throw new UseCaseError(
+        "card.file-already-exists",
+        { path: path.absolutePath },
+        { cause },
+      );
     }
-    throw cause;
+    throw new UseCaseError(
+      "card.create-failed",
+      { path: path.absolutePath },
+      { cause },
+    );
   }
   return createCardReference(path.relativePath, path.absolutePath, markdown);
 }

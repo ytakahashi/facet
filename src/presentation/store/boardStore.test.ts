@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Board } from "../../domain/board.ts";
+import { UseCaseError } from "../../usecase/useCaseError.ts";
+import { toUiError } from "../errors/toUiError.ts";
 import { createBoardStore } from "./boardStore.ts";
 
 function makeBoard(): Board {
@@ -32,9 +34,12 @@ describe("createBoardStore", () => {
     expect(useBoardStore.getState().board).toEqual(board);
   });
 
-  it("moves to error with the failure message when openBoard rejects", async () => {
+  it("moves to error with the toUiError message when openBoard rejects", async () => {
+    const openBoardError = new UseCaseError("board.open-failed", {
+      path: "/board/missing.board.yaml",
+    });
     const useBoardStore = createBoardStore(
-      () => Promise.reject(new Error("board file not found")),
+      () => Promise.reject(openBoardError),
       vi.fn(),
       vi.fn(),
     );
@@ -42,7 +47,9 @@ describe("createBoardStore", () => {
     await useBoardStore.getState().openBoard("/board/missing.board.yaml");
 
     expect(useBoardStore.getState().status).toBe("error");
-    expect(useBoardStore.getState().error).toBe("board file not found");
+    expect(useBoardStore.getState().error).toBe(
+      toUiError(openBoardError).message,
+    );
   });
 
   it("updates the board immediately, before the save resolves", async () => {
@@ -92,7 +99,10 @@ describe("createBoardStore", () => {
 
   it("keeps the optimistic board and reports an error when saving fails", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockRejectedValue(new Error("disk full"));
+    const saveFailedError = new UseCaseError("board.save-failed", {
+      path: "/board/development.board.yaml",
+    });
+    const saveBoard = vi.fn().mockRejectedValue(saveFailedError);
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
@@ -105,7 +115,9 @@ describe("createBoardStore", () => {
       { columnId: "done", index: 0 },
     );
     await vi.waitFor(() =>
-      expect(useBoardStore.getState().saveError).toBe("disk full")
+      expect(useBoardStore.getState().saveError).toBe(
+        toUiError(saveFailedError).message,
+      )
     );
 
     expect(useBoardStore.getState().board?.columns[1].cards).toEqual([
@@ -115,8 +127,11 @@ describe("createBoardStore", () => {
 
   it("retries the save when retrySave is called", async () => {
     const board = makeBoard();
+    const saveFailedError = new UseCaseError("board.save-failed", {
+      path: "/board/development.board.yaml",
+    });
     const saveBoard = vi.fn()
-      .mockRejectedValueOnce(new Error("disk full"))
+      .mockRejectedValueOnce(saveFailedError)
       .mockResolvedValue(undefined);
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
@@ -129,7 +144,9 @@ describe("createBoardStore", () => {
       { columnId: "done", index: 0 },
     );
     await vi.waitFor(() =>
-      expect(useBoardStore.getState().saveError).toBe("disk full")
+      expect(useBoardStore.getState().saveError).toBe(
+        toUiError(saveFailedError).message,
+      )
     );
 
     useBoardStore.getState().retrySave();
@@ -200,7 +217,7 @@ describe("createBoardStore", () => {
         title: "A",
       });
 
-    await expect(act).rejects.toThrow("already on this board");
+    await expect(act).rejects.toMatchObject({ code: "card.already-on-board" });
     expect(createMarkdownCard).not.toHaveBeenCalled();
   });
 
@@ -208,7 +225,9 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const createMarkdownCard = vi.fn().mockRejectedValue(
-      new Error("file already exists"),
+      new UseCaseError("card.file-already-exists", {
+        path: "/board/new.md",
+      }),
     );
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
@@ -225,7 +244,9 @@ describe("createBoardStore", () => {
         title: "New",
       });
 
-    await expect(act).rejects.toThrow("file already exists");
+    await expect(act).rejects.toMatchObject({
+      code: "card.file-already-exists",
+    });
     expect(useBoardStore.getState().board).toEqual(board);
     expect(saveBoard).not.toHaveBeenCalled();
   });

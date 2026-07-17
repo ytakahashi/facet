@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import { useDirectoryBrowsing } from "../context/appContext.ts";
+import type { UiError } from "../errors/toUiError.ts";
+import { toUiError } from "../errors/toUiError.ts";
 import {
   joinPath,
   parentWithinRoot,
@@ -14,10 +16,6 @@ interface BoardDirectoryPickerProps {
   onChange: (path: string) => void;
 }
 
-function toMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 export function BoardDirectoryPicker({
   root,
   value,
@@ -25,11 +23,11 @@ export function BoardDirectoryPicker({
 }: BoardDirectoryPickerProps) {
   const { listDirectory, createDirectory } = useDirectoryBrowsing();
   const [entries, setEntries] = useState<DirEntry[]>([]);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<UiError>();
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newDirectoryName, setNewDirectoryName] = useState("");
-  const [createError, setCreateError] = useState<string>();
+  const [createError, setCreateError] = useState<UiError>();
 
   const load = useCallback(
     async (path: string) => {
@@ -39,7 +37,7 @@ export function BoardDirectoryPicker({
         const nextEntries = await listDirectory(path);
         setEntries(nextEntries);
       } catch (navigationError) {
-        setError(toMessage(navigationError));
+        setError(toUiError(navigationError));
       } finally {
         setIsLoading(false);
       }
@@ -63,7 +61,7 @@ export function BoardDirectoryPicker({
       setIsCreating(false);
       onChange(createdPath);
     } catch (creationError) {
-      setCreateError(toMessage(creationError));
+      setCreateError(toUiError(creationError));
     }
   }
 
@@ -81,7 +79,7 @@ export function BoardDirectoryPicker({
         )}
         <span title={value}>{relativePathWithinRoot(value, root)}</span>
       </div>
-      {error && <p role="alert">{error}</p>}
+      {error && <p role="alert">{error.message}</p>}
       {isLoading && <p>Loading…</p>}
       {!isLoading && directories.length === 0 && (
         <p className="board-directory-picker__empty">No subdirectories</p>
@@ -142,7 +140,7 @@ export function BoardDirectoryPicker({
             + New directory
           </button>
         )}
-      {createError && <p role="alert">{createError}</p>}
+      {createError && <p role="alert">{createError.message}</p>}
     </div>
   );
 }

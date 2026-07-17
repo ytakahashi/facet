@@ -1,9 +1,18 @@
 import { directoryOf, toRelativeCardPath } from "./boardPath.ts";
 
+export type CardFileValidationErrorKind =
+  | "title-required"
+  | "file-name-required"
+  | "invalid-file-name"
+  | "outside-board-directory";
+
 export class CardFileValidationError extends Error {
-  constructor(message: string) {
-    super(message);
+  readonly kind: CardFileValidationErrorKind;
+
+  constructor(kind: CardFileValidationErrorKind) {
+    super(kind);
     this.name = "CardFileValidationError";
+    this.kind = kind;
   }
 }
 
@@ -19,18 +28,16 @@ export function suggestMarkdownFileName(title: string): string {
 export function normalizeMarkdownFileName(input: string): string {
   const fileName = input.trim();
   if (!fileName) {
-    throw new CardFileValidationError("File name is required.");
+    throw new CardFileValidationError("file-name-required");
   }
   if (
     fileName === "." || fileName === ".." || fileName.includes("/") ||
     fileName.includes(":")
   ) {
-    throw new CardFileValidationError("Enter a single valid file name.");
+    throw new CardFileValidationError("invalid-file-name");
   }
   if (fileName.includes("\0")) {
-    throw new CardFileValidationError(
-      "File name contains an invalid character.",
-    );
+    throw new CardFileValidationError("invalid-file-name");
   }
   if (/\.md$/i.test(fileName)) {
     return `${fileName.slice(0, -3)}.md`;
@@ -41,7 +48,7 @@ export function normalizeMarkdownFileName(input: string): string {
 export function initialMarkdown(title: string): string {
   const normalizedTitle = title.trim();
   if (!normalizedTitle) {
-    throw new CardFileValidationError("Title is required.");
+    throw new CardFileValidationError("title-required");
   }
   return `# ${normalizedTitle}\n\n`;
 }
@@ -63,9 +70,7 @@ export function resolveNewMarkdownPath(
     : `${directory}/${fileName}`;
   const relative = toRelativeCardPath(directoryOf(boardPath), absolutePath);
   if (!relative.ok) {
-    throw new CardFileValidationError(
-      "Choose a directory inside the board directory.",
-    );
+    throw new CardFileValidationError("outside-board-directory");
   }
   return { absolutePath, relativePath: relative.path, fileName };
 }

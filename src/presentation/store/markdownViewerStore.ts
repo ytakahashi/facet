@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import type { Card } from "../../domain/card.ts";
+import { toUiError } from "../errors/toUiError.ts";
 
 export type MarkdownStatus = "idle" | "loading" | "loaded" | "error";
 
@@ -71,7 +72,7 @@ export function createMarkdownViewerStore(
       } catch (error) {
         set({
           status: "error",
-          error: error instanceof Error ? error.message : String(error),
+          error: toUiError(error).message,
         });
       }
     },
@@ -91,7 +92,7 @@ export function createMarkdownViewerStore(
       } catch (error) {
         set({
           isSaving: false,
-          saveError: error instanceof Error ? error.message : String(error),
+          saveError: toUiError(error).message,
         });
       }
     },

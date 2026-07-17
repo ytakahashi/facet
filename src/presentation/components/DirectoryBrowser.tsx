@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import { useBoardStore, useDirectoryBrowsing } from "../context/appContext.ts";
+import type { UiError } from "../errors/toUiError.ts";
+import { toUiError } from "../errors/toUiError.ts";
 import {
   joinPath,
   parentWithinRoot,
@@ -11,10 +13,6 @@ function isBoardFile(name: string): boolean {
   return name.endsWith(".yaml") || name.endsWith(".yml");
 }
 
-function toMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 export function DirectoryBrowser() {
   const { listDirectory, homeDirectory } = useDirectoryBrowsing();
   const openBoard = useBoardStore((state) => state.openBoard);
@@ -23,17 +21,17 @@ export function DirectoryBrowser() {
 
   const [path, setPath] = useState<string | null>(null);
   const [entries, setEntries] = useState<DirEntry[]>([]);
-  const [browseError, setBrowseError] = useState<string | null>(null);
+  const [browseError, setBrowseError] = useState<UiError>();
 
   const navigate = useCallback(
     async (nextPath: string) => {
       try {
-        setBrowseError(null);
+        setBrowseError(undefined);
         const nextEntries = await listDirectory(nextPath);
         setPath(nextPath);
         setEntries(nextEntries);
       } catch (error) {
-        setBrowseError(toMessage(error));
+        setBrowseError(toUiError(error));
       }
     },
     [listDirectory],
@@ -49,7 +47,7 @@ export function DirectoryBrowser() {
       })
       .catch((error) => {
         if (!cancelled) {
-          setBrowseError(toMessage(error));
+          setBrowseError(toUiError(error));
         }
       });
     return () => {
@@ -84,7 +82,7 @@ export function DirectoryBrowser() {
         <span>{path ?? "Loading…"}</span>
       </div>
 
-      {browseError && <p role="alert">{browseError}</p>}
+      {browseError && <p role="alert">{browseError.message}</p>}
       {status === "loading" && <p>Opening board…</p>}
       {status === "error" && boardError && <p role="alert">{boardError}</p>}
 

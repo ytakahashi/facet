@@ -5,12 +5,15 @@ import { listRecentBoards } from "./listRecentBoards.ts";
 
 class FakeConfigRepository implements ConfigRepository {
   private readonly config: AppConfig;
+  private readonly loadError?: Error;
 
-  constructor(config: AppConfig) {
+  constructor(config: AppConfig, loadError?: Error) {
     this.config = config;
+    this.loadError = loadError;
   }
 
   load(): Promise<AppConfig> {
+    if (this.loadError) return Promise.reject(this.loadError);
     return Promise.resolve(this.config);
   }
 
@@ -40,5 +43,18 @@ describe("listRecentBoards", () => {
     const result = await listRecentBoards({ configRepository });
 
     expect(result).toEqual([]);
+  });
+
+  it("maps config failures to a recent boards load error", async () => {
+    const configRepository = new FakeConfigRepository(
+      { version: 1, recentBoards: [] },
+      new Error("config unavailable"),
+    );
+
+    const act = () => listRecentBoards({ configRepository });
+
+    await expect(act).rejects.toMatchObject({
+      code: "recent-boards.load-failed",
+    });
   });
 });

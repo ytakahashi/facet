@@ -1,4 +1,5 @@
 import type { FileSystemPort } from "../domain/fileSystemPort.ts";
+import { UseCaseError } from "./useCaseError.ts";
 
 export interface CreateBoardDirectoryDeps {
   fileSystem: FileSystemPort;
@@ -11,22 +12,33 @@ export async function createBoardDirectory(
 ): Promise<string> {
   const name = inputName.trim();
   if (!name) {
-    throw new Error("Directory name is required.");
+    throw new UseCaseError("directory.name-required");
   }
   if (
     name === "." || name === ".." || name.includes("/") ||
     name.includes(":") || name.includes("\0")
   ) {
-    throw new Error("Enter a single valid directory name.");
+    throw new UseCaseError("directory.invalid-name");
   }
 
   const path = parentDirectory.endsWith("/")
     ? `${parentDirectory}${name}`
     : `${parentDirectory}/${name}`;
-  if (await fileSystem.exists(path)) {
-    throw new Error(`A file or directory already exists at ${path}`);
+
+  let exists: boolean;
+  try {
+    exists = await fileSystem.exists(path);
+  } catch (cause) {
+    throw new UseCaseError("directory.create-failed", { path }, { cause });
+  }
+  if (exists) {
+    throw new UseCaseError("directory.already-exists", { path });
   }
 
-  await fileSystem.mkdir(path);
+  try {
+    await fileSystem.mkdir(path);
+  } catch (cause) {
+    throw new UseCaseError("directory.create-failed", { path }, { cause });
+  }
   return path;
 }

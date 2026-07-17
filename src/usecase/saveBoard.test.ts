@@ -29,4 +29,22 @@ describe("saveBoard", () => {
       { path: "/board/development.board.yaml", board },
     ]);
   });
+
+  it("maps repository failures to a board save error", async () => {
+    const cause = new Error("disk full");
+    const boardRepository: BoardRepository = {
+      load: () => Promise.reject(new Error("not needed for this test")),
+      save: () => Promise.reject(cause),
+    };
+    const board: Board = { version: 1, name: "Development", columns: [] };
+
+    const act = () =>
+      saveBoard("/board/development.board.yaml", board, { boardRepository });
+
+    await expect(act).rejects.toMatchObject({
+      code: "board.save-failed",
+      details: { path: "/board/development.board.yaml" },
+      cause,
+    });
+  });
 });
