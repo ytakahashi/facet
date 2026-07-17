@@ -14,6 +14,10 @@ class FakeFileSystemPort implements FileSystemPort {
     return Promise.resolve();
   }
 
+  createTextFile(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
+
   readDir(): Promise<DirEntry[]> {
     throw new Error("not needed for this test");
   }

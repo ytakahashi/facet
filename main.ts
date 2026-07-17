@@ -10,6 +10,30 @@ win.bind(
   },
 );
 
+win.bind(
+  "createTextFile",
+  async (path: unknown, content: unknown) => {
+    const file = await Deno.open(path as string, {
+      write: true,
+      createNew: true,
+    });
+    try {
+      const bytes = new TextEncoder().encode(content as string);
+      let offset = 0;
+      while (offset < bytes.length) {
+        const written = await file.write(bytes.subarray(offset));
+        if (written === 0) {
+          throw new Error(`Failed to write the complete file: ${path}`);
+        }
+        offset += written;
+      }
+    } finally {
+      file.close();
+    }
+    return null;
+  },
+);
+
 win.bind("readDir", async (path: unknown) => {
   const entries = [];
   for await (const entry of Deno.readDir(path as string)) {

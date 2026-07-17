@@ -1,4 +1,5 @@
 import type { Card } from "./card.ts";
+import { normalizeCardPath } from "./boardPath.ts";
 
 export interface Column {
   id: string;
@@ -15,6 +16,37 @@ export interface Board {
 export interface CardLocation {
   columnId: string;
   index: number;
+}
+
+export class CardAlreadyExistsError extends Error {
+  constructor(path: string) {
+    super(`This Markdown is already on this board: ${path}`);
+    this.name = "CardAlreadyExistsError";
+  }
+}
+
+export function containsCardPath(board: Board, path: string): boolean {
+  const normalizedPath = normalizeCardPath(path);
+  return board.columns.some((column) =>
+    column.cards.some((card) => normalizeCardPath(card.path) === normalizedPath)
+  );
+}
+
+export function addCard(board: Board, columnId: string, card: Card): Board {
+  if (containsCardPath(board, card.path)) {
+    throw new CardAlreadyExistsError(card.path);
+  }
+
+  let found = false;
+  const columns = board.columns.map((column) => {
+    if (column.id !== columnId) return column;
+    found = true;
+    return { ...column, cards: [...column.cards, card] };
+  });
+  if (!found) {
+    throw new Error(`Unknown column: ${columnId}`);
+  }
+  return { ...board, columns };
 }
 
 // `to.index` is always "the index as currently seen in the destination

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Board, Column } from "./board.ts";
-import { moveCard } from "./board.ts";
+import {
+  addCard,
+  CardAlreadyExistsError,
+  containsCardPath,
+  moveCard,
+} from "./board.ts";
 import type { Card } from "./card.ts";
 
 function makeCard(overrides: Partial<Card> = {}): Card {
@@ -137,5 +142,57 @@ describe("moveCard", () => {
     );
 
     expect(result.columns[1].cards).toEqual([moved]);
+  });
+});
+
+describe("addCard", () => {
+  it("appends a card to the target column without changing other columns", () => {
+    const existing = makeCard({ path: "existing.md" });
+    const added = makeCard({ path: "added.md" });
+    const untouched = makeColumn({ id: "done", cards: [existing] });
+    const board = makeBoard({
+      columns: [makeColumn({ id: "doing" }), untouched],
+    });
+
+    const result = addCard(board, "doing", added);
+
+    expect(result.columns[0].cards).toEqual([added]);
+    expect(result.columns[1]).toBe(untouched);
+    expect(board.columns[0].cards).toEqual([]);
+  });
+
+  it("rejects an unknown target column", () => {
+    const board = makeBoard({ columns: [makeColumn({ id: "doing" })] });
+
+    const act = () => addCard(board, "missing", makeCard());
+
+    expect(act).toThrow("Unknown column: missing");
+  });
+
+  it("rejects a path already present on the board after normalization", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "notes/card.md" })] })],
+    });
+
+    const act = () =>
+      addCard(
+        board,
+        "column",
+        makeCard({ path: "./notes/other/../card.md" }),
+      );
+
+    expect(act).toThrow(CardAlreadyExistsError);
+  });
+});
+
+describe("containsCardPath", () => {
+  it("finds an equivalent path in any column", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "./notes/card.md" })] })],
+    });
+
+    const result = containsCardPath(board, "notes/card.md");
+
+    expect(result).toBe(true);
   });
 });

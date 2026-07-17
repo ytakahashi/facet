@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveCardTitle } from "./card.ts";
+import { createCardReference, resolveCardTitle } from "./card.ts";
 
 describe("resolveCardTitle", () => {
   it("uses the YAML title override when present", () => {
@@ -32,5 +32,22 @@ describe("resolveCardTitle", () => {
     const title = resolveCardTitle(undefined, undefined, "improve-search.md");
 
     expect(title).toBe("improve-search");
+  });
+});
+
+describe("createCardReference", () => {
+  it("creates a card with its H1 title and empty board metadata", () => {
+    const result = createCardReference(
+      "notes/card.md",
+      "/board/notes/card.md",
+      "# Card title\n\nBody",
+    );
+
+    expect(result).toEqual({
+      path: "notes/card.md",
+      absolutePath: "/board/notes/card.md",
+      labels: [],
+      displayTitle: "Card title",
+    });
   });
 });

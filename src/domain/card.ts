@@ -27,6 +27,19 @@ export function resolveCardTitle(
   return filenameOf(path);
 }
 
+export function createCardReference(
+  path: string,
+  absolutePath: string,
+  markdownText: string,
+): Card {
+  return {
+    path,
+    absolutePath,
+    labels: [],
+    displayTitle: resolveCardTitle(undefined, markdownText, path),
+  };
+}
+
 function findFirstH1(markdown: string): string | undefined {
   for (const line of markdown.split("\n")) {
     const match = /^#\s+(.+)$/.exec(line.trim());

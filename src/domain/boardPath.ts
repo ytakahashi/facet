@@ -44,3 +44,69 @@ export function directoryOf(path: string): string {
   const index = path.lastIndexOf("/");
   return index === -1 ? "" : path.slice(0, index);
 }
+
+export type RelativeCardPathResult =
+  | { ok: true; path: string }
+  | { ok: false; reason: "outside-board-directory" | "not-a-file" };
+
+export function toRelativeCardPath(
+  boardDirectory: string,
+  absolutePath: string,
+): RelativeCardPathResult {
+  const boardSegments = normalizeAbsolutePath(boardDirectory);
+  const fileSegments = normalizeAbsolutePath(absolutePath);
+
+  if (!boardSegments || !fileSegments) {
+    return { ok: false, reason: "outside-board-directory" };
+  }
+  if (fileSegments.length <= boardSegments.length) {
+    return {
+      ok: false,
+      reason: fileSegments.length === boardSegments.length &&
+          fileSegments.every((segment, index) =>
+            segment === boardSegments[index]
+          )
+        ? "not-a-file"
+        : "outside-board-directory",
+    };
+  }
+  if (
+    !boardSegments.every((segment, index) => segment === fileSegments[index])
+  ) {
+    return { ok: false, reason: "outside-board-directory" };
+  }
+
+  return { ok: true, path: fileSegments.slice(boardSegments.length).join("/") };
+}
+
+export function normalizeCardPath(path: string): string {
+  const segments: string[] = [];
+  for (const segment of path.split("/")) {
+    if (segment === "" || segment === ".") continue;
+    if (segment === ".." && segments.at(-1) !== "..") {
+      if (segments.length > 0) {
+        segments.pop();
+      } else {
+        segments.push(segment);
+      }
+      continue;
+    }
+    segments.push(segment);
+  }
+  return segments.join("/");
+}
+
+function normalizeAbsolutePath(path: string): string[] | undefined {
+  if (!path.startsWith("/")) return undefined;
+
+  const segments: string[] = [];
+  for (const segment of path.split("/")) {
+    if (segment === "" || segment === ".") continue;
+    if (segment === "..") {
+      segments.pop();
+    } else {
+      segments.push(segment);
+    }
+  }
+  return segments;
+}

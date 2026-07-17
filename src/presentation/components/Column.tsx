@@ -4,7 +4,12 @@ import type { Column as ColumnModel } from "../../domain/board.ts";
 import type { ColumnDropData } from "./dragData.ts";
 import { Card } from "./Card.tsx";
 
-export function Column({ column }: { column: ColumnModel }) {
+interface ColumnProps {
+  column: ColumnModel;
+  onAddCard: (columnId: string) => void;
+}
+
+export function Column({ column, onAddCard }: ColumnProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isDraggedOver, setIsDraggedOver] = useState(false);
 
@@ -26,7 +31,12 @@ export function Column({ column }: { column: ColumnModel }) {
 
   return (
     <div className="column">
-      <h2 className="column__name">{column.name}</h2>
+      <div className="column__header">
+        <h2 className="column__name" title={column.name}>{column.name}</h2>
+        <button type="button" onClick={() => onAddCard(column.id)}>
+          + Add card
+        </button>
+      </div>
       <div
         ref={ref}
         className={`column__cards${
