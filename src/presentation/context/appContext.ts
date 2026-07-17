@@ -7,6 +7,7 @@ import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 export interface DirectoryBrowsing {
   listDirectory(path: string): Promise<DirEntry[]>;
   homeDirectory(): Promise<string>;
+  createDirectory(parentDirectory: string, name: string): Promise<string>;
 }
 
 export interface RecentBoards {

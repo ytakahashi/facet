@@ -4,6 +4,7 @@ import { useDirectoryBrowsing } from "../context/appContext.ts";
 import {
   joinPath,
   parentWithinRoot,
+  relativePathWithinRoot,
   sortDirectoryEntries,
 } from "./pathNavigation.ts";
 
@@ -22,10 +23,13 @@ export function BoardDirectoryPicker({
   value,
   onChange,
 }: BoardDirectoryPickerProps) {
-  const { listDirectory } = useDirectoryBrowsing();
+  const { listDirectory, createDirectory } = useDirectoryBrowsing();
   const [entries, setEntries] = useState<DirEntry[]>([]);
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newDirectoryName, setNewDirectoryName] = useState("");
+  const [createError, setCreateError] = useState<string>();
 
   const load = useCallback(
     async (path: string) => {
@@ -51,17 +55,31 @@ export function BoardDirectoryPicker({
     entry.isDirectory
   );
 
+  async function handleCreateDirectory() {
+    setCreateError(undefined);
+    try {
+      const createdPath = await createDirectory(value, newDirectoryName);
+      setNewDirectoryName("");
+      setIsCreating(false);
+      onChange(createdPath);
+    } catch (creationError) {
+      setCreateError(toMessage(creationError));
+    }
+  }
+
   return (
     <div className="board-directory-picker">
       <div className="board-directory-picker__path">
-        <button
-          type="button"
-          onClick={() => onChange(parentWithinRoot(value, root))}
-          disabled={value === root || isLoading}
-        >
-          Up
-        </button>
-        <span title={value}>{value}</span>
+        {value !== root && (
+          <button
+            type="button"
+            onClick={() => onChange(parentWithinRoot(value, root))}
+            disabled={isLoading}
+          >
+            Up
+          </button>
+        )}
+        <span title={value}>{relativePathWithinRoot(value, root)}</span>
       </div>
       {error && <p role="alert">{error}</p>}
       {isLoading && <p>Loading…</p>}
@@ -80,6 +98,51 @@ export function BoardDirectoryPicker({
           </li>
         ))}
       </ul>
+      {isCreating
+        ? (
+          <div className="board-directory-picker__create">
+            <input
+              type="text"
+              value={newDirectoryName}
+              onChange={(event) => setNewDirectoryName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void handleCreateDirectory();
+                }
+              }}
+              placeholder="Directory name"
+              aria-label="New directory name"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => void handleCreateDirectory()}
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreating(false);
+                setNewDirectoryName("");
+                setCreateError(undefined);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )
+        : (
+          <button
+            type="button"
+            className="board-directory-picker__new"
+            onClick={() => setIsCreating(true)}
+          >
+            + New directory
+          </button>
+        )}
+      {createError && <p role="alert">{createError}</p>}
     </div>
   );
 }

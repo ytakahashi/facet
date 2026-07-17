@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   joinPath,
   parentWithinRoot,
+  relativePathWithinRoot,
   sortDirectoryEntries,
 } from "./pathNavigation.ts";
 
@@ -30,6 +31,29 @@ describe("parentWithinRoot", () => {
     const result = parentWithinRoot("/Users/me/project", "/");
 
     expect(result).toBe("/Users/me");
+  });
+});
+
+describe("relativePathWithinRoot", () => {
+  it("represents the board directory as a dot", () => {
+    const result = relativePathWithinRoot("/projects/facet", "/projects/facet");
+
+    expect(result).toBe(".");
+  });
+
+  it("returns a path relative to the board directory", () => {
+    const result = relativePathWithinRoot(
+      "/projects/facet/ideas/later",
+      "/projects/facet",
+    );
+
+    expect(result).toBe("ideas/later");
+  });
+
+  it("handles the file-system root without leaving a leading slash", () => {
+    const result = relativePathWithinRoot("/ideas/later", "/");
+
+    expect(result).toBe("ideas/later");
   });
 });
 

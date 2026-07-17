@@ -14,6 +14,12 @@ export function parentWithinRoot(path: string, root: string): string {
   return parent === root || parent.startsWith(`${root}/`) ? parent : root;
 }
 
+export function relativePathWithinRoot(path: string, root: string): string {
+  if (path === root) return ".";
+  const prefix = root === "/" ? "/" : `${root}/`;
+  return path.startsWith(prefix) ? path.slice(prefix.length) : path;
+}
+
 export function sortDirectoryEntries(entries: DirEntry[]): DirEntry[] {
   return [...entries].sort((a, b) => {
     if (a.isDirectory !== b.isDirectory) {
