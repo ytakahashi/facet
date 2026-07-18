@@ -218,7 +218,7 @@
 }
 
 .column__cards--dragged-over {
-  background: var(--color-accent-bg);
+  background: var(--color-accent-warm-bg);
 }
 
 .card {
@@ -240,11 +240,11 @@
 }
 
 .card--drop-before {
-  box-shadow: 0 -2px 0 var(--color-accent);
+  box-shadow: 0 -2px 0 var(--color-accent-warm);
 }
 
 .card--drop-after {
-  box-shadow: 0 2px 0 var(--color-accent);
+  box-shadow: 0 2px 0 var(--color-accent-warm);
 }
 
 .card__priority {
