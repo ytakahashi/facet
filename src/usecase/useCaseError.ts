@@ -9,6 +9,8 @@ export type UseCaseErrorCode =
   | "card.file-already-exists"
   | "card.file-name-required"
   | "card.invalid-file-name"
+  | "card.load-failed"
+  | "card.not-markdown-file"
   | "card.outside-board-directory"
   | "card.title-required"
   | "directory.already-exists"
@@ -47,6 +49,8 @@ export function cardFileValidationToUseCaseError(
       return new UseCaseError("card.file-name-required", {}, { cause: error });
     case "invalid-file-name":
       return new UseCaseError("card.invalid-file-name", {}, { cause: error });
+    case "not-markdown-file":
+      return new UseCaseError("card.not-markdown-file", {}, { cause: error });
     case "outside-board-directory":
       return new UseCaseError(
         "card.outside-board-directory",

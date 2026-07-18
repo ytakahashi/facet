@@ -4,6 +4,7 @@ export type CardFileValidationErrorKind =
   | "title-required"
   | "file-name-required"
   | "invalid-file-name"
+  | "not-markdown-file"
   | "outside-board-directory";
 
 export class CardFileValidationError extends Error {
@@ -57,6 +58,25 @@ export interface NewMarkdownPath {
   absolutePath: string;
   relativePath: string;
   fileName: string;
+}
+
+export interface ExistingMarkdownPath {
+  absolutePath: string;
+  relativePath: string;
+}
+
+export function resolveExistingMarkdownPath(
+  boardPath: string,
+  absolutePath: string,
+): ExistingMarkdownPath {
+  const relative = toRelativeCardPath(directoryOf(boardPath), absolutePath);
+  if (!relative.ok) {
+    throw new CardFileValidationError("outside-board-directory");
+  }
+  if (!relative.path.toLowerCase().endsWith(".md")) {
+    throw new CardFileValidationError("not-markdown-file");
+  }
+  return { absolutePath, relativePath: relative.path };
 }
 
 export function resolveNewMarkdownPath(

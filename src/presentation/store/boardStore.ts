@@ -10,8 +10,10 @@ import {
 import type { Card } from "../../domain/card.ts";
 import {
   CardFileValidationError,
+  resolveExistingMarkdownPath,
   resolveNewMarkdownPath,
 } from "../../domain/cardFile.ts";
+import type { AddExistingMarkdownCardInput } from "../../usecase/addExistingMarkdownCard.ts";
 import type { CreateMarkdownCardInput } from "../../usecase/createMarkdownCard.ts";
 import type { SaveBoard } from "../../usecase/boardSaveQueue.ts";
 import { createBoardSaveQueue } from "../../usecase/boardSaveQueue.ts";
@@ -33,6 +35,7 @@ export interface BoardState {
   openBoard: (path: string) => Promise<void>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
+  addExistingCard: (input: ExistingCardInput) => Promise<Card>;
   retrySave: () => void;
 }
 
@@ -43,16 +46,25 @@ export interface NewCardInput {
   title: string;
 }
 
+export interface ExistingCardInput {
+  columnId: string;
+  absolutePath: string;
+}
+
 export type OpenBoard = (path: string) => Promise<Board>;
 export type { SaveBoard };
 export type CreateMarkdownCard = (
   input: CreateMarkdownCardInput,
+) => Promise<Card>;
+export type AddExistingMarkdownCard = (
+  input: AddExistingMarkdownCardInput,
 ) => Promise<Card>;
 
 export function createBoardStore(
   openBoard: OpenBoard,
   saveBoard: SaveBoard,
   createMarkdownCard: CreateMarkdownCard,
+  addExistingMarkdownCard: AddExistingMarkdownCard,
 ): UseBoundStore<StoreApi<BoardState>> {
   return create<BoardState>((set, get) => {
     const saveQueue = createBoardSaveQueue(saveBoard, {
@@ -61,6 +73,33 @@ export function createBoardStore(
       onError: (error) =>
         set({ isSaving: false, saveError: toUiError(error).message }),
     });
+
+    function appendCard(
+      boardPath: string,
+      columnId: string,
+      card: Card,
+    ): Card {
+      const current = get();
+      if (!current.board || current.path !== boardPath) {
+        throw new UseCaseError("card.board-changed");
+      }
+      let nextBoard: Board;
+      try {
+        nextBoard = addCardDomain(current.board, columnId, card);
+      } catch (cause) {
+        if (cause instanceof CardAlreadyExistsError) {
+          throw new UseCaseError(
+            "card.already-on-board",
+            { path: card.path },
+            { cause },
+          );
+        }
+        throw cause;
+      }
+      set({ board: nextBoard });
+      saveQueue.save(current.path, nextBoard);
+      return card;
+    }
 
     return {
       status: "empty",
@@ -118,26 +157,37 @@ export function createBoardStore(
           title: input.title,
         });
 
-        const current = get();
-        if (!current.board || current.path !== initial.path) {
-          throw new UseCaseError("card.board-changed");
+        return appendCard(initial.path, input.columnId, card);
+      },
+      addExistingCard: async (input: ExistingCardInput) => {
+        const initial = get();
+        if (!initial.board || !initial.path) {
+          throw new Error("Open a board before adding a card.");
         }
-        let nextBoard: Board;
+
+        let target: ReturnType<typeof resolveExistingMarkdownPath>;
         try {
-          nextBoard = addCardDomain(current.board, input.columnId, card);
+          target = resolveExistingMarkdownPath(
+            initial.path,
+            input.absolutePath,
+          );
         } catch (cause) {
-          if (cause instanceof CardAlreadyExistsError) {
-            throw new UseCaseError(
-              "card.already-on-board",
-              { path: card.path },
-              { cause },
-            );
+          if (cause instanceof CardFileValidationError) {
+            throw cardFileValidationToUseCaseError(cause);
           }
           throw cause;
         }
-        set({ board: nextBoard });
-        saveQueue.save(current.path, nextBoard);
-        return card;
+        if (containsCardPath(initial.board, target.relativePath)) {
+          throw new UseCaseError("card.already-on-board", {
+            path: target.relativePath,
+          });
+        }
+
+        const card = await addExistingMarkdownCard({
+          boardPath: initial.path,
+          absolutePath: input.absolutePath,
+        });
+        return appendCard(initial.path, input.columnId, card);
       },
       retrySave: () => {
         const { board, path } = get();

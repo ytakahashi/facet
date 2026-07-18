@@ -409,7 +409,9 @@
 }
 
 .add-card-dialog__actions button,
-.board-directory-picker button {
+.board-directory-picker button,
+.markdown-file-browser button,
+.add-card-dialog__modes button {
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -418,12 +420,24 @@
   cursor: pointer;
 }
 
+.add-card-dialog__modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.add-card-dialog__modes button.is-selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-bg);
+}
+
 .add-card-dialog button:disabled {
   cursor: default;
   opacity: 0.5;
 }
 
-.board-directory-picker {
+.board-directory-picker,
+.markdown-file-browser {
   min-height: 130px;
   max-height: 220px;
   overflow-y: auto;
@@ -435,21 +449,24 @@
   font-size: 13px;
 }
 
-.board-directory-picker__path {
+.board-directory-picker__path,
+.markdown-file-browser__path {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
 }
 
-.board-directory-picker__path span {
+.board-directory-picker__path span,
+.markdown-file-browser__path span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--mono);
 }
 
-.board-directory-picker__entries {
+.board-directory-picker__entries,
+.markdown-file-browser__entries {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -458,18 +475,22 @@
   list-style: none;
 }
 
-.board-directory-picker__entries button {
+.board-directory-picker__entries button,
+.markdown-file-browser__entries button {
   width: 100%;
   border: 0;
   background: none;
   text-align: left;
 }
 
-.board-directory-picker__entries button:hover {
+.board-directory-picker__entries button:hover,
+.markdown-file-browser__entries button:hover,
+.markdown-file-browser__entries button.is-selected {
   background: var(--color-accent-bg);
 }
 
-.board-directory-picker__empty {
+.board-directory-picker__empty,
+.markdown-file-browser__empty {
   color: var(--color-text);
 }
 

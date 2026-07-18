@@ -27,6 +27,20 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps an existing Markdown read failure without exposing its cause", () => {
+    const error = new UseCaseError(
+      "card.load-failed",
+      { path: "/board/existing.md" },
+      { cause: new Error("Permission denied") },
+    );
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "Failed to load the Markdown file at /board/existing.md.",
+    });
+  });
+
   it("hides unexpected error details and logs the original error", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(
       () => {},

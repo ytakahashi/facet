@@ -34,6 +34,10 @@ export function toUiError(error: unknown): UiError {
       return { message: "File name is required.", field: "fileName" };
     case "card.invalid-file-name":
       return { message: "Enter a single valid file name.", field: "fileName" };
+    case "card.load-failed":
+      return { message: `Failed to load the Markdown file${atPath(path)}.` };
+    case "card.not-markdown-file":
+      return { message: "Select a Markdown (.md) file." };
     case "card.outside-board-directory":
       return {
         message: "Choose a directory inside the board directory.",

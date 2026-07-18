@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   initialMarkdown,
   normalizeMarkdownFileName,
+  resolveExistingMarkdownPath,
   resolveNewMarkdownPath,
   suggestMarkdownFileName,
 } from "./cardFile.ts";
@@ -11,6 +12,42 @@ describe("suggestMarkdownFileName", () => {
     const result = suggestMarkdownFileName("  検索 / UI: 改善  ");
 
     expect(result).toBe("検索-UI-改善.md");
+  });
+});
+
+describe("resolveExistingMarkdownPath", () => {
+  it("resolves Markdown in a board subdirectory", () => {
+    expect(resolveExistingMarkdownPath(
+      "/board/development.board.yaml",
+      "/board/ideas/existing.md",
+    )).toEqual({
+      absolutePath: "/board/ideas/existing.md",
+      relativePath: "ideas/existing.md",
+    });
+  });
+
+  it("rejects a file outside the board directory", () => {
+    const act = () =>
+      resolveExistingMarkdownPath(
+        "/board/development.board.yaml",
+        "/other/existing.md",
+      );
+
+    expect(act).toThrow(
+      expect.objectContaining({ kind: "outside-board-directory" }),
+    );
+  });
+
+  it("rejects a non-Markdown file", () => {
+    const act = () =>
+      resolveExistingMarkdownPath(
+        "/board/development.board.yaml",
+        "/board/existing.txt",
+      );
+
+    expect(act).toThrow(
+      expect.objectContaining({ kind: "not-markdown-file" }),
+    );
   });
 });
 
