@@ -2,6 +2,7 @@ import { findCardByPath } from "../../domain/board.ts";
 import { useBoardStore, useMarkdownViewer } from "../context/appContext.ts";
 import { CardTitle } from "./CardTitle.tsx";
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
+import { PriorityPicker } from "./PriorityPicker.tsx";
 
 export function MarkdownViewer() {
   const status = useMarkdownViewer((state) => state.status);
@@ -17,6 +18,7 @@ export function MarkdownViewer() {
 
   const board = useBoardStore((state) => state.board);
   const renameCard = useBoardStore((state) => state.renameCard);
+  const setCardPriority = useBoardStore((state) => state.setCardPriority);
   const card = status === "loaded" && board && selectedPath
     ? findCardByPath(board, selectedPath)
     : undefined;
@@ -44,6 +46,15 @@ export function MarkdownViewer() {
           <button type="button" onClick={close}>Close</button>
         </div>
       </div>
+
+      {card && (
+        <div className="markdown-viewer__meta">
+          <PriorityPicker
+            priority={card.priority}
+            onChange={(priority) => setCardPriority(card.path, priority)}
+          />
+        </div>
+      )}
 
       {saveError && <p role="alert">{saveError}</p>}
       {status === "loading" && (

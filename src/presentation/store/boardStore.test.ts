@@ -515,6 +515,90 @@ describe("createBoardStore", () => {
     expect(saveBoard).not.toHaveBeenCalled();
   });
 
+  it("sets a card's priority and saves the board", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().setCardPriority("a.md", "high");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    const card = useBoardStore.getState().board?.columns[0].cards[0];
+    expect(card?.priority).toBe("high");
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("clears a card's priority when set to undefined", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().setCardPriority("a.md", "high");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    useBoardStore.getState().setCardPriority("a.md", undefined);
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+
+    const card = useBoardStore.getState().board?.columns[0].cards[0];
+    expect(card?.priority).toBeUndefined();
+    expect(saveBoard).toHaveBeenLastCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("does not change or save the board when the priority is unchanged", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().setCardPriority("a.md", undefined);
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("does not change or save the board when setting priority on an unknown card", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().setCardPriority("missing.md", "high");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
   it("creates a Markdown card, appends it, and saves the updated board", async () => {
     const board = makeBoard();
     const card = {

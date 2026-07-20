@@ -11,6 +11,7 @@ import {
   removeColumn,
   renameBoard,
   renameColumn,
+  setCardPriority,
   setCardTitle,
 } from "./board.ts";
 import type { Card } from "./card.ts";
@@ -253,6 +254,43 @@ describe("setCardTitle", () => {
     });
 
     const act = () => setCardTitle(board, "missing.md", "New Title");
+
+    expect(act).toThrow("Unknown card: missing.md");
+  });
+});
+
+describe("setCardPriority", () => {
+  it("sets the priority, keeping other cards untouched", () => {
+    const target = makeCard({ path: "target.md" });
+    const untouched = makeCard({ path: "other.md" });
+    const board = makeBoard({
+      columns: [makeColumn({ id: "doing", cards: [target, untouched] })],
+    });
+
+    const result = setCardPriority(board, "target.md", "high");
+
+    expect(result.columns[0].cards[0]).toEqual({ ...target, priority: "high" });
+    expect(result.columns[0].cards[1]).toBe(untouched);
+    expect(board.columns[0].cards[0]).toBe(target);
+  });
+
+  it("clears the priority when given undefined", () => {
+    const target = makeCard({ path: "target.md", priority: "medium" });
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [target] })],
+    });
+
+    const result = setCardPriority(board, "target.md", undefined);
+
+    expect(result.columns[0].cards[0].priority).toBeUndefined();
+  });
+
+  it("rejects an unknown card path", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "target.md" })] })],
+    });
+
+    const act = () => setCardPriority(board, "missing.md", "low");
 
     expect(act).toThrow("Unknown card: missing.md");
   });

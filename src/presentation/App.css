@@ -527,6 +527,44 @@
   opacity: 0.5;
 }
 
+.markdown-viewer__meta {
+  margin-bottom: 16px;
+}
+
+.priority-picker {
+  display: flex;
+  gap: 6px;
+}
+
+.priority-picker button {
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.priority-picker__option--high.is-selected {
+  border-color: var(--color-priority-high);
+  color: var(--color-priority-high);
+}
+
+.priority-picker__option--medium.is-selected {
+  border-color: var(--color-priority-medium);
+  color: var(--color-priority-medium);
+}
+
+.priority-picker__option--low.is-selected {
+  border-color: var(--color-priority-low);
+  color: var(--color-priority-low);
+}
+
+.priority-picker button.is-selected {
+  background: var(--color-surface);
+}
+
 .markdown-viewer__placeholder {
   color: var(--color-text);
 }

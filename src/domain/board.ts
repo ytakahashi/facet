@@ -1,4 +1,5 @@
 import type { Card } from "./card.ts";
+import type { Priority } from "./priority.ts";
 import { normalizeCardPath } from "./boardPath.ts";
 
 export interface Column {
@@ -103,6 +104,33 @@ export function setCardTitle(
       titleOverride: title,
       displayTitle: title,
     };
+    return { ...column, cards };
+  });
+  if (!found) {
+    throw new Error(`Unknown card: ${cardPath}`);
+  }
+  return { ...board, columns };
+}
+
+// `priority` of `undefined` clears the card's priority. `Priority` is a
+// closed union, so unlike title/name fields there is no blank-value case to
+// guard against here - the caller can only ever pass a valid value or
+// undefined.
+export function setCardPriority(
+  board: Board,
+  cardPath: string,
+  priority: Priority | undefined,
+): Board {
+  const normalizedPath = normalizeCardPath(cardPath);
+  let found = false;
+  const columns = board.columns.map((column) => {
+    const index = column.cards.findIndex((c) =>
+      normalizeCardPath(c.path) === normalizedPath
+    );
+    if (index === -1) return column;
+    found = true;
+    const cards = [...column.cards];
+    cards[index] = { ...cards[index], priority };
     return { ...column, cards };
   });
   if (!found) {
