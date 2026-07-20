@@ -171,6 +171,9 @@
   display: flex;
   gap: 16px;
   align-items: flex-start;
+  /* Columns keep their min-width and the row scrolls once the in-app
+     "Add column" flow grows the board past the window width. */
+  overflow-x: auto;
 }
 
 .column {
@@ -219,6 +222,69 @@
 
 .column__cards--dragged-over {
   background: var(--color-accent-warm-bg);
+}
+
+.add-column {
+  flex: 1 1 0;
+  min-width: 200px;
+  box-sizing: border-box;
+}
+
+.add-column__open {
+  width: 100%;
+  padding: 12px;
+  font-size: 13px;
+  text-align: left;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.add-column__open:hover {
+  background: var(--color-surface);
+}
+
+.add-column__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.add-column__form input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text-strong);
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 13px;
+}
+
+.add-column__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.add-column__actions button {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text-strong);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.add-column__actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .card {

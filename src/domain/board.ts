@@ -49,6 +49,20 @@ export function addCard(board: Board, columnId: string, card: Card): Board {
   return { ...board, columns };
 }
 
+// Expects a validated column: the caller generates a fresh id and trims the
+// name. The checks below are invariant guards, not user-facing validation.
+// Id uniqueness is still asserted here because hand-written ids from existing
+// board YAML and app-generated ids flow through the same function.
+export function addColumn(board: Board, column: Column): Board {
+  if (column.name.trim() === "") {
+    throw new Error("Column name must not be empty");
+  }
+  if (board.columns.some((existing) => existing.id === column.id)) {
+    throw new Error(`Duplicate column id: ${column.id}`);
+  }
+  return { ...board, columns: [...board.columns, column] };
+}
+
 // `to.index` is always "the index as currently seen in the destination
 // column" (append-to-end is expressed as Infinity, which Array.prototype
 // .splice clamps to the array length). When from/to are the same column,

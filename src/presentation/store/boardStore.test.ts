@@ -163,6 +163,100 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledTimes(2);
   });
 
+  it("appends a new column with the trimmed name at the right end and saves the board", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().addColumn("  Review  ");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    const columns = useBoardStore.getState().board?.columns ?? [];
+    expect(columns.map((column) => column.name)).toEqual([
+      "Doing",
+      "Done",
+      "Review",
+    ]);
+    expect(columns[2].cards).toEqual([]);
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("assigns each added column a unique non-empty id", async () => {
+    const board = makeBoard();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().addColumn("Review");
+    useBoardStore.getState().addColumn("Review");
+
+    const ids = (useBoardStore.getState().board?.columns ?? []).map(
+      (column) => column.id,
+    );
+    expect(ids).toHaveLength(4);
+    expect(ids.every((id) => id.length > 0)).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("does not change or save the board for a whitespace-only column name", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().addColumn("   ");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("keeps the added column and reports an error when saving fails", async () => {
+    const board = makeBoard();
+    const saveFailedError = new UseCaseError("board.save-failed", {
+      path: "/board/development.board.yaml",
+    });
+    const saveBoard = vi.fn().mockRejectedValue(saveFailedError);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().addColumn("Review");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveError).toBe(
+        toUiError(saveFailedError).message,
+      )
+    );
+
+    const columns = useBoardStore.getState().board?.columns ?? [];
+    expect(columns.map((column) => column.name)).toEqual([
+      "Doing",
+      "Done",
+      "Review",
+    ]);
+  });
+
   it("creates a Markdown card, appends it, and saves the updated board", async () => {
     const board = makeBoard();
     const card = {

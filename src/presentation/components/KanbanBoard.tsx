@@ -5,6 +5,7 @@ import { useBoardStore } from "../context/appContext.ts";
 import { resolveMove } from "./resolveMove.ts";
 import { Column } from "./Column.tsx";
 import { AddCardDialog } from "./AddCardDialog.tsx";
+import { AddColumn } from "./AddColumn.tsx";
 
 export function KanbanBoard({ board }: { board: Board }) {
   const moveCard = useBoardStore((state) => state.moveCard);
@@ -53,6 +54,7 @@ export function KanbanBoard({ board }: { board: Board }) {
             }}
           />
         ))}
+        <AddColumn />
       </div>
       {boardPath && addToColumnId && (
         <AddCardDialog

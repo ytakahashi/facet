@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Board, Column } from "./board.ts";
 import {
   addCard,
+  addColumn,
   CardAlreadyExistsError,
   containsCardPath,
   moveCard,
@@ -182,6 +183,37 @@ describe("addCard", () => {
       );
 
     expect(act).toThrow(CardAlreadyExistsError);
+  });
+});
+
+describe("addColumn", () => {
+  it("appends the column to the right end without changing existing columns", () => {
+    const existing = makeColumn({ id: "doing", cards: [makeCard()] });
+    const board = makeBoard({ columns: [existing] });
+    const added = makeColumn({ id: "added", name: "Added" });
+
+    const result = addColumn(board, added);
+
+    expect(result.columns).toEqual([existing, added]);
+    expect(result.columns[0]).toBe(existing);
+    expect(board.columns).toEqual([existing]);
+  });
+
+  it("rejects a duplicate column id", () => {
+    const board = makeBoard({ columns: [makeColumn({ id: "doing" })] });
+
+    const act = () =>
+      addColumn(board, makeColumn({ id: "doing", name: "Doing again" }));
+
+    expect(act).toThrow("Duplicate column id: doing");
+  });
+
+  it("rejects a blank column name", () => {
+    const board = makeBoard();
+
+    const act = () => addColumn(board, makeColumn({ id: "blank", name: "  " }));
+
+    expect(act).toThrow("Column name must not be empty");
   });
 });
 

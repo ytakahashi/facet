@@ -3,6 +3,7 @@ import type { StoreApi, UseBoundStore } from "zustand";
 import type { Board, CardLocation } from "../../domain/board.ts";
 import {
   addCard as addCardDomain,
+  addColumn as addColumnDomain,
   CardAlreadyExistsError,
   containsCardPath,
   moveCard as moveCardDomain,
@@ -34,6 +35,7 @@ export interface BoardState {
   saveError?: string;
   openBoard: (path: string) => Promise<void>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
+  addColumn: (name: string) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
   retrySave: () => void;
@@ -120,6 +122,26 @@ export function createBoardStore(
         const { board, path } = get();
         if (!board || !path) return;
         const nextBoard = moveCardDomain(board, from, to);
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      addColumn: (name: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const trimmedName = name.trim();
+        // The AddColumn form disables submit for blank names; this guard is a
+        // defense line, so it silently no-ops instead of surfacing an error.
+        if (trimmedName === "") return;
+        // A column id only has to be unique within the board; readable
+        // hand-written ids in existing YAML stay valid alongside these.
+        // Generated here rather than in the domain layer to keep domain
+        // functions free of randomness. crypto.randomUUID needs a secure
+        // context, which the localhost-served webview qualifies as.
+        const nextBoard = addColumnDomain(board, {
+          id: crypto.randomUUID(),
+          name: trimmedName,
+          cards: [],
+        });
         set({ board: nextBoard });
         saveQueue.save(path, nextBoard);
       },
