@@ -117,6 +117,7 @@ export function LabelPickerDialog({
                 <input
                   type="checkbox"
                   checked={isChecked}
+                  aria-label={label.name}
                   onChange={(event) =>
                     event.target.checked
                       ? onAddCardLabel(card.path, label.name)

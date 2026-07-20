@@ -30,16 +30,20 @@
   --color-label-ruby-bg: rgba(147, 47, 47, 0.1);
   --color-label-amber: #93612f;
   --color-label-amber-bg: rgba(147, 97, 47, 0.1);
-  --color-label-citrine: #938b2f;
-  --color-label-citrine-bg: rgba(147, 139, 47, 0.1);
-  --color-label-peridot: #61932f;
-  --color-label-peridot-bg: rgba(97, 147, 47, 0.1);
-  --color-label-emerald: #2f9348;
-  --color-label-emerald-bg: rgba(47, 147, 72, 0.1);
-  --color-label-jade: #2f937a;
-  --color-label-jade-bg: rgba(47, 147, 122, 0.1);
-  --color-label-turquoise: #2f8b93;
-  --color-label-turquoise-bg: rgba(47, 139, 147, 0.1);
+  /* citrine/peridot/emerald/jade/turquoise are darkened relative to the
+     rest of the wheel (contrast against a white surface blended with their
+     own 10%-alpha background, per WCAG AA 4.5:1 for small text - the raw
+     30°-spaced hue-wheel value came out at 3.2-3.6 for these five). */
+  --color-label-citrine: #716b24;
+  --color-label-citrine-bg: rgba(113, 107, 36, 0.1);
+  --color-label-peridot: #4c7424;
+  --color-label-peridot-bg: rgba(76, 116, 36, 0.1);
+  --color-label-emerald: #26773a;
+  --color-label-emerald-bg: rgba(38, 119, 58, 0.1);
+  --color-label-jade: #257561;
+  --color-label-jade-bg: rgba(37, 117, 97, 0.1);
+  --color-label-turquoise: #26737a;
+  --color-label-turquoise-bg: rgba(38, 115, 122, 0.1);
   --color-label-aquamarine: #2f6993;
   --color-label-aquamarine-bg: rgba(47, 105, 147, 0.1);
   --color-label-sapphire: #2f3793;
