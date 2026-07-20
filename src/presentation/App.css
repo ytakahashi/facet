@@ -465,12 +465,56 @@
 
 .markdown-viewer__header {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-bottom: 12px;
 }
 
-.markdown-viewer__header button {
+.markdown-viewer__title {
+  font-size: 15px;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.markdown-viewer__title-button {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.markdown-viewer__title-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 1px 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.markdown-viewer__header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.markdown-viewer__header-actions button {
   font-size: 13px;
   padding: 4px 10px;
   border-radius: 6px;
@@ -478,7 +522,7 @@
   cursor: pointer;
 }
 
-.markdown-viewer__header button:disabled {
+.markdown-viewer__header-actions button:disabled {
   cursor: default;
   opacity: 0.5;
 }

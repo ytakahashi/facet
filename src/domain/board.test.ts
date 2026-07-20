@@ -6,10 +6,12 @@ import {
   CardAlreadyExistsError,
   containsCardPath,
   createEmptyBoard,
+  findCardByPath,
   moveCard,
   removeColumn,
   renameBoard,
   renameColumn,
+  setCardTitle,
 } from "./board.ts";
 import type { Card } from "./card.ts";
 
@@ -187,6 +189,72 @@ describe("addCard", () => {
       );
 
     expect(act).toThrow(CardAlreadyExistsError);
+  });
+});
+
+describe("findCardByPath", () => {
+  it("finds a card by path across columns", () => {
+    const target = makeCard({ path: "target.md" });
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "doing", cards: [makeCard({ path: "other.md" })] }),
+        makeColumn({ id: "done", cards: [target] }),
+      ],
+    });
+
+    const result = findCardByPath(board, "target.md");
+
+    expect(result).toBe(target);
+  });
+
+  it("returns undefined when no card matches the path", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "a.md" })] })],
+    });
+
+    const result = findCardByPath(board, "missing.md");
+
+    expect(result).toBeUndefined();
+  });
+});
+
+describe("setCardTitle", () => {
+  it("sets titleOverride and displayTitle to the given title, keeping other cards untouched", () => {
+    const target = makeCard({ path: "target.md", displayTitle: "Original" });
+    const untouched = makeCard({ path: "other.md" });
+    const board = makeBoard({
+      columns: [makeColumn({ id: "doing", cards: [target, untouched] })],
+    });
+
+    const result = setCardTitle(board, "target.md", "New Title");
+
+    expect(result.columns[0].cards[0]).toEqual({
+      ...target,
+      titleOverride: "New Title",
+      displayTitle: "New Title",
+    });
+    expect(result.columns[0].cards[1]).toBe(untouched);
+    expect(board.columns[0].cards[0]).toBe(target);
+  });
+
+  it("rejects a blank title", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "target.md" })] })],
+    });
+
+    const act = () => setCardTitle(board, "target.md", "  ");
+
+    expect(act).toThrow("Card title must not be empty");
+  });
+
+  it("rejects an unknown card path", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "target.md" })] })],
+    });
+
+    const act = () => setCardTitle(board, "missing.md", "New Title");
+
+    expect(act).toThrow("Unknown card: missing.md");
   });
 });
 

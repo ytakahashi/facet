@@ -6,10 +6,12 @@ import {
   addColumn as addColumnDomain,
   CardAlreadyExistsError,
   containsCardPath,
+  findCardByPath,
   moveCard as moveCardDomain,
   removeColumn as removeColumnDomain,
   renameBoard as renameBoardDomain,
   renameColumn as renameColumnDomain,
+  setCardTitle as setCardTitleDomain,
 } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import {
@@ -44,6 +46,7 @@ export interface BoardState {
   renameBoard: (name: string) => void;
   renameColumn: (columnId: string, name: string) => void;
   removeColumn: (columnId: string) => void;
+  renameCard: (path: string, title: string) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
   retrySave: () => void;
@@ -195,6 +198,23 @@ export function createBoardStore(
         const column = board.columns.find((c) => c.id === columnId);
         if (column && column.cards.length > 0) return;
         const nextBoard = removeColumnDomain(board, columnId);
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      renameCard: (cardPath: string, title: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const trimmedTitle = title.trim();
+        // The inline rename UI reverts blank input instead of submitting it;
+        // this guard is a defense line, so it silently no-ops.
+        if (trimmedTitle === "") return;
+        // MarkdownViewer only exposes the rename UI for a card it resolved
+        // via findCardByPath, but path is caller-supplied, so an unknown
+        // path is guarded here rather than left to throw from the domain
+        // layer.
+        const card = findCardByPath(board, cardPath);
+        if (!card || card.displayTitle === trimmedTitle) return;
+        const nextBoard = setCardTitleDomain(board, cardPath, trimmedTitle);
         set({ board: nextBoard });
         saveQueue.save(path, nextBoard);
       },

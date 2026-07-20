@@ -46,6 +46,19 @@ export function containsCardPath(board: Board, path: string): boolean {
   );
 }
 
+// A card's path is unique across the whole board (containsCardPath is what
+// enforces that on add), so it can be located without a columnId.
+export function findCardByPath(board: Board, path: string): Card | undefined {
+  const normalizedPath = normalizeCardPath(path);
+  for (const column of board.columns) {
+    const card = column.cards.find((c) =>
+      normalizeCardPath(c.path) === normalizedPath
+    );
+    if (card) return card;
+  }
+  return undefined;
+}
+
 export function addCard(board: Board, columnId: string, card: Card): Board {
   if (containsCardPath(board, card.path)) {
     throw new CardAlreadyExistsError(card.path);
@@ -59,6 +72,41 @@ export function addCard(board: Board, columnId: string, card: Card): Board {
   });
   if (!found) {
     throw new Error(`Unknown column: ${columnId}`);
+  }
+  return { ...board, columns };
+}
+
+// Expects a trimmed, non-empty title; the blank-title check is an invariant
+// guard (the inline rename UI reverts blank input instead of submitting it).
+// A title override always wins the display priority order (see
+// resolveCardTitle in card.ts), so titleOverride and displayTitle are set to
+// the same value here - the caller does not need to re-run title resolution.
+export function setCardTitle(
+  board: Board,
+  cardPath: string,
+  title: string,
+): Board {
+  if (title.trim() === "") {
+    throw new Error("Card title must not be empty");
+  }
+  const normalizedPath = normalizeCardPath(cardPath);
+  let found = false;
+  const columns = board.columns.map((column) => {
+    const index = column.cards.findIndex((c) =>
+      normalizeCardPath(c.path) === normalizedPath
+    );
+    if (index === -1) return column;
+    found = true;
+    const cards = [...column.cards];
+    cards[index] = {
+      ...cards[index],
+      titleOverride: title,
+      displayTitle: title,
+    };
+    return { ...column, cards };
+  });
+  if (!found) {
+    throw new Error(`Unknown card: ${cardPath}`);
   }
   return { ...board, columns };
 }

@@ -454,6 +454,67 @@ describe("createBoardStore", () => {
     expect(saveBoard).not.toHaveBeenCalled();
   });
 
+  it("renames a card with the trimmed title and saves the board", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().renameCard("a.md", "  New Title  ");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    const card = useBoardStore.getState().board?.columns[0].cards[0];
+    expect(card?.titleOverride).toBe("New Title");
+    expect(card?.displayTitle).toBe("New Title");
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("does not change or save the board when the renamed title is unchanged or blank", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().renameCard("a.md", "  A  ");
+    useBoardStore.getState().renameCard("a.md", "   ");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("does not change or save the board when renaming an unknown card path", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().renameCard("missing.md", "New Title");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
   it("creates a Markdown card, appends it, and saves the updated board", async () => {
     const board = makeBoard();
     const card = {
