@@ -79,6 +79,17 @@ export function addColumn(board: Board, column: Column): Board {
 
 // Expects a trimmed, non-empty name; the blank-name check is an invariant
 // guard (the inline rename UI reverts blank input instead of submitting it).
+// Renames only the board's name field - the board file itself keeps its
+// path, so no reference (history, open windows) needs to follow.
+export function renameBoard(board: Board, name: string): Board {
+  if (name.trim() === "") {
+    throw new Error("Board name must not be empty");
+  }
+  return { ...board, name };
+}
+
+// Expects a trimmed, non-empty name; the blank-name check is an invariant
+// guard (the inline rename UI reverts blank input instead of submitting it).
 export function renameColumn(
   board: Board,
   columnId: string,

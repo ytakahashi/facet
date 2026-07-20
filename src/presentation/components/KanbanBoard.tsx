@@ -6,9 +6,11 @@ import { resolveMove } from "./resolveMove.ts";
 import { Column } from "./Column.tsx";
 import { AddCardDialog } from "./AddCardDialog.tsx";
 import { AddColumn } from "./AddColumn.tsx";
+import { BoardName } from "./BoardName.tsx";
 
 export function KanbanBoard({ board }: { board: Board }) {
   const moveCard = useBoardStore((state) => state.moveCard);
+  const renameBoard = useBoardStore((state) => state.renameBoard);
   const renameColumn = useBoardStore((state) => state.renameColumn);
   const removeColumn = useBoardStore((state) => state.removeColumn);
   const saveError = useBoardStore((state) => state.saveError);
@@ -38,7 +40,11 @@ export function KanbanBoard({ board }: { board: Board }) {
 
   return (
     <div className="kanban-board">
-      <h1 className="kanban-board__name">{board.name}</h1>
+      {
+        /* Keyed by path so switching boards (e.g. Open Recent) discards any
+          in-progress name edit instead of committing it to the new board. */
+      }
+      <BoardName key={boardPath} name={board.name} onRename={renameBoard} />
       {saveError && (
         <div className="kanban-board__save-error" role="alert">
           <span>Failed to save board: {saveError}</span>

@@ -326,6 +326,47 @@ describe("createBoardStore", () => {
     ]);
   });
 
+  it("renames the board with the trimmed name and saves it", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().renameBoard("  Renamed Board  ");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    expect(useBoardStore.getState().board?.name).toBe("Renamed Board");
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("does not change or save the board when the renamed board name is unchanged or blank", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().renameBoard("  Development  ");
+    useBoardStore.getState().renameBoard("   ");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
   it("renames a column with the trimmed name and saves the board", async () => {
     const board = makeBoard();
     const saveBoard = vi.fn().mockResolvedValue(undefined);

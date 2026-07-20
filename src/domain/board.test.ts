@@ -8,6 +8,7 @@ import {
   createEmptyBoard,
   moveCard,
   removeColumn,
+  renameBoard,
   renameColumn,
 } from "./board.ts";
 import type { Card } from "./card.ts";
@@ -296,6 +297,27 @@ describe("containsCardPath", () => {
     const result = containsCardPath(board, "notes/card.md");
 
     expect(result).toBe(true);
+  });
+});
+
+describe("renameBoard", () => {
+  it("renames the board and keeps the columns reference", () => {
+    const columns = [makeColumn({ cards: [makeCard()] })];
+    const board = makeBoard({ name: "Before", columns });
+
+    const result = renameBoard(board, "After");
+
+    expect(result.name).toBe("After");
+    expect(result.columns).toBe(columns);
+    expect(board.name).toBe("Before");
+  });
+
+  it("rejects a blank name", () => {
+    const board = makeBoard();
+
+    const act = () => renameBoard(board, "   ");
+
+    expect(act).toThrow("Board name must not be empty");
   });
 });
 

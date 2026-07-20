@@ -163,6 +163,39 @@
 .kanban-board__name {
   font-size: 24px;
   margin: 0 0 20px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.kanban-board__name-button {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Mirrors the h1's font and bottom margin so toggling into editing does not
+   shift the columns below. */
+.kanban-board__name-input {
+  width: min(480px, 100%);
+  margin: 0 0 20px;
+  padding: 1px 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 24px;
+  font-weight: 700;
 }
 
 .kanban-board__save-error {

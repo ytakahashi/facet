@@ -8,6 +8,7 @@ import {
   containsCardPath,
   moveCard as moveCardDomain,
   removeColumn as removeColumnDomain,
+  renameBoard as renameBoardDomain,
   renameColumn as renameColumnDomain,
 } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
@@ -40,6 +41,7 @@ export interface BoardState {
   createBoard: (input: CreateBoardInput) => Promise<void>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
   addColumn: (name: string) => void;
+  renameBoard: (name: string) => void;
   renameColumn: (columnId: string, name: string) => void;
   removeColumn: (columnId: string) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
@@ -157,6 +159,18 @@ export function createBoardStore(
           name: trimmedName,
           cards: [],
         });
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      renameBoard: (name: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const trimmedName = name.trim();
+        // The inline rename UI reverts blank input instead of submitting it;
+        // this guard is a defense line, so it silently no-ops.
+        if (trimmedName === "") return;
+        if (board.name === trimmedName) return;
+        const nextBoard = renameBoardDomain(board, trimmedName);
         set({ board: nextBoard });
         saveQueue.save(path, nextBoard);
       },
