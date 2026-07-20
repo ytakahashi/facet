@@ -23,7 +23,12 @@ class FakeBoardRepository implements BoardRepository {
 describe("saveBoard", () => {
   it("saves the board to the given path through the repository", async () => {
     const boardRepository = new FakeBoardRepository();
-    const board: Board = { version: 1, name: "Development", columns: [] };
+    const board: Board = {
+      version: 1,
+      name: "Development",
+      labels: [],
+      columns: [],
+    };
 
     await saveBoard("/board/development.board.yaml", board, {
       boardRepository,
@@ -41,7 +46,12 @@ describe("saveBoard", () => {
       save: () => Promise.reject(cause),
       create: () => Promise.reject(new Error("not needed for this test")),
     };
-    const board: Board = { version: 1, name: "Development", columns: [] };
+    const board: Board = {
+      version: 1,
+      name: "Development",
+      labels: [],
+      columns: [],
+    };
 
     const act = () =>
       saveBoard("/board/development.board.yaml", board, { boardRepository });

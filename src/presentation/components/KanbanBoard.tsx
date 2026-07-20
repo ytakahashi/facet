@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Board } from "../../domain/board.ts";
+import type { LabelColor } from "../../domain/label.ts";
 import { useBoardStore } from "../context/appContext.ts";
 import { resolveMove } from "./resolveMove.ts";
 import { Column } from "./Column.tsx";
@@ -21,6 +22,15 @@ export function KanbanBoard({ board }: { board: Board }) {
   // unmounting on every close bypasses the browser's native focus restore.
   const [addToColumnId, setAddToColumnId] = useState<string>();
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
+  // Built once per registry change and threaded down to Card, rather than
+  // having every Card re-scan board.labels itself for each of its labels.
+  const labelColors = useMemo(
+    () =>
+      new Map<string, LabelColor>(
+        board.labels.map((label) => [label.name, label.color]),
+      ),
+    [board.labels],
+  );
 
   useEffect(() => {
     // A board can change in-place through Open Recent. Never carry a dialog
@@ -56,6 +66,7 @@ export function KanbanBoard({ board }: { board: Board }) {
           <Column
             column={column}
             key={column.id}
+            labelColors={labelColors}
             onAddCard={(columnId) => {
               setAddToColumnId(columnId);
               setIsAddCardOpen(true);

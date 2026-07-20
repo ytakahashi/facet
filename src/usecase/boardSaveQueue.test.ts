@@ -3,7 +3,7 @@ import type { Board } from "../domain/board.ts";
 import { createBoardSaveQueue } from "./boardSaveQueue.ts";
 
 function makeBoard(name: string): Board {
-  return { version: 1, name, columns: [] };
+  return { version: 1, name, labels: [], columns: [] };
 }
 
 function deferred<T>() {

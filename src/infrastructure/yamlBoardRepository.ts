@@ -5,6 +5,7 @@ import { directoryOf, resolveCardPath } from "../domain/boardPath.ts";
 import type { Card } from "../domain/card.ts";
 import { resolveCardTitle } from "../domain/card.ts";
 import type { FileSystemPort } from "../domain/fileSystemPort.ts";
+import type { LabelColor, LabelDefinition } from "../domain/label.ts";
 
 // Trusts the parsed YAML's shape instead of validating it against a schema.
 // A malformed field (wrong type, missing key) surfaces as an odd value
@@ -26,9 +27,15 @@ interface RawColumn {
   cards?: RawCard[];
 }
 
+interface RawLabelDefinition {
+  name: string;
+  color: string;
+}
+
 interface RawBoard {
   version: number;
   name: string;
+  labels?: RawLabelDefinition[];
   columns?: RawColumn[];
 }
 
@@ -56,8 +63,14 @@ export class YamlBoardRepository implements BoardRepository {
       }
       columns.push({ id: rawColumn.id, name: rawColumn.name, cards });
     }
+    // Unlike `columns`, a missing `labels` key does not reject the file:
+    // board.yaml files written before this key existed must keep loading.
+    const labels: LabelDefinition[] = (raw.labels ?? []).map((rawLabel) => ({
+      name: rawLabel.name,
+      color: rawLabel.color as LabelColor,
+    }));
 
-    return { version: raw.version, name: raw.name, columns };
+    return { version: raw.version, name: raw.name, labels, columns };
   }
 
   private async loadCard(
@@ -103,6 +116,10 @@ export class YamlBoardRepository implements BoardRepository {
     return {
       version: board.version,
       name: board.name,
+      labels: board.labels.map((label) => ({
+        name: label.name,
+        color: label.color,
+      })),
       // An empty board keeps an explicit `columns: []` key: load rejects
       // files whose columns is not an array, so omitting the key would
       // produce a board file this app cannot open again.

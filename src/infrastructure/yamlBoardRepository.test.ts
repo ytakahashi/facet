@@ -74,6 +74,7 @@ columns:
     expect(board).toEqual({
       version: 1,
       name: "Development",
+      labels: [],
       columns: [
         {
           id: "doing",
@@ -90,6 +91,39 @@ columns:
         },
       ],
     });
+  });
+
+  it("loads the label registry", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+labels:
+  - name: ui
+    color: ruby
+columns: []
+`,
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const board = await repository.load("/board/development.board.yaml");
+
+    expect(board.labels).toEqual([{ name: "ui", color: "ruby" }]);
+  });
+
+  it("defaults to an empty label registry when board.yaml predates the labels key", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+columns: []
+`,
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const board = await repository.load("/board/development.board.yaml");
+
+    expect(board.labels).toEqual([]);
   });
 
   it("falls back to the filename when the referenced markdown is missing", async () => {
@@ -144,6 +178,7 @@ describe("YamlBoardRepository.save", () => {
     const board: Board = {
       version: 1,
       name: "Development",
+      labels: [{ name: "search", color: "sapphire" }],
       columns: [
         {
           id: "doing",
@@ -170,6 +205,7 @@ describe("YamlBoardRepository.save", () => {
     expect(parse(written.content)).toEqual({
       version: 1,
       name: "Development",
+      labels: [{ name: "search", color: "sapphire" }],
       columns: [
         {
           id: "doing",
@@ -189,10 +225,15 @@ describe("YamlBoardRepository.save", () => {
 });
 
 describe("YamlBoardRepository.create", () => {
-  it("writes an empty board with an explicit columns key via exclusive create", async () => {
+  it("writes an empty board with explicit labels/columns keys via exclusive create", async () => {
     const fileSystem = new FakeFileSystemPort();
     const repository = new YamlBoardRepository(fileSystem);
-    const board: Board = { version: 1, name: "New Board", columns: [] };
+    const board: Board = {
+      version: 1,
+      name: "New Board",
+      labels: [],
+      columns: [],
+    };
 
     await repository.create("/board/facet.board.yaml", board);
 
@@ -203,6 +244,7 @@ describe("YamlBoardRepository.create", () => {
     expect(parse(created.content)).toEqual({
       version: 1,
       name: "New Board",
+      labels: [],
       columns: [],
     });
   });
@@ -210,7 +252,31 @@ describe("YamlBoardRepository.create", () => {
   it("loads a just-created empty board back unchanged", async () => {
     const fileSystem = new FakeFileSystemPort();
     const repository = new YamlBoardRepository(fileSystem);
-    const board: Board = { version: 1, name: "New Board", columns: [] };
+    const board: Board = {
+      version: 1,
+      name: "New Board",
+      labels: [],
+      columns: [],
+    };
+
+    await repository.create("/board/facet.board.yaml", board);
+    const result = await repository.load("/board/facet.board.yaml");
+
+    expect(result).toEqual(board);
+  });
+
+  it("round-trips a board with a populated label registry", async () => {
+    const fileSystem = new FakeFileSystemPort();
+    const repository = new YamlBoardRepository(fileSystem);
+    const board: Board = {
+      version: 1,
+      name: "New Board",
+      labels: [
+        { name: "ui", color: "ruby" },
+        { name: "docs", color: "amber" },
+      ],
+      columns: [],
+    };
 
     await repository.create("/board/facet.board.yaml", board);
     const result = await repository.load("/board/facet.board.yaml");
