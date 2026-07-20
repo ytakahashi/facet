@@ -1,6 +1,11 @@
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 
-export type UiErrorField = "title" | "fileName" | "directory" | "boardName";
+export type UiErrorField =
+  | "title"
+  | "fileName"
+  | "directory"
+  | "boardName"
+  | "labelName";
 
 export interface UiError {
   message: string;
@@ -70,6 +75,11 @@ export function toUiError(error: unknown): UiError {
       return { message: "Enter a single valid directory name." };
     case "directory.name-required":
       return { message: "Directory name is required." };
+    case "label.already-exists":
+      return {
+        message: "A label with this name already exists.",
+        field: "labelName",
+      };
     case "markdown.load-failed":
       return { message: `Failed to load the Markdown file${atPath(path)}.` };
     case "markdown.save-failed":

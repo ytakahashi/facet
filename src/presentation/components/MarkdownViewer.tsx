@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { findCardByPath } from "../../domain/board.ts";
 import { useBoardStore, useMarkdownViewer } from "../context/appContext.ts";
 import { CardTitle } from "./CardTitle.tsx";
+import { LabelPickerDialog } from "./LabelPickerDialog.tsx";
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
 import { PriorityPicker } from "./PriorityPicker.tsx";
 
@@ -19,9 +21,17 @@ export function MarkdownViewer() {
   const board = useBoardStore((state) => state.board);
   const renameCard = useBoardStore((state) => state.renameCard);
   const setCardPriority = useBoardStore((state) => state.setCardPriority);
+  const addCardLabel = useBoardStore((state) => state.addCardLabel);
+  const removeCardLabel = useBoardStore((state) => state.removeCardLabel);
+  const createLabel = useBoardStore((state) => state.createLabel);
+  const renameLabel = useBoardStore((state) => state.renameLabel);
+  const setLabelColor = useBoardStore((state) => state.setLabelColor);
+  const removeLabel = useBoardStore((state) => state.removeLabel);
   const card = status === "loaded" && board && selectedPath
     ? findCardByPath(board, selectedPath)
     : undefined;
+
+  const [isLabelPickerOpen, setIsLabelPickerOpen] = useState(false);
 
   const isDirty = draft !== undefined && draft !== content;
 
@@ -53,7 +63,43 @@ export function MarkdownViewer() {
             priority={card.priority}
             onChange={(priority) => setCardPriority(card.path, priority)}
           />
+          <div className="markdown-viewer__labels">
+            {card.labels.map((label) => (
+              <span
+                className={`card__label card__label--${
+                  board?.labels.find((l) => l.name === label)?.color ??
+                    "neutral"
+                }`}
+                key={label}
+              >
+                {label}
+              </span>
+            ))}
+            <button
+              type="button"
+              className="markdown-viewer__labels-button"
+              onClick={() => setIsLabelPickerOpen(true)}
+            >
+              Labels…
+            </button>
+          </div>
         </div>
+      )}
+
+      {card && board && (
+        <LabelPickerDialog
+          key={card.path}
+          card={card}
+          labels={board.labels}
+          open={isLabelPickerOpen}
+          onClose={() => setIsLabelPickerOpen(false)}
+          onAddCardLabel={addCardLabel}
+          onRemoveCardLabel={removeCardLabel}
+          onCreateLabel={createLabel}
+          onRenameLabel={renameLabel}
+          onSetLabelColor={setLabelColor}
+          onRemoveLabel={removeLabel}
+        />
       )}
 
       {saveError && <p role="alert">{saveError}</p>}

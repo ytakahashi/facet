@@ -4,17 +4,26 @@ import type { Board, CardLocation } from "../../domain/board.ts";
 import {
   addCard as addCardDomain,
   addColumn as addColumnDomain,
+  addLabelDefinition as addLabelDefinitionDomain,
+  addLabelToCard as addLabelToCardDomain,
   CardAlreadyExistsError,
   containsCardPath,
   findCardByPath,
+  findLabelDefinition,
+  LabelAlreadyExistsError,
   moveCard as moveCardDomain,
   removeColumn as removeColumnDomain,
+  removeLabelDefinition as removeLabelDefinitionDomain,
+  removeLabelFromCard as removeLabelFromCardDomain,
   renameBoard as renameBoardDomain,
   renameColumn as renameColumnDomain,
+  renameLabelDefinition as renameLabelDefinitionDomain,
   setCardPriority as setCardPriorityDomain,
   setCardTitle as setCardTitleDomain,
+  setLabelColor as setLabelColorDomain,
 } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
+import type { LabelColor } from "../../domain/label.ts";
 import type { Priority } from "../../domain/priority.ts";
 import {
   CardFileValidationError,
@@ -50,6 +59,12 @@ export interface BoardState {
   removeColumn: (columnId: string) => void;
   renameCard: (path: string, title: string) => void;
   setCardPriority: (path: string, priority: Priority | undefined) => void;
+  addCardLabel: (path: string, labelName: string) => void;
+  removeCardLabel: (path: string, labelName: string) => void;
+  createLabel: (name: string, color: LabelColor) => void;
+  renameLabel: (name: string, nextName: string) => void;
+  setLabelColor: (name: string, color: LabelColor) => void;
+  removeLabel: (name: string) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
   retrySave: () => void;
@@ -230,6 +245,102 @@ export function createBoardStore(
         const card = findCardByPath(board, cardPath);
         if (!card || card.priority === priority) return;
         const nextBoard = setCardPriorityDomain(board, cardPath, priority);
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      addCardLabel: (cardPath: string, labelName: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        // LabelPickerDialog only offers labels from the registry and only
+        // toggles a checkbox to its opposite state; these guards are a
+        // defense line against a stale card/registry reference rather than
+        // input this store expects to validate.
+        const card = findCardByPath(board, cardPath);
+        if (!card || card.labels.includes(labelName)) return;
+        if (!findLabelDefinition(board, labelName)) return;
+        const nextBoard = addLabelToCardDomain(board, cardPath, labelName);
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      removeCardLabel: (cardPath: string, labelName: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const card = findCardByPath(board, cardPath);
+        if (!card || !card.labels.includes(labelName)) return;
+        const nextBoard = removeLabelFromCardDomain(
+          board,
+          cardPath,
+          labelName,
+        );
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      createLabel: (name: string, color: LabelColor) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const trimmedName = name.trim();
+        // The create form disables submit for blank names; this guard is a
+        // defense line, so it silently no-ops instead of surfacing an error.
+        if (trimmedName === "") return;
+        let nextBoard: Board;
+        try {
+          nextBoard = addLabelDefinitionDomain(board, {
+            name: trimmedName,
+            color,
+          });
+        } catch (cause) {
+          if (cause instanceof LabelAlreadyExistsError) {
+            throw new UseCaseError(
+              "label.already-exists",
+              { name: trimmedName },
+              { cause },
+            );
+          }
+          throw cause;
+        }
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      renameLabel: (name: string, nextName: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const trimmedNextName = nextName.trim();
+        // The inline rename UI reverts blank input instead of submitting it;
+        // this guard is a defense line, so it silently no-ops.
+        if (trimmedNextName === "" || trimmedNextName === name) return;
+        let nextBoard: Board;
+        try {
+          nextBoard = renameLabelDefinitionDomain(
+            board,
+            name,
+            trimmedNextName,
+          );
+        } catch (cause) {
+          if (cause instanceof LabelAlreadyExistsError) {
+            throw new UseCaseError(
+              "label.already-exists",
+              { name: trimmedNextName },
+              { cause },
+            );
+          }
+          throw cause;
+        }
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      setLabelColor: (name: string, color: LabelColor) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const label = findLabelDefinition(board, name);
+        if (!label || label.color === color) return;
+        const nextBoard = setLabelColorDomain(board, name, color);
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      removeLabel: (name: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const nextBoard = removeLabelDefinitionDomain(board, name);
         set({ board: nextBoard });
         saveQueue.save(path, nextBoard);
       },

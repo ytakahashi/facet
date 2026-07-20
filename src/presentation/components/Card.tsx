@@ -10,6 +10,7 @@ import {
   extractClosestEdge,
 } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import type { Card as CardModel } from "../../domain/card.ts";
+import type { LabelColor } from "../../domain/label.ts";
 import { useMarkdownViewer } from "../context/appContext.ts";
 import type { CardDragData } from "./dragData.ts";
 
@@ -17,9 +18,10 @@ interface CardProps {
   card: CardModel;
   columnId: string;
   index: number;
+  labelColors: Map<string, LabelColor>;
 }
 
-export function Card({ card, columnId, index }: CardProps) {
+export function Card({ card, columnId, index, labelColors }: CardProps) {
   const isSelected = useMarkdownViewer((state) =>
     state.selectedPath === card.path
   );
@@ -81,7 +83,12 @@ export function Card({ card, columnId, index }: CardProps) {
       {card.labels.length > 0 && (
         <div className="card__labels">
           {card.labels.map((label) => (
-            <span className="card__label" key={label}>
+            <span
+              className={`card__label card__label--${
+                labelColors.get(label) ?? "neutral"
+              }`}
+              key={label}
+            >
               {label}
             </span>
           ))}

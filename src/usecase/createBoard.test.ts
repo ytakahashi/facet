@@ -48,7 +48,7 @@ describe("createBoard", () => {
     expect(result).toBe("/home/user/boards/facet.board.yaml");
     expect(create).toHaveBeenCalledWith(
       "/home/user/boards/facet.board.yaml",
-      { version: 1, name: "My Board", columns: [] },
+      { version: 1, name: "My Board", labels: [], columns: [] },
     );
   });
 

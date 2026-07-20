@@ -448,8 +448,71 @@
   font-size: 11px;
   border-radius: 4px;
   padding: 2px 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
+}
+
+.card__label--neutral {
+  background: var(--color-label-neutral-bg);
+  color: var(--color-label-neutral);
+}
+
+.card__label--ruby {
+  background: var(--color-label-ruby-bg);
+  color: var(--color-label-ruby);
+}
+
+.card__label--amber {
+  background: var(--color-label-amber-bg);
+  color: var(--color-label-amber);
+}
+
+.card__label--citrine {
+  background: var(--color-label-citrine-bg);
+  color: var(--color-label-citrine);
+}
+
+.card__label--peridot {
+  background: var(--color-label-peridot-bg);
+  color: var(--color-label-peridot);
+}
+
+.card__label--emerald {
+  background: var(--color-label-emerald-bg);
+  color: var(--color-label-emerald);
+}
+
+.card__label--jade {
+  background: var(--color-label-jade-bg);
+  color: var(--color-label-jade);
+}
+
+.card__label--turquoise {
+  background: var(--color-label-turquoise-bg);
+  color: var(--color-label-turquoise);
+}
+
+.card__label--aquamarine {
+  background: var(--color-label-aquamarine-bg);
+  color: var(--color-label-aquamarine);
+}
+
+.card__label--sapphire {
+  background: var(--color-label-sapphire-bg);
+  color: var(--color-label-sapphire);
+}
+
+.card__label--lapis {
+  background: var(--color-label-lapis-bg);
+  color: var(--color-label-lapis);
+}
+
+.card__label--amethyst {
+  background: var(--color-label-amethyst-bg);
+  color: var(--color-label-amethyst);
+}
+
+.card__label--morganite {
+  background: var(--color-label-morganite-bg);
+  color: var(--color-label-morganite);
 }
 
 .markdown-viewer {
@@ -563,6 +626,28 @@
 
 .priority-picker button.is-selected {
   background: var(--color-surface);
+}
+
+.markdown-viewer__labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.markdown-viewer__labels-button {
+  font-size: 12px;
+  padding: 2px 6px;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.markdown-viewer__labels-button:hover {
+  background: var(--color-accent-bg);
+  border-radius: 4px;
 }
 
 .markdown-viewer__placeholder {
@@ -766,4 +851,238 @@
 .board-directory-picker__create input {
   min-width: 0;
   padding: 5px 8px;
+}
+
+.label-picker-dialog {
+  width: min(420px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  box-sizing: border-box;
+}
+
+/* Scoped to [open]: the browser hides a <dialog> without this attribute via
+   its UA stylesheet (dialog:not([open]) { display: none }), and an author
+   rule for plain `display` on the bare element - even one that never fires
+   showModal()/close() - overrides that default because author styles always
+   beat UA styles regardless of specificity. Setting flex only for the
+   [open] state keeps the dialog's own open/close (driven by the ref effect
+   in LabelPickerDialog.tsx) as the single source of visibility. */
+.label-picker-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.label-picker-dialog::backdrop {
+  background: var(--color-accent-bg);
+}
+
+.label-picker-dialog h2 {
+  margin: 0;
+}
+
+.label-picker-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.label-picker-dialog__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label-picker-dialog__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label-picker-dialog__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-strong);
+}
+
+.label-picker-dialog__name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.label-picker-dialog__edit,
+.label-picker-dialog__edit-actions > button {
+  padding: 3px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.label-picker-dialog__edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label-picker-dialog__error {
+  flex-basis: 100%;
+  color: var(--color-priority-high);
+  font-size: 13px;
+}
+
+.label-picker-dialog__create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.label-picker-dialog__create input {
+  flex: 1 1 120px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.label-picker-dialog__create > button {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  cursor: pointer;
+}
+
+.label-picker-dialog__create > button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.label-picker-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.label-picker-dialog__actions button {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  cursor: pointer;
+}
+
+.label-picker-dialog__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.label-color-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.label-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.label-color-swatch.is-selected {
+  border-color: var(--color-text-strong);
+}
+
+.label-picker-dialog__dot--ruby,
+.label-color-swatch--ruby {
+  background: var(--color-label-ruby);
+}
+
+.label-picker-dialog__dot--amber,
+.label-color-swatch--amber {
+  background: var(--color-label-amber);
+}
+
+.label-picker-dialog__dot--citrine,
+.label-color-swatch--citrine {
+  background: var(--color-label-citrine);
+}
+
+.label-picker-dialog__dot--peridot,
+.label-color-swatch--peridot {
+  background: var(--color-label-peridot);
+}
+
+.label-picker-dialog__dot--emerald,
+.label-color-swatch--emerald {
+  background: var(--color-label-emerald);
+}
+
+.label-picker-dialog__dot--jade,
+.label-color-swatch--jade {
+  background: var(--color-label-jade);
+}
+
+.label-picker-dialog__dot--turquoise,
+.label-color-swatch--turquoise {
+  background: var(--color-label-turquoise);
+}
+
+.label-picker-dialog__dot--aquamarine,
+.label-color-swatch--aquamarine {
+  background: var(--color-label-aquamarine);
+}
+
+.label-picker-dialog__dot--sapphire,
+.label-color-swatch--sapphire {
+  background: var(--color-label-sapphire);
+}
+
+.label-picker-dialog__dot--lapis,
+.label-color-swatch--lapis {
+  background: var(--color-label-lapis);
+}
+
+.label-picker-dialog__dot--amethyst,
+.label-color-swatch--amethyst {
+  background: var(--color-label-amethyst);
+}
+
+.label-picker-dialog__dot--morganite,
+.label-color-swatch--morganite {
+  background: var(--color-label-morganite);
 }

@@ -4,10 +4,11 @@ import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import { createBoardStore } from "./boardStore.ts";
 
-function makeBoard(): Board {
+function makeBoard(overrides: Partial<Board> = {}): Board {
   return {
     version: 1,
     name: "Development",
+    labels: [],
     columns: [
       {
         id: "doing",
@@ -16,6 +17,7 @@ function makeBoard(): Board {
       },
       { id: "done", name: "Done", cards: [] },
     ],
+    ...overrides,
   };
 }
 
@@ -594,6 +596,304 @@ describe("createBoardStore", () => {
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
     useBoardStore.getState().setCardPriority("missing.md", "high");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("creates a label and saves the board", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().createLabel("  ui  ", "ruby");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    expect(useBoardStore.getState().board?.labels).toEqual([
+      { name: "ui", color: "ruby" },
+    ]);
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("does not change or save the board for a blank label name", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().createLabel("   ", "ruby");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("throws a UseCaseError for a duplicate label name without changing or saving the board", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () => useBoardStore.getState().createLabel("ui", "jade");
+
+    expect(act).toThrow(UseCaseError);
+    expect(act).toThrow(
+      expect.objectContaining({ code: "label.already-exists" }),
+    );
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("renames a label, updating tagged cards, and saves the board", async () => {
+    const board = makeBoard({
+      labels: [{ name: "ui", color: "ruby" }],
+    });
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().addCardLabel("a.md", "ui");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(1));
+
+    useBoardStore.getState().renameLabel("ui", "interface");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+
+    expect(useBoardStore.getState().board?.labels).toEqual([
+      { name: "interface", color: "ruby" },
+    ]);
+    expect(useBoardStore.getState().board?.columns[0].cards[0].labels).toEqual(
+      ["interface"],
+    );
+  });
+
+  it("does not change or save the board when the renamed name is unchanged or blank", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().renameLabel("ui", "  ui  ");
+    useBoardStore.getState().renameLabel("ui", "   ");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("throws a UseCaseError when renaming a label to an existing name", async () => {
+    const board = makeBoard({
+      labels: [{ name: "ui", color: "ruby" }, { name: "docs", color: "jade" }],
+    });
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () => useBoardStore.getState().renameLabel("ui", "docs");
+
+    expect(act).toThrow(
+      expect.objectContaining({ code: "label.already-exists" }),
+    );
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("changes a label's color and saves the board", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().setLabelColor("ui", "sapphire");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    expect(useBoardStore.getState().board?.labels).toEqual([
+      { name: "ui", color: "sapphire" },
+    ]);
+  });
+
+  it("does not change or save the board when the label color is unchanged", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().setLabelColor("ui", "ruby");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("removes a label, untagging cards that had it, and saves the board", async () => {
+    const board = makeBoard({
+      labels: [{ name: "ui", color: "ruby" }],
+    });
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().addCardLabel("a.md", "ui");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(1));
+
+    useBoardStore.getState().removeLabel("ui");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+
+    expect(useBoardStore.getState().board?.labels).toEqual([]);
+    expect(useBoardStore.getState().board?.columns[0].cards[0].labels).toEqual(
+      [],
+    );
+  });
+
+  it("adds a label to a card and saves the board", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().addCardLabel("a.md", "ui");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    expect(useBoardStore.getState().board?.columns[0].cards[0].labels).toEqual(
+      ["ui"],
+    );
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("does not change or save the board when adding a label already on the card", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().addCardLabel("a.md", "ui");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(1));
+
+    useBoardStore.getState().addCardLabel("a.md", "ui");
+
+    expect(saveBoard).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not change or save the board when adding an unknown label or to an unknown card", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().addCardLabel("a.md", "missing");
+    useBoardStore.getState().addCardLabel("missing.md", "ui");
+
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("removes a label from a card and saves the board", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().addCardLabel("a.md", "ui");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(1));
+
+    useBoardStore.getState().removeCardLabel("a.md", "ui");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+
+    expect(useBoardStore.getState().board?.columns[0].cards[0].labels).toEqual(
+      [],
+    );
+  });
+
+  it("does not change or save the board when removing a label not on the card", async () => {
+    const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(
+      () => Promise.resolve(board),
+      saveBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+    );
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().removeCardLabel("a.md", "ui");
 
     expect(useBoardStore.getState().board).toEqual(board);
     expect(saveBoard).not.toHaveBeenCalled();

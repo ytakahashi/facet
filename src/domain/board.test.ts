@@ -3,18 +3,27 @@ import type { Board, Column } from "./board.ts";
 import {
   addCard,
   addColumn,
+  addLabelDefinition,
+  addLabelToCard,
   CardAlreadyExistsError,
   containsCardPath,
   createEmptyBoard,
   findCardByPath,
+  findLabelDefinition,
+  LabelAlreadyExistsError,
   moveCard,
   removeColumn,
+  removeLabelDefinition,
+  removeLabelFromCard,
   renameBoard,
   renameColumn,
+  renameLabelDefinition,
   setCardPriority,
   setCardTitle,
+  setLabelColor,
 } from "./board.ts";
 import type { Card } from "./card.ts";
+import type { LabelDefinition } from "./label.ts";
 
 function makeCard(overrides: Partial<Card> = {}): Card {
   return {
@@ -34,10 +43,19 @@ function makeColumn(overrides: Partial<Column> = {}): Column {
   };
 }
 
+function makeLabel(overrides: Partial<LabelDefinition> = {}): LabelDefinition {
+  return {
+    name: "ui",
+    color: "ruby",
+    ...overrides,
+  };
+}
+
 function makeBoard(overrides: Partial<Board> = {}): Board {
   return {
     version: 1,
     name: "Board",
+    labels: [],
     columns: [],
     ...overrides,
   };
@@ -296,6 +314,255 @@ describe("setCardPriority", () => {
   });
 });
 
+describe("findLabelDefinition", () => {
+  it("finds a label definition by name", () => {
+    const label = makeLabel({ name: "ui" });
+    const board = makeBoard({ labels: [label, makeLabel({ name: "docs" })] });
+
+    const result = findLabelDefinition(board, "ui");
+
+    expect(result).toBe(label);
+  });
+
+  it("returns undefined when no label matches the name", () => {
+    const board = makeBoard({ labels: [makeLabel({ name: "ui" })] });
+
+    const result = findLabelDefinition(board, "missing");
+
+    expect(result).toBeUndefined();
+  });
+});
+
+describe("addLabelDefinition", () => {
+  it("appends the label to the registry without changing existing entries", () => {
+    const existing = makeLabel({ name: "ui", color: "ruby" });
+    const board = makeBoard({ labels: [existing] });
+    const added = makeLabel({ name: "docs", color: "sapphire" });
+
+    const result = addLabelDefinition(board, added);
+
+    expect(result.labels).toEqual([existing, added]);
+    expect(result.labels[0]).toBe(existing);
+    expect(board.labels).toEqual([existing]);
+  });
+
+  it("rejects a blank name", () => {
+    const board = makeBoard();
+
+    const act = () => addLabelDefinition(board, makeLabel({ name: "  " }));
+
+    expect(act).toThrow("Label name must not be empty");
+  });
+
+  it("rejects a duplicate name", () => {
+    const board = makeBoard({ labels: [makeLabel({ name: "ui" })] });
+
+    const act = () =>
+      addLabelDefinition(board, makeLabel({ name: "ui", color: "jade" }));
+
+    expect(act).toThrow(LabelAlreadyExistsError);
+  });
+});
+
+describe("renameLabelDefinition", () => {
+  it("renames the registry entry and every card referencing it, keeping other cards untouched", () => {
+    const untouchedLabel = makeLabel({ name: "docs" });
+    const renamedLabel = makeLabel({ name: "ui" });
+    const taggedCard = makeCard({ path: "a.md", labels: ["ui", "docs"] });
+    const untouchedCard = makeCard({ path: "b.md", labels: ["docs"] });
+    const board = makeBoard({
+      labels: [renamedLabel, untouchedLabel],
+      columns: [
+        makeColumn({ cards: [taggedCard, untouchedCard] }),
+      ],
+    });
+
+    const result = renameLabelDefinition(board, "ui", "interface");
+
+    expect(result.labels).toEqual([
+      { ...renamedLabel, name: "interface" },
+      untouchedLabel,
+    ]);
+    expect(result.columns[0].cards[0].labels).toEqual(["interface", "docs"]);
+    expect(result.columns[0].cards[1]).toBe(untouchedCard);
+    expect(board.labels[0].name).toBe("ui");
+  });
+
+  it("dedupes a card that already lists both the old and new name", () => {
+    const board = makeBoard({
+      labels: [makeLabel({ name: "ui" })],
+      columns: [
+        makeColumn({
+          cards: [makeCard({ labels: ["ui", "interface"] })],
+        }),
+      ],
+    });
+
+    const result = renameLabelDefinition(board, "ui", "interface");
+
+    expect(result.columns[0].cards[0].labels).toEqual(["interface"]);
+  });
+
+  it("rejects renaming to a name that already exists", () => {
+    const board = makeBoard({
+      labels: [makeLabel({ name: "ui" }), makeLabel({ name: "docs" })],
+    });
+
+    const act = () => renameLabelDefinition(board, "ui", "docs");
+
+    expect(act).toThrow(LabelAlreadyExistsError);
+  });
+
+  it("rejects an unknown label name", () => {
+    const board = makeBoard({ labels: [makeLabel({ name: "ui" })] });
+
+    const act = () => renameLabelDefinition(board, "missing", "interface");
+
+    expect(act).toThrow("Unknown label: missing");
+  });
+});
+
+describe("setLabelColor", () => {
+  it("changes only the color, keeping other entries untouched", () => {
+    const untouched = makeLabel({ name: "docs", color: "jade" });
+    const board = makeBoard({
+      labels: [makeLabel({ name: "ui", color: "ruby" }), untouched],
+    });
+
+    const result = setLabelColor(board, "ui", "sapphire");
+
+    expect(result.labels[0]).toEqual({ name: "ui", color: "sapphire" });
+    expect(result.labels[1]).toBe(untouched);
+  });
+
+  it("rejects an unknown label name", () => {
+    const board = makeBoard();
+
+    const act = () => setLabelColor(board, "missing", "ruby");
+
+    expect(act).toThrow("Unknown label: missing");
+  });
+});
+
+describe("removeLabelDefinition", () => {
+  it("removes the registry entry and strips it from every card that had it", () => {
+    const untouchedLabel = makeLabel({ name: "docs" });
+    const taggedCard = makeCard({ path: "a.md", labels: ["ui", "docs"] });
+    const untaggedCard = makeCard({ path: "b.md", labels: ["docs"] });
+    const board = makeBoard({
+      labels: [makeLabel({ name: "ui" }), untouchedLabel],
+      columns: [makeColumn({ cards: [taggedCard, untaggedCard] })],
+    });
+
+    const result = removeLabelDefinition(board, "ui");
+
+    expect(result.labels).toEqual([untouchedLabel]);
+    expect(result.columns[0].cards[0].labels).toEqual(["docs"]);
+    expect(result.columns[0].cards[1]).toBe(untaggedCard);
+    expect(board.labels).toHaveLength(2);
+  });
+
+  it("rejects an unknown label name", () => {
+    const board = makeBoard();
+
+    const act = () => removeLabelDefinition(board, "missing");
+
+    expect(act).toThrow("Unknown label: missing");
+  });
+});
+
+describe("addLabelToCard", () => {
+  it("appends the label to the card, keeping other cards untouched", () => {
+    const target = makeCard({ path: "target.md", labels: [] });
+    const untouched = makeCard({ path: "other.md", labels: [] });
+    const board = makeBoard({
+      labels: [makeLabel({ name: "ui" })],
+      columns: [makeColumn({ cards: [target, untouched] })],
+    });
+
+    const result = addLabelToCard(board, "target.md", "ui");
+
+    expect(result.columns[0].cards[0].labels).toEqual(["ui"]);
+    expect(result.columns[0].cards[1]).toBe(untouched);
+    expect(board.columns[0].cards[0]).toBe(target);
+  });
+
+  it("rejects a label name that is not in the registry", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "target.md" })] })],
+    });
+
+    const act = () => addLabelToCard(board, "target.md", "missing");
+
+    expect(act).toThrow("Unknown label: missing");
+  });
+
+  it("rejects a label already on the card", () => {
+    const board = makeBoard({
+      labels: [makeLabel({ name: "ui" })],
+      columns: [
+        makeColumn({
+          cards: [makeCard({ path: "target.md", labels: ["ui"] })],
+        }),
+      ],
+    });
+
+    const act = () => addLabelToCard(board, "target.md", "ui");
+
+    expect(act).toThrow("Label already on card: ui");
+  });
+
+  it("rejects an unknown card path", () => {
+    const board = makeBoard({ labels: [makeLabel({ name: "ui" })] });
+
+    const act = () => addLabelToCard(board, "missing.md", "ui");
+
+    expect(act).toThrow("Unknown card: missing.md");
+  });
+});
+
+describe("removeLabelFromCard", () => {
+  it("removes the label from the card, keeping other cards untouched", () => {
+    const untouched = makeCard({ path: "other.md", labels: ["ui"] });
+    const board = makeBoard({
+      labels: [makeLabel({ name: "ui" })],
+      columns: [
+        makeColumn({
+          cards: [
+            makeCard({ path: "target.md", labels: ["ui", "docs"] }),
+            untouched,
+          ],
+        }),
+      ],
+    });
+
+    const result = removeLabelFromCard(board, "target.md", "ui");
+
+    expect(result.columns[0].cards[0].labels).toEqual(["docs"]);
+    expect(result.columns[0].cards[1]).toBe(untouched);
+  });
+
+  it("rejects a label not on the card", () => {
+    const board = makeBoard({
+      columns: [
+        makeColumn({ cards: [makeCard({ path: "target.md", labels: [] })] }),
+      ],
+    });
+
+    const act = () => removeLabelFromCard(board, "target.md", "ui");
+
+    expect(act).toThrow("Label not on card: ui");
+  });
+
+  it("rejects an unknown card path", () => {
+    const board = makeBoard();
+
+    const act = () => removeLabelFromCard(board, "missing.md", "ui");
+
+    expect(act).toThrow("Unknown card: missing.md");
+  });
+});
+
 describe("addColumn", () => {
   it("appends the column to the right end without changing existing columns", () => {
     const existing = makeColumn({ id: "doing", cards: [makeCard()] });
@@ -431,7 +698,12 @@ describe("createEmptyBoard", () => {
   it("creates a board with the current schema version and no columns", () => {
     const result = createEmptyBoard("My Board");
 
-    expect(result).toEqual({ version: 1, name: "My Board", columns: [] });
+    expect(result).toEqual({
+      version: 1,
+      name: "My Board",
+      labels: [],
+      columns: [],
+    });
   });
 
   it("rejects a blank name", () => {

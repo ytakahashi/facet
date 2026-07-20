@@ -18,6 +18,41 @@
   --color-priority-medium: #b46716;
   --color-priority-low: #7b7782;
 
+  /* Label colors: a 12-stop gemstone hue wheel (see domain/label.ts). Each
+     entry pairs a text color with a low-alpha background of the same hue,
+     following the --color-accent/--color-accent-bg pattern. `amethyst` and
+     `citrine` share names with the theme's core accent tokens but are
+     independent values - only the naming is shared. `neutral` is the
+     fallback for a label name with no matching registry entry (e.g. a
+     hand-edited board.yaml), kept identical to the pre-Phase-12 plain
+     .card__label look. */
+  --color-label-ruby: #932f2f;
+  --color-label-ruby-bg: rgba(147, 47, 47, 0.1);
+  --color-label-amber: #93612f;
+  --color-label-amber-bg: rgba(147, 97, 47, 0.1);
+  --color-label-citrine: #938b2f;
+  --color-label-citrine-bg: rgba(147, 139, 47, 0.1);
+  --color-label-peridot: #61932f;
+  --color-label-peridot-bg: rgba(97, 147, 47, 0.1);
+  --color-label-emerald: #2f9348;
+  --color-label-emerald-bg: rgba(47, 147, 72, 0.1);
+  --color-label-jade: #2f937a;
+  --color-label-jade-bg: rgba(47, 147, 122, 0.1);
+  --color-label-turquoise: #2f8b93;
+  --color-label-turquoise-bg: rgba(47, 139, 147, 0.1);
+  --color-label-aquamarine: #2f6993;
+  --color-label-aquamarine-bg: rgba(47, 105, 147, 0.1);
+  --color-label-sapphire: #2f3793;
+  --color-label-sapphire-bg: rgba(47, 55, 147, 0.1);
+  --color-label-lapis: #5e2f93;
+  --color-label-lapis-bg: rgba(94, 47, 147, 0.1);
+  --color-label-amethyst: #8b2f93;
+  --color-label-amethyst-bg: rgba(139, 47, 147, 0.1);
+  --color-label-morganite: #932f69;
+  --color-label-morganite-bg: rgba(147, 47, 105, 0.1);
+  --color-label-neutral: var(--color-text);
+  --color-label-neutral-bg: var(--color-surface);
+
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
@@ -55,6 +90,31 @@
     --color-priority-high: #c94b79;
     --color-priority-medium: #c2842b;
     --color-priority-low: #7b7782;
+
+    --color-label-ruby: #d78e8e;
+    --color-label-ruby-bg: rgba(215, 142, 142, 0.14);
+    --color-label-amber: #d7b28e;
+    --color-label-amber-bg: rgba(215, 178, 142, 0.14);
+    --color-label-citrine: #d7d18e;
+    --color-label-citrine-bg: rgba(215, 209, 142, 0.14);
+    --color-label-peridot: #b2d78e;
+    --color-label-peridot-bg: rgba(178, 215, 142, 0.14);
+    --color-label-emerald: #8ed7a0;
+    --color-label-emerald-bg: rgba(142, 215, 160, 0.14);
+    --color-label-jade: #8ed7c5;
+    --color-label-jade-bg: rgba(142, 215, 197, 0.14);
+    --color-label-turquoise: #8ed1d7;
+    --color-label-turquoise-bg: rgba(142, 209, 215, 0.14);
+    --color-label-aquamarine: #8eb9d7;
+    --color-label-aquamarine-bg: rgba(142, 185, 215, 0.14);
+    --color-label-sapphire: #8e94d7;
+    --color-label-sapphire-bg: rgba(142, 148, 215, 0.14);
+    --color-label-lapis: #b08ed7;
+    --color-label-lapis-bg: rgba(176, 142, 215, 0.14);
+    --color-label-amethyst: #d18ed7;
+    --color-label-amethyst-bg: rgba(209, 142, 215, 0.14);
+    --color-label-morganite: #d78eb9;
+    --color-label-morganite-bg: rgba(215, 142, 185, 0.14);
   }
 }
 

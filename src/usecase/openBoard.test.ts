@@ -66,7 +66,12 @@ class FakeConfigRepository implements ConfigRepository {
 
 describe("openBoard", () => {
   it("loads the board at the given path through the repository", async () => {
-    const board: Board = { version: 1, name: "Development", columns: [] };
+    const board: Board = {
+      version: 1,
+      name: "Development",
+      labels: [],
+      columns: [],
+    };
     const boardRepository = new FakeBoardRepository(board);
     const configRepository = new FakeConfigRepository();
 
@@ -82,7 +87,12 @@ describe("openBoard", () => {
   });
 
   it("records the opened path at the front of the recent boards history", async () => {
-    const board: Board = { version: 1, name: "Development", columns: [] };
+    const board: Board = {
+      version: 1,
+      name: "Development",
+      labels: [],
+      columns: [],
+    };
     const boardRepository = new FakeBoardRepository(board);
     const configRepository = new FakeConfigRepository();
 
@@ -115,7 +125,12 @@ describe("openBoard", () => {
   });
 
   it("still returns the board when recording history fails", async () => {
-    const board: Board = { version: 1, name: "Development", columns: [] };
+    const board: Board = {
+      version: 1,
+      name: "Development",
+      labels: [],
+      columns: [],
+    };
     const boardRepository = new FakeBoardRepository(board);
     const configRepository = new FakeConfigRepository(emptyAppConfig(), true);
 

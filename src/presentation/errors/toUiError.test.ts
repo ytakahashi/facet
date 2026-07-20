@@ -79,6 +79,17 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps a duplicate label name to the label name field", () => {
+    const error = new UseCaseError("label.already-exists", { name: "ui" });
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "A label with this name already exists.",
+      field: "labelName",
+    });
+  });
+
   it("hides unexpected error details and logs the original error", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(
       () => {},
