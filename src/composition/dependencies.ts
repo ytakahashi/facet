@@ -66,14 +66,20 @@ export const appDependencies: AppDependencies = {
 };
 
 // Called once at startup (outside React) to set the initial menu and wire
-// native "Open Recent" clicks to the board/markdown stores.
+// native menu clicks to the stores.
 export function startApplicationMenu(): void {
   void refreshRecentMenu();
-  applicationMenu.onOpenRecent((path) => {
-    // Abort the switch if the user declines to discard an unsaved draft.
-    if (!appDependencies.markdownViewer.getState().close()) {
-      return;
-    }
-    void appDependencies.boardStore.getState().openBoard(path);
+  applicationMenu.onMenuSelect({
+    // Only opens the dialog; the unsaved-draft confirmation happens at
+    // submit time (in NewBoardDialog), so cancelling the dialog never
+    // discards a draft as a side effect.
+    newBoard: () => appDependencies.newBoardDialog.getState().open(),
+    openRecent: (path) => {
+      // Abort the switch if the user declines to discard an unsaved draft.
+      if (!appDependencies.markdownViewer.getState().close()) {
+        return;
+      }
+      void appDependencies.boardStore.getState().openBoard(path);
+    },
   });
 }

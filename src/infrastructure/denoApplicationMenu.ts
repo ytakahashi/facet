@@ -15,6 +15,9 @@ export type MenuItem =
   | "separator";
 
 const RECENT_ID_PREFIX = "recent:";
+// Fixed id, unlike the index-based recent ids: it stays valid across menu
+// rebuilds, so a click can never be misrouted after the history changes.
+const NEW_BOARD_ID = "new-board";
 
 export function buildApplicationMenu(
   recentBoardPaths: readonly string[],
@@ -42,6 +45,8 @@ export function buildApplicationMenu(
       submenu: {
         label: "File",
         items: [
+          { item: { label: "New Board…", id: NEW_BOARD_ID, enabled: true } },
+          "separator",
           { submenu: { label: "Open Recent", items: recentItems } },
         ],
       },
@@ -78,6 +83,11 @@ function labelFor(path: string, homeDirectory: string): string {
   return `${name} — ${shortDirectory}`;
 }
 
+export interface MenuSelectionHandlers {
+  newBoard(): void;
+  openRecent(path: string): void;
+}
+
 export class DenoApplicationMenu {
   private readonly fileSystem: FileSystemPort;
   private pathById = new Map<string, string>();
@@ -93,14 +103,14 @@ export class DenoApplicationMenu {
     await bindings.setApplicationMenu(menu);
   }
 
-  // Starts a long-poll loop that resolves clicked ids back to paths.
+  // Starts a long-poll loop that dispatches clicked ids to their handlers.
   // Fire-and-forget: the loop ends silently once nextMenuClick() rejects
   // (e.g. bindings unavailable, such as running in a plain browser tab).
-  onOpenRecent(callback: (path: string) => void): void {
-    void this.pollLoop(callback);
+  onMenuSelect(handlers: MenuSelectionHandlers): void {
+    void this.pollLoop(handlers);
   }
 
-  private async pollLoop(callback: (path: string) => void): Promise<void> {
+  private async pollLoop(handlers: MenuSelectionHandlers): Promise<void> {
     for (;;) {
       let id: string;
       try {
@@ -108,9 +118,13 @@ export class DenoApplicationMenu {
       } catch {
         return;
       }
+      if (id === NEW_BOARD_ID) {
+        handlers.newBoard();
+        continue;
+      }
       const path = this.pathById.get(id);
       if (path) {
-        callback(path);
+        handlers.openRecent(path);
       }
     }
   }

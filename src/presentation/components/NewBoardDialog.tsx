@@ -3,6 +3,7 @@ import { DEFAULT_BOARD_FILE_NAME } from "../../domain/boardFile.ts";
 import {
   useBoardStore,
   useDirectoryBrowsing,
+  useMarkdownViewer,
   useNewBoardDialog,
 } from "../context/appContext.ts";
 import type { UiError } from "../errors/toUiError.ts";
@@ -14,6 +15,7 @@ export function NewBoardDialog() {
   const isOpen = useNewBoardDialog((state) => state.isOpen);
   const close = useNewBoardDialog((state) => state.close);
   const createBoard = useBoardStore((state) => state.createBoard);
+  const closeMarkdownViewer = useMarkdownViewer((state) => state.close);
   const { homeDirectory } = useDirectoryBrowsing();
   const [name, setName] = useState("");
   const [fileName, setFileName] = useState(DEFAULT_BOARD_FILE_NAME);
@@ -55,6 +57,10 @@ export function NewBoardDialog() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!directory) return;
+    // Creating a board replaces the one on screen, so an unsaved Markdown
+    // draft is confirmed before anything is written. Declining leaves the
+    // dialog open and the file system untouched.
+    if (!closeMarkdownViewer()) return;
     setIsSubmitting(true);
     setError(undefined);
     try {
