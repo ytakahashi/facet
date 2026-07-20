@@ -1,6 +1,6 @@
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 
-export type UiErrorField = "title" | "fileName" | "directory";
+export type UiErrorField = "title" | "fileName" | "directory" | "boardName";
 
 export interface UiError {
   message: string;
@@ -15,6 +15,19 @@ export function toUiError(error: unknown): UiError {
 
   const path = error.details.path;
   switch (error.code) {
+    case "board.create-failed":
+      return { message: `Failed to create the board${atPath(path)}.` };
+    case "board.file-already-exists":
+      return {
+        message: `A file already exists${atPath(path)}.`,
+        field: "fileName",
+      };
+    case "board.file-name-required":
+      return { message: "File name is required.", field: "fileName" };
+    case "board.invalid-file-name":
+      return { message: "Enter a single valid file name.", field: "fileName" };
+    case "board.name-required":
+      return { message: "Board name is required.", field: "boardName" };
     case "board.open-failed":
       return { message: `Failed to open the board${atPath(path)}.` };
     case "board.save-failed":

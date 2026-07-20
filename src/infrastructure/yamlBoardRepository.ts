@@ -88,9 +88,24 @@ export class YamlBoardRepository implements BoardRepository {
   // are lost on save. Acceptable because board.yaml isn't meant to be
   // hand-maintained with comments - the app owns the file once it exists.
   async save(path: string, board: Board): Promise<void> {
-    const raw: RawBoard = {
+    await this.fileSystem.writeTextFile(path, stringify(this.toRaw(board)));
+  }
+
+  // Exclusive create: createTextFile's create-new semantics guarantee an
+  // existing file is never overwritten, even when a concurrent existence
+  // check has already passed. Already-exists classification is left to the
+  // caller (usecase), so FileSystemError passes through untranslated.
+  async create(path: string, board: Board): Promise<void> {
+    await this.fileSystem.createTextFile(path, stringify(this.toRaw(board)));
+  }
+
+  private toRaw(board: Board): RawBoard {
+    return {
       version: board.version,
       name: board.name,
+      // An empty board keeps an explicit `columns: []` key: load rejects
+      // files whose columns is not an array, so omitting the key would
+      // produce a board file this app cannot open again.
       columns: board.columns.map((column) => ({
         id: column.id,
         name: column.name,
@@ -102,7 +117,6 @@ export class YamlBoardRepository implements BoardRepository {
         })),
       })),
     };
-    await this.fileSystem.writeTextFile(path, stringify(raw));
   }
 
   private async tryReadTextFile(path: string): Promise<string | undefined> {

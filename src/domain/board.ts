@@ -18,6 +18,20 @@ export interface CardLocation {
   index: number;
 }
 
+// The version this app writes into newly created board files. Loading keeps
+// whatever version an existing file declares; only creation needs to know
+// the current schema version.
+export const BOARD_SCHEMA_VERSION = 1;
+
+// Expects a validated (trimmed, non-empty) name; the blank check is an
+// invariant guard, not user-facing validation.
+export function createEmptyBoard(name: string): Board {
+  if (name.trim() === "") {
+    throw new Error("Board name must not be empty");
+  }
+  return { version: BOARD_SCHEMA_VERSION, name, columns: [] };
+}
+
 export class CardAlreadyExistsError extends Error {
   constructor(path: string) {
     super(`This Markdown is already on this board: ${path}`);

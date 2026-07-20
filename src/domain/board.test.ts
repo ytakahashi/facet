@@ -5,6 +5,7 @@ import {
   addColumn,
   CardAlreadyExistsError,
   containsCardPath,
+  createEmptyBoard,
   moveCard,
   removeColumn,
   renameColumn,
@@ -295,5 +296,19 @@ describe("containsCardPath", () => {
     const result = containsCardPath(board, "notes/card.md");
 
     expect(result).toBe(true);
+  });
+});
+
+describe("createEmptyBoard", () => {
+  it("creates a board with the current schema version and no columns", () => {
+    const result = createEmptyBoard("My Board");
+
+    expect(result).toEqual({ version: 1, name: "My Board", columns: [] });
+  });
+
+  it("rejects a blank name", () => {
+    const act = () => createEmptyBoard("   ");
+
+    expect(act).toThrow("Board name must not be empty");
   });
 });

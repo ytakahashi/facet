@@ -7,6 +7,9 @@ import { YamlBoardRepository } from "./yamlBoardRepository.ts";
 class FakeFileSystemPort implements FileSystemPort {
   private readonly files: Map<string, string>;
   readonly writes: Array<{ path: string; content: string }> = [];
+  // Recorded separately from writes so tests can assert which API was used:
+  // create must go through the exclusive createTextFile, never writeTextFile.
+  readonly creates: Array<{ path: string; content: string }> = [];
 
   constructor(files: Record<string, string> = {}) {
     this.files = new Map(Object.entries(files));
@@ -33,8 +36,10 @@ class FakeFileSystemPort implements FileSystemPort {
     return Promise.resolve();
   }
 
-  createTextFile(): Promise<void> {
-    throw new Error("not needed for this test");
+  createTextFile(path: string, content: string): Promise<void> {
+    this.creates.push({ path, content });
+    this.files.set(path, content);
+    return Promise.resolve();
   }
 
   exists(): Promise<boolean> {
@@ -180,5 +185,36 @@ describe("YamlBoardRepository.save", () => {
         },
       ],
     });
+  });
+});
+
+describe("YamlBoardRepository.create", () => {
+  it("writes an empty board with an explicit columns key via exclusive create", async () => {
+    const fileSystem = new FakeFileSystemPort();
+    const repository = new YamlBoardRepository(fileSystem);
+    const board: Board = { version: 1, name: "New Board", columns: [] };
+
+    await repository.create("/board/facet.board.yaml", board);
+
+    expect(fileSystem.writes).toHaveLength(0);
+    expect(fileSystem.creates).toHaveLength(1);
+    const created = fileSystem.creates[0];
+    expect(created.path).toBe("/board/facet.board.yaml");
+    expect(parse(created.content)).toEqual({
+      version: 1,
+      name: "New Board",
+      columns: [],
+    });
+  });
+
+  it("loads a just-created empty board back unchanged", async () => {
+    const fileSystem = new FakeFileSystemPort();
+    const repository = new YamlBoardRepository(fileSystem);
+    const board: Board = { version: 1, name: "New Board", columns: [] };
+
+    await repository.create("/board/facet.board.yaml", board);
+    const result = await repository.load("/board/facet.board.yaml");
+
+    expect(result).toEqual(board);
   });
 });

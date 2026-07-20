@@ -3,6 +3,7 @@ import type { StoreApi, UseBoundStore } from "zustand";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import type { BoardState } from "../store/boardStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
+import type { NewBoardDialogState } from "../store/newBoardDialogStore.ts";
 
 export interface DirectoryBrowsing {
   listDirectory(path: string): Promise<DirEntry[]>;
@@ -23,6 +24,7 @@ export interface AppDependencies {
   boardStore: UseBoundStore<StoreApi<BoardState>>;
   directoryBrowsing: DirectoryBrowsing;
   markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
+  newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
   recentBoards: RecentBoards;
 }
 
@@ -50,6 +52,12 @@ export function useMarkdownViewer<T>(
   selector: (state: MarkdownViewerState) => T,
 ): T {
   return useAppDependencies().markdownViewer(selector);
+}
+
+export function useNewBoardDialog<T>(
+  selector: (state: NewBoardDialogState) => T,
+): T {
+  return useAppDependencies().newBoardDialog(selector);
 }
 
 export function useRecentBoards(): RecentBoards {

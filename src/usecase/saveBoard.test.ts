@@ -14,6 +14,10 @@ class FakeBoardRepository implements BoardRepository {
     this.saves.push({ path, board });
     return Promise.resolve();
   }
+
+  create(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
 }
 
 describe("saveBoard", () => {
@@ -35,6 +39,7 @@ describe("saveBoard", () => {
     const boardRepository: BoardRepository = {
       load: () => Promise.reject(new Error("not needed for this test")),
       save: () => Promise.reject(cause),
+      create: () => Promise.reject(new Error("not needed for this test")),
     };
     const board: Board = { version: 1, name: "Development", columns: [] };
 

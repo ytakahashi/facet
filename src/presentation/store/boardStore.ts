@@ -17,6 +17,7 @@ import {
   resolveNewMarkdownPath,
 } from "../../domain/cardFile.ts";
 import type { AddExistingMarkdownCardInput } from "../../usecase/addExistingMarkdownCard.ts";
+import type { CreateBoardInput } from "../../usecase/createBoard.ts";
 import type { CreateMarkdownCardInput } from "../../usecase/createMarkdownCard.ts";
 import type { SaveBoard } from "../../usecase/boardSaveQueue.ts";
 import { createBoardSaveQueue } from "../../usecase/boardSaveQueue.ts";
@@ -36,6 +37,7 @@ export interface BoardState {
   isSaving: boolean;
   saveError?: string;
   openBoard: (path: string) => Promise<void>;
+  createBoard: (input: CreateBoardInput) => Promise<void>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
   addColumn: (name: string) => void;
   renameColumn: (columnId: string, name: string) => void;
@@ -58,6 +60,7 @@ export interface ExistingCardInput {
 }
 
 export type OpenBoard = (path: string) => Promise<Board>;
+export type CreateBoard = (input: CreateBoardInput) => Promise<string>;
 export type { SaveBoard };
 export type CreateMarkdownCard = (
   input: CreateMarkdownCardInput,
@@ -71,6 +74,7 @@ export function createBoardStore(
   saveBoard: SaveBoard,
   createMarkdownCard: CreateMarkdownCard,
   addExistingMarkdownCard: AddExistingMarkdownCard,
+  createBoard: CreateBoard,
 ): UseBoundStore<StoreApi<BoardState>> {
   return create<BoardState>((set, get) => {
     const saveQueue = createBoardSaveQueue(saveBoard, {
@@ -121,6 +125,13 @@ export function createBoardStore(
             error: toUiError(error).message,
           });
         }
+      },
+      createBoard: async (input: CreateBoardInput) => {
+        const path = await createBoard(input);
+        // Opening through the regular openBoard path records the board in
+        // the recent history and reads the just-written file back, so a
+        // file that cannot be loaded again surfaces immediately.
+        await get().openBoard(path);
       },
       moveCard: (from: CardLocation, to: CardLocation) => {
         const { board, path } = get();

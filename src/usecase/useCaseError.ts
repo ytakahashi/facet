@@ -1,6 +1,12 @@
+import type { BoardFileValidationError } from "../domain/boardFile.ts";
 import type { CardFileValidationError } from "../domain/cardFile.ts";
 
 export type UseCaseErrorCode =
+  | "board.create-failed"
+  | "board.file-already-exists"
+  | "board.file-name-required"
+  | "board.invalid-file-name"
+  | "board.name-required"
   | "board.open-failed"
   | "board.save-failed"
   | "card.already-on-board"
@@ -36,6 +42,19 @@ export class UseCaseError extends Error {
     this.name = "UseCaseError";
     this.code = code;
     this.details = details;
+  }
+}
+
+export function boardFileValidationToUseCaseError(
+  error: BoardFileValidationError,
+): UseCaseError {
+  switch (error.kind) {
+    case "name-required":
+      return new UseCaseError("board.name-required", {}, { cause: error });
+    case "file-name-required":
+      return new UseCaseError("board.file-name-required", {}, { cause: error });
+    case "invalid-file-name":
+      return new UseCaseError("board.invalid-file-name", {}, { cause: error });
   }
 }
 

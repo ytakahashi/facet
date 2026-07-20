@@ -27,6 +27,7 @@ describe("createBoardStore", () => {
       vi.fn(),
       vi.fn(),
       vi.fn(),
+      vi.fn(),
     );
 
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -44,6 +45,7 @@ describe("createBoardStore", () => {
       vi.fn(),
       vi.fn(),
       vi.fn(),
+      vi.fn(),
     );
 
     await useBoardStore.getState().openBoard("/board/missing.board.yaml");
@@ -54,12 +56,72 @@ describe("createBoardStore", () => {
     );
   });
 
+  it("creates a board and opens it from the created path", async () => {
+    const board = makeBoard();
+    const openBoard = vi.fn().mockResolvedValue(board);
+    const createBoard = vi.fn().mockResolvedValue(
+      "/boards/facet.board.yaml",
+    );
+    const useBoardStore = createBoardStore(
+      openBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      createBoard,
+    );
+
+    await useBoardStore.getState().createBoard({
+      directory: "/boards",
+      fileName: "facet.board.yaml",
+      name: "My Board",
+    });
+
+    expect(createBoard).toHaveBeenCalledWith({
+      directory: "/boards",
+      fileName: "facet.board.yaml",
+      name: "My Board",
+    });
+    expect(openBoard).toHaveBeenCalledWith("/boards/facet.board.yaml");
+    expect(useBoardStore.getState().status).toBe("loaded");
+    expect(useBoardStore.getState().path).toBe("/boards/facet.board.yaml");
+  });
+
+  it("propagates a creation failure without opening a board", async () => {
+    const openBoard = vi.fn();
+    const createBoard = vi.fn().mockRejectedValue(
+      new UseCaseError("board.file-already-exists", {
+        path: "/boards/facet.board.yaml",
+      }),
+    );
+    const useBoardStore = createBoardStore(
+      openBoard,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      createBoard,
+    );
+
+    const act = () =>
+      useBoardStore.getState().createBoard({
+        directory: "/boards",
+        fileName: "facet.board.yaml",
+        name: "My Board",
+      });
+
+    await expect(act).rejects.toMatchObject({
+      code: "board.file-already-exists",
+    });
+    expect(openBoard).not.toHaveBeenCalled();
+    expect(useBoardStore.getState().status).toBe("empty");
+  });
+
   it("updates the board immediately, before the save resolves", async () => {
     const board = makeBoard();
     const saveBoard = vi.fn(() => new Promise<void>(() => {}));
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
       vi.fn(),
       vi.fn(),
     );
@@ -82,6 +144,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
       vi.fn(),
       vi.fn(),
     );
@@ -110,6 +173,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
       vi.fn(),
       vi.fn(),
     );
@@ -143,6 +207,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       vi.fn(),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
     useBoardStore.getState().moveCard(
@@ -171,6 +236,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       vi.fn(),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -197,6 +263,7 @@ describe("createBoardStore", () => {
       vi.fn().mockResolvedValue(undefined),
       vi.fn(),
       vi.fn(),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -219,6 +286,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       vi.fn(),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -237,6 +305,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
       vi.fn(),
       vi.fn(),
     );
@@ -265,6 +334,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       vi.fn(),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -291,6 +361,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       vi.fn(),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -307,6 +378,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
       vi.fn(),
       vi.fn(),
     );
@@ -329,6 +401,7 @@ describe("createBoardStore", () => {
     const useBoardStore = createBoardStore(
       () => Promise.resolve(board),
       saveBoard,
+      vi.fn(),
       vi.fn(),
       vi.fn(),
     );
@@ -354,6 +427,7 @@ describe("createBoardStore", () => {
       () => Promise.resolve(board),
       saveBoard,
       createMarkdownCard,
+      vi.fn(),
       vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -391,6 +465,7 @@ describe("createBoardStore", () => {
       vi.fn(),
       createMarkdownCard,
       vi.fn(),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -418,6 +493,7 @@ describe("createBoardStore", () => {
       () => Promise.resolve(board),
       saveBoard,
       createMarkdownCard,
+      vi.fn(),
       vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -452,6 +528,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       addExistingMarkdownCard,
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -477,6 +554,7 @@ describe("createBoardStore", () => {
       vi.fn(),
       vi.fn(),
       addExistingMarkdownCard,
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -503,6 +581,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       addExistingMarkdownCard,
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -535,6 +614,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       vi.fn().mockReturnValue(loading),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -578,6 +658,7 @@ describe("createBoardStore", () => {
       saveBoard,
       vi.fn(),
       vi.fn().mockResolvedValue(card),
+      vi.fn(),
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 

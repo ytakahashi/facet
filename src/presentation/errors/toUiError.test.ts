@@ -27,6 +27,44 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps a blank board name to the board name field", () => {
+    const error = new UseCaseError("board.name-required");
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "Board name is required.",
+      field: "boardName",
+    });
+  });
+
+  it("maps an existing board file path to the file name field", () => {
+    const error = new UseCaseError("board.file-already-exists", {
+      path: "/boards/facet.board.yaml",
+    });
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "A file already exists at /boards/facet.board.yaml.",
+      field: "fileName",
+    });
+  });
+
+  it("maps a board creation failure without exposing its cause", () => {
+    const error = new UseCaseError(
+      "board.create-failed",
+      { path: "/boards/facet.board.yaml" },
+      { cause: new Error("Permission denied") },
+    );
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "Failed to create the board at /boards/facet.board.yaml.",
+    });
+  });
+
   it("maps an existing Markdown read failure without exposing its cause", () => {
     const error = new UseCaseError(
       "card.load-failed",

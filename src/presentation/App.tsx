@@ -1,7 +1,12 @@
-import { useBoardStore, useMarkdownViewer } from "./context/appContext.ts";
+import {
+  useBoardStore,
+  useMarkdownViewer,
+  useNewBoardDialog,
+} from "./context/appContext.ts";
 import { DirectoryBrowser } from "./components/DirectoryBrowser.tsx";
 import { KanbanBoard } from "./components/KanbanBoard.tsx";
 import { MarkdownViewer } from "./components/MarkdownViewer.tsx";
+import { NewBoardDialog } from "./components/NewBoardDialog.tsx";
 import { RecentBoardList } from "./components/RecentBoardList.tsx";
 import "./App.css";
 
@@ -9,21 +14,39 @@ function App() {
   const status = useBoardStore((state) => state.status);
   const board = useBoardStore((state) => state.board);
   const markdownStatus = useMarkdownViewer((state) => state.status);
-
-  if (status === "loaded" && board) {
-    return (
-      <div className="board-workspace">
-        <KanbanBoard board={board} />
-        {markdownStatus !== "idle" && <MarkdownViewer />}
-      </div>
-    );
-  }
+  const openNewBoardDialog = useNewBoardDialog((state) => state.open);
 
   return (
-    <div className="start-screen">
-      <RecentBoardList />
-      <DirectoryBrowser />
-    </div>
+    <>
+      {status === "loaded" && board
+        ? (
+          <div className="board-workspace">
+            <KanbanBoard board={board} />
+            {markdownStatus !== "idle" && <MarkdownViewer />}
+          </div>
+        )
+        : (
+          <div className="start-screen">
+            <div className="start-screen__actions">
+              <button
+                type="button"
+                className="start-screen__new-board"
+                onClick={openNewBoardDialog}
+              >
+                New Board…
+              </button>
+            </div>
+            <RecentBoardList />
+            <DirectoryBrowser />
+          </div>
+        )}
+      {
+        /* Mounted once outside both branches: creating a board switches the
+          branch mid-submit, and remounting the dialog then would close it
+          before the submit handler finishes. */
+      }
+      <NewBoardDialog />
+    </>
   );
 }
 

@@ -6,6 +6,25 @@
   overflow-y: auto;
 }
 
+.start-screen__actions {
+  display: flex;
+  padding: 24px 24px 0;
+}
+
+.start-screen__new-board {
+  padding: 8px 14px;
+  font-size: 13px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.start-screen__new-board:hover {
+  background: var(--color-accent-bg);
+}
+
 .recent-board-list {
   display: flex;
   flex-direction: column;
@@ -449,7 +468,8 @@
   color: var(--color-text);
 }
 
-.add-card-dialog {
+.add-card-dialog,
+.new-board-dialog {
   width: min(520px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   padding: 0;
@@ -460,22 +480,26 @@
   box-sizing: border-box;
 }
 
-.add-card-dialog::backdrop {
+.add-card-dialog::backdrop,
+.new-board-dialog::backdrop {
   background: var(--color-accent-bg);
 }
 
-.add-card-dialog form {
+.add-card-dialog form,
+.new-board-dialog form {
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 24px;
 }
 
-.add-card-dialog h2 {
+.add-card-dialog h2,
+.new-board-dialog h2 {
   margin: 0;
 }
 
-.add-card-dialog label {
+.add-card-dialog label,
+.new-board-dialog label {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -484,7 +508,8 @@
   font-weight: 500;
 }
 
-.add-card-dialog input {
+.add-card-dialog input,
+.new-board-dialog input {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--color-border);
@@ -495,32 +520,37 @@
   font: inherit;
 }
 
-.add-card-dialog fieldset {
+.add-card-dialog fieldset,
+.new-board-dialog fieldset {
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.add-card-dialog legend {
+.add-card-dialog legend,
+.new-board-dialog legend {
   margin-bottom: 6px;
   color: var(--color-text-strong);
   font-size: 13px;
   font-weight: 500;
 }
 
-.add-card-dialog__error {
+.add-card-dialog__error,
+.new-board-dialog__error {
   color: var(--color-priority-high);
   font-size: 13px;
 }
 
-.add-card-dialog__actions {
+.add-card-dialog__actions,
+.new-board-dialog__actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 
 .add-card-dialog__actions button,
+.new-board-dialog__actions button,
 .board-directory-picker button,
 .markdown-file-browser button,
 .add-card-dialog__modes button {
@@ -543,7 +573,8 @@
   background: var(--color-accent-bg);
 }
 
-.add-card-dialog button:disabled {
+.add-card-dialog button:disabled,
+.new-board-dialog button:disabled {
   cursor: default;
   opacity: 0.5;
 }
