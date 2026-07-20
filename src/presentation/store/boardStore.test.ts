@@ -655,7 +655,7 @@ describe("createBoardStore", () => {
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
-    const act = () => useBoardStore.getState().createLabel("ui", "jade");
+    const act = () => useBoardStore.getState().createLabel("ui", "amber");
 
     expect(act).toThrow(UseCaseError);
     expect(act).toThrow(
@@ -713,7 +713,7 @@ describe("createBoardStore", () => {
 
   it("throws a UseCaseError when renaming a label to an existing name", async () => {
     const board = makeBoard({
-      labels: [{ name: "ui", color: "ruby" }, { name: "docs", color: "jade" }],
+      labels: [{ name: "ui", color: "ruby" }, { name: "docs", color: "amber" }],
     });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(

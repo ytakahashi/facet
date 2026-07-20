@@ -1,21 +1,24 @@
 import type { LabelColor } from "../../domain/label.ts";
 
-// Fixed 12-stop gemstone hue wheel order (see domain/label.ts), rendered as
-// a 6x2 grid via CSS grid-template-columns so this array stays the single
-// source of truth for both the swatch order and the color values.
+// Rainbow order (see domain/label.ts for the deep/pale lightness tiers this
+// glosses over) rendered as a 6x2 grid via CSS grid-template-columns, so
+// this array stays the single source of truth for both the swatch order
+// and the color values. The two neutrals (morion, selenite) sit last,
+// matching how a gray/black swatch is conventionally placed last in a
+// color picker.
 const LABEL_COLORS: LabelColor[] = [
   "ruby",
   "amber",
   "citrine",
-  "peridot",
+  "sphene",
   "emerald",
-  "jade",
-  "turquoise",
   "aquamarine",
   "sapphire",
   "lapis",
   "amethyst",
   "morganite",
+  "morion",
+  "selenite",
 ];
 
 interface LabelColorSwatchGridProps {

@@ -273,7 +273,7 @@ describe("YamlBoardRepository.create", () => {
       name: "New Board",
       labels: [
         { name: "ui", color: "ruby" },
-        { name: "docs", color: "jade" },
+        { name: "docs", color: "amber" },
       ],
       columns: [],
     };

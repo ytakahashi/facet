@@ -18,42 +18,44 @@
   --color-priority-medium: #b46716;
   --color-priority-low: #7b7782;
 
-  /* Label colors: a 12-stop gemstone hue wheel (see domain/label.ts). Each
-     entry pairs a text color with a low-alpha background of the same hue,
-     following the --color-accent/--color-accent-bg pattern. `amethyst` and
-     `citrine` share names with the theme's core accent tokens but are
-     independent values - only the naming is shared. `neutral` is the
-     fallback for a label name with no matching registry entry (e.g. a
-     hand-edited board.yaml), kept identical to the pre-Phase-12 plain
-     .card__label look. */
-  --color-label-ruby: #932f2f;
-  --color-label-ruby-bg: rgba(147, 47, 47, 0.1);
-  --color-label-amber: #93612f;
-  --color-label-amber-bg: rgba(147, 97, 47, 0.1);
-  /* citrine/peridot/emerald/jade/turquoise are darkened relative to the
-     rest of the wheel (contrast against a white surface blended with their
-     own 10%-alpha background, per WCAG AA 4.5:1 for small text - the raw
-     30°-spaced hue-wheel value came out at 3.2-3.6 for these five). */
-  --color-label-citrine: #716b24;
-  --color-label-citrine-bg: rgba(113, 107, 36, 0.1);
-  --color-label-peridot: #4c7424;
-  --color-label-peridot-bg: rgba(76, 116, 36, 0.1);
-  --color-label-emerald: #26773a;
-  --color-label-emerald-bg: rgba(38, 119, 58, 0.1);
-  --color-label-jade: #257561;
-  --color-label-jade-bg: rgba(37, 117, 97, 0.1);
-  --color-label-turquoise: #26737a;
-  --color-label-turquoise-bg: rgba(38, 115, 122, 0.1);
-  --color-label-aquamarine: #2f6993;
-  --color-label-aquamarine-bg: rgba(47, 105, 147, 0.1);
-  --color-label-sapphire: #2f3793;
-  --color-label-sapphire-bg: rgba(47, 55, 147, 0.1);
-  --color-label-lapis: #5e2f93;
-  --color-label-lapis-bg: rgba(94, 47, 147, 0.1);
-  --color-label-amethyst: #8b2f93;
-  --color-label-amethyst-bg: rgba(139, 47, 147, 0.1);
-  --color-label-morganite: #932f69;
-  --color-label-morganite-bg: rgba(147, 47, 105, 0.1);
+  /* Label colors: 12 gemstones in two lightness/saturation tiers - deep
+     (ruby/amber/emerald/sapphire/lapis/morion) and pale (citrine/sphene/
+     aquamarine/amethyst/morganite/selenite) - see domain/label.ts for why
+     a single hue-only wheel wasn't enough. Each entry pairs a text color
+     with a low-alpha background of the same hue, following the
+     --color-accent/--color-accent-bg pattern. `amethyst`/`citrine` share
+     names with the theme's core accent tokens but are independent values.
+     `morion`/`selenite` stand in for black/white with a faint warm/cool
+     tint so neither reads as literally black-on-black or white-on-white.
+     Every value here is darkened only as far as needed to clear WCAG AA
+     4.5:1 for small text against a white surface tinted with its own
+     10%-alpha background. `neutral` is the fallback for a label name with
+     no matching registry entry (e.g. a hand-edited board.yaml), kept
+     identical to the pre-Phase-12 plain .card__label look. */
+  --color-label-ruby: #792028;
+  --color-label-ruby-bg: rgba(121, 32, 40, 0.1);
+  --color-label-amber: #795420;
+  --color-label-amber-bg: rgba(121, 84, 32, 0.1);
+  --color-label-emerald: #20793e;
+  --color-label-emerald-bg: rgba(32, 121, 62, 0.1);
+  --color-label-sapphire: #204579;
+  --color-label-sapphire-bg: rgba(32, 69, 121, 0.1);
+  --color-label-lapis: #362079;
+  --color-label-lapis-bg: rgba(54, 32, 121, 0.1);
+  --color-label-morion: #363330;
+  --color-label-morion-bg: rgba(54, 51, 48, 0.1);
+  --color-label-citrine: #7c6b29;
+  --color-label-citrine-bg: rgba(124, 107, 41, 0.1);
+  --color-label-sphene: #437928;
+  --color-label-sphene-bg: rgba(67, 121, 40, 0.1);
+  --color-label-aquamarine: #2b6c82;
+  --color-label-aquamarine-bg: rgba(43, 108, 130, 0.1);
+  --color-label-amethyst: #6c2b82;
+  --color-label-amethyst-bg: rgba(108, 43, 130, 0.1);
+  --color-label-morganite: #822b57;
+  --color-label-morganite-bg: rgba(130, 43, 87, 0.1);
+  --color-label-selenite: #6b677e;
+  --color-label-selenite-bg: rgba(107, 103, 126, 0.1);
   --color-label-neutral: var(--color-text);
   --color-label-neutral-bg: var(--color-surface);
 
@@ -95,30 +97,53 @@
     --color-priority-medium: #c2842b;
     --color-priority-low: #7b7782;
 
-    --color-label-ruby: #d78e8e;
-    --color-label-ruby-bg: rgba(215, 142, 142, 0.14);
-    --color-label-amber: #d7b28e;
-    --color-label-amber-bg: rgba(215, 178, 142, 0.14);
-    --color-label-citrine: #d7d18e;
-    --color-label-citrine-bg: rgba(215, 209, 142, 0.14);
-    --color-label-peridot: #b2d78e;
-    --color-label-peridot-bg: rgba(178, 215, 142, 0.14);
-    --color-label-emerald: #8ed7a0;
-    --color-label-emerald-bg: rgba(142, 215, 160, 0.14);
-    --color-label-jade: #8ed7c5;
-    --color-label-jade-bg: rgba(142, 215, 197, 0.14);
-    --color-label-turquoise: #8ed1d7;
-    --color-label-turquoise-bg: rgba(142, 209, 215, 0.14);
-    --color-label-aquamarine: #8eb9d7;
-    --color-label-aquamarine-bg: rgba(142, 185, 215, 0.14);
-    --color-label-sapphire: #8e94d7;
-    --color-label-sapphire-bg: rgba(142, 148, 215, 0.14);
-    --color-label-lapis: #b08ed7;
-    --color-label-lapis-bg: rgba(176, 142, 215, 0.14);
-    --color-label-amethyst: #d18ed7;
-    --color-label-amethyst-bg: rgba(209, 142, 215, 0.14);
-    --color-label-morganite: #d78eb9;
-    --color-label-morganite-bg: rgba(215, 142, 185, 0.14);
+    /* Deep tier: S 50% / L 52%. Pale tier: S 58% / L 78% - raised from an
+       earlier, less saturated pass where every color shared one lightness
+       and the whole set read as a single washed-out pastel band regardless
+       of hue. Morion/selenite are the low-saturation (S 6% / S 10%)
+       neutrals, tuned per-theme so neither vanishes into its own
+       background (morion would if it were as dark as it is in light mode;
+       selenite would if it were as pale as it is in dark mode). */
+    --color-label-ruby: #c24752;
+    --color-label-ruby-bg: rgba(194, 71, 82, 0.14);
+    --color-label-amber: #c28f47;
+    --color-label-amber-bg: rgba(194, 143, 71, 0.14);
+    --color-label-emerald: #47c270;
+    --color-label-emerald-bg: rgba(71, 194, 112, 0.14);
+    --color-label-sapphire: #477ac2;
+    --color-label-sapphire-bg: rgba(71, 122, 194, 0.14);
+    --color-label-lapis: #6647c2;
+    --color-label-lapis-bg: rgba(102, 71, 194, 0.14);
+    --color-label-morion: #777069;
+    --color-label-morion-bg: rgba(119, 112, 105, 0.14);
+    /* The deep tier's own -bg tint stays as dark as the swatch/dot color
+       above (that darkness is the point of the "deep" tier), but at 14%
+       alpha over a dark surface that leaves too little contrast for the
+       label *text* sitting on top of it - lapis in particular came out
+       under 2.5:1. Rather than lighten the swatch/dot color itself (which
+       would wash out the tier's whole reason to exist), badge text reads
+       from a separate, brighter same-hue variable that only exists for
+       dark mode; card__label--{color} falls back to the swatch color via
+       var()'s second argument when this isn't defined (light mode, and
+       every pale-tier color, don't need the split). */
+    --color-label-ruby-badge-text: #d47d84;
+    --color-label-amber-badge-text: #c99d5e;
+    --color-label-emerald-badge-text: #5ec982;
+    --color-label-sapphire-badge-text: #7da1d4;
+    --color-label-lapis-badge-text: #9f8cd9;
+    --color-label-morion-badge-text: #a49e98;
+    --color-label-citrine: #e7daa6;
+    --color-label-citrine-bg: rgba(231, 218, 166, 0.14);
+    --color-label-sphene: #bce7a6;
+    --color-label-sphene-bg: rgba(188, 231, 166, 0.14);
+    --color-label-aquamarine: #a6d7e7;
+    --color-label-aquamarine-bg: rgba(166, 215, 231, 0.14);
+    --color-label-amethyst: #d7a6e7;
+    --color-label-amethyst-bg: rgba(215, 166, 231, 0.14);
+    --color-label-morganite: #e7a6c7;
+    --color-label-morganite-bg: rgba(231, 166, 199, 0.14);
+    --color-label-selenite: #d6d5dd;
+    --color-label-selenite-bg: rgba(214, 213, 221, 0.14);
   }
 }
 

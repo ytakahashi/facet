@@ -455,14 +455,19 @@
   color: var(--color-label-neutral);
 }
 
+/* ruby/amber/emerald/sapphire/lapis/morion (the deep tier) read the badge
+   text from a dark-mode-only *-badge-text variable when it exists, falling
+   back to the swatch color everywhere else (light mode, and every pale
+   color) - see the -badge-text comment in index.css for why the two need
+   to differ here. */
 .card__label--ruby {
   background: var(--color-label-ruby-bg);
-  color: var(--color-label-ruby);
+  color: var(--color-label-ruby-badge-text, var(--color-label-ruby));
 }
 
 .card__label--amber {
   background: var(--color-label-amber-bg);
-  color: var(--color-label-amber);
+  color: var(--color-label-amber-badge-text, var(--color-label-amber));
 }
 
 .card__label--citrine {
@@ -470,24 +475,24 @@
   color: var(--color-label-citrine);
 }
 
-.card__label--peridot {
-  background: var(--color-label-peridot-bg);
-  color: var(--color-label-peridot);
+.card__label--sphene {
+  background: var(--color-label-sphene-bg);
+  color: var(--color-label-sphene);
 }
 
 .card__label--emerald {
   background: var(--color-label-emerald-bg);
-  color: var(--color-label-emerald);
+  color: var(--color-label-emerald-badge-text, var(--color-label-emerald));
 }
 
-.card__label--jade {
-  background: var(--color-label-jade-bg);
-  color: var(--color-label-jade);
+.card__label--morion {
+  background: var(--color-label-morion-bg);
+  color: var(--color-label-morion-badge-text, var(--color-label-morion));
 }
 
-.card__label--turquoise {
-  background: var(--color-label-turquoise-bg);
-  color: var(--color-label-turquoise);
+.card__label--selenite {
+  background: var(--color-label-selenite-bg);
+  color: var(--color-label-selenite);
 }
 
 .card__label--aquamarine {
@@ -497,12 +502,12 @@
 
 .card__label--sapphire {
   background: var(--color-label-sapphire-bg);
-  color: var(--color-label-sapphire);
+  color: var(--color-label-sapphire-badge-text, var(--color-label-sapphire));
 }
 
 .card__label--lapis {
   background: var(--color-label-lapis-bg);
-  color: var(--color-label-lapis);
+  color: var(--color-label-lapis-badge-text, var(--color-label-lapis));
 }
 
 .card__label--amethyst {
@@ -1007,6 +1012,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  border: 1px solid var(--color-border);
 }
 
 .label-color-swatch-grid {
@@ -1019,7 +1025,11 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid transparent;
+  /* Always visible, not just on selection: morion (dark neutral) and
+     selenite (pale neutral) are tuned close to the app's own surface
+     colors, and without a standing border either could blend into the
+     dialog background before the user ever selects it. */
+  border: 1.5px solid var(--color-border);
   padding: 0;
   cursor: pointer;
 }
@@ -1038,34 +1048,9 @@
   background: var(--color-label-amber);
 }
 
-.label-picker-dialog__dot--citrine,
-.label-color-swatch--citrine {
-  background: var(--color-label-citrine);
-}
-
-.label-picker-dialog__dot--peridot,
-.label-color-swatch--peridot {
-  background: var(--color-label-peridot);
-}
-
 .label-picker-dialog__dot--emerald,
 .label-color-swatch--emerald {
   background: var(--color-label-emerald);
-}
-
-.label-picker-dialog__dot--jade,
-.label-color-swatch--jade {
-  background: var(--color-label-jade);
-}
-
-.label-picker-dialog__dot--turquoise,
-.label-color-swatch--turquoise {
-  background: var(--color-label-turquoise);
-}
-
-.label-picker-dialog__dot--aquamarine,
-.label-color-swatch--aquamarine {
-  background: var(--color-label-aquamarine);
 }
 
 .label-picker-dialog__dot--sapphire,
@@ -1078,6 +1063,26 @@
   background: var(--color-label-lapis);
 }
 
+.label-picker-dialog__dot--morion,
+.label-color-swatch--morion {
+  background: var(--color-label-morion);
+}
+
+.label-picker-dialog__dot--citrine,
+.label-color-swatch--citrine {
+  background: var(--color-label-citrine);
+}
+
+.label-picker-dialog__dot--sphene,
+.label-color-swatch--sphene {
+  background: var(--color-label-sphene);
+}
+
+.label-picker-dialog__dot--aquamarine,
+.label-color-swatch--aquamarine {
+  background: var(--color-label-aquamarine);
+}
+
 .label-picker-dialog__dot--amethyst,
 .label-color-swatch--amethyst {
   background: var(--color-label-amethyst);
@@ -1086,4 +1091,9 @@
 .label-picker-dialog__dot--morganite,
 .label-color-swatch--morganite {
   background: var(--color-label-morganite);
+}
+
+.label-picker-dialog__dot--selenite,
+.label-color-swatch--selenite {
+  background: var(--color-label-selenite);
 }

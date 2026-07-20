@@ -358,7 +358,7 @@ describe("addLabelDefinition", () => {
     const board = makeBoard({ labels: [makeLabel({ name: "ui" })] });
 
     const act = () =>
-      addLabelDefinition(board, makeLabel({ name: "ui", color: "jade" }));
+      addLabelDefinition(board, makeLabel({ name: "ui", color: "amber" }));
 
     expect(act).toThrow(LabelAlreadyExistsError);
   });
@@ -424,7 +424,7 @@ describe("renameLabelDefinition", () => {
 
 describe("setLabelColor", () => {
   it("changes only the color, keeping other entries untouched", () => {
-    const untouched = makeLabel({ name: "docs", color: "jade" });
+    const untouched = makeLabel({ name: "docs", color: "amber" });
     const board = makeBoard({
       labels: [makeLabel({ name: "ui", color: "ruby" }), untouched],
     });
