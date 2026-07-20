@@ -7,6 +7,8 @@ import {
   CardAlreadyExistsError,
   containsCardPath,
   moveCard as moveCardDomain,
+  removeColumn as removeColumnDomain,
+  renameColumn as renameColumnDomain,
 } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import {
@@ -36,6 +38,8 @@ export interface BoardState {
   openBoard: (path: string) => Promise<void>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
   addColumn: (name: string) => void;
+  renameColumn: (columnId: string, name: string) => void;
+  removeColumn: (columnId: string) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
   retrySave: () => void;
@@ -142,6 +146,30 @@ export function createBoardStore(
           name: trimmedName,
           cards: [],
         });
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      renameColumn: (columnId: string, name: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const trimmedName = name.trim();
+        // The inline rename UI reverts blank input instead of submitting it;
+        // this guard is a defense line, so it silently no-ops.
+        if (trimmedName === "") return;
+        const column = board.columns.find((c) => c.id === columnId);
+        if (column && column.name === trimmedName) return;
+        const nextBoard = renameColumnDomain(board, columnId, trimmedName);
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      removeColumn: (columnId: string) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        // The delete action is disabled for non-empty columns; this guard is
+        // a defense line, so it silently no-ops.
+        const column = board.columns.find((c) => c.id === columnId);
+        if (column && column.cards.length > 0) return;
+        const nextBoard = removeColumnDomain(board, columnId);
         set({ board: nextBoard });
         saveQueue.save(path, nextBoard);
       },

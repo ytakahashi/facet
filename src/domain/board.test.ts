@@ -6,6 +6,8 @@ import {
   CardAlreadyExistsError,
   containsCardPath,
   moveCard,
+  removeColumn,
+  renameColumn,
 } from "./board.ts";
 import type { Card } from "./card.ts";
 
@@ -214,6 +216,73 @@ describe("addColumn", () => {
     const act = () => addColumn(board, makeColumn({ id: "blank", name: "  " }));
 
     expect(act).toThrow("Column name must not be empty");
+  });
+});
+
+describe("renameColumn", () => {
+  it("changes only the name, keeping the id and the cards reference", () => {
+    const cards = [makeCard()];
+    const untouched = makeColumn({ id: "done" });
+    const board = makeBoard({
+      columns: [makeColumn({ id: "doing", name: "Doing", cards }), untouched],
+    });
+
+    const result = renameColumn(board, "doing", "In Progress");
+
+    expect(result.columns[0].id).toBe("doing");
+    expect(result.columns[0].name).toBe("In Progress");
+    expect(result.columns[0].cards).toBe(cards);
+    expect(result.columns[1]).toBe(untouched);
+    expect(board.columns[0].name).toBe("Doing");
+  });
+
+  it("rejects a blank name", () => {
+    const board = makeBoard({ columns: [makeColumn({ id: "doing" })] });
+
+    const act = () => renameColumn(board, "doing", "  ");
+
+    expect(act).toThrow("Column name must not be empty");
+  });
+
+  it("rejects an unknown column", () => {
+    const board = makeBoard({ columns: [makeColumn({ id: "doing" })] });
+
+    const act = () => renameColumn(board, "missing", "New name");
+
+    expect(act).toThrow("Unknown column: missing");
+  });
+});
+
+describe("removeColumn", () => {
+  it("removes an empty column without changing other columns", () => {
+    const untouched = makeColumn({ id: "doing", cards: [makeCard()] });
+    const board = makeBoard({
+      columns: [untouched, makeColumn({ id: "done" })],
+    });
+
+    const result = removeColumn(board, "done");
+
+    expect(result.columns).toEqual([untouched]);
+    expect(result.columns[0]).toBe(untouched);
+    expect(board.columns).toHaveLength(2);
+  });
+
+  it("rejects a column that still holds cards", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ id: "doing", cards: [makeCard()] })],
+    });
+
+    const act = () => removeColumn(board, "doing");
+
+    expect(act).toThrow("Column is not empty: doing");
+  });
+
+  it("rejects an unknown column", () => {
+    const board = makeBoard({ columns: [makeColumn({ id: "doing" })] });
+
+    const act = () => removeColumn(board, "missing");
+
+    expect(act).toThrow("Unknown column: missing");
   });
 });
 

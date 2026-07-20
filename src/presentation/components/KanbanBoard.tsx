@@ -9,6 +9,8 @@ import { AddColumn } from "./AddColumn.tsx";
 
 export function KanbanBoard({ board }: { board: Board }) {
   const moveCard = useBoardStore((state) => state.moveCard);
+  const renameColumn = useBoardStore((state) => state.renameColumn);
+  const removeColumn = useBoardStore((state) => state.removeColumn);
   const saveError = useBoardStore((state) => state.saveError);
   const retrySave = useBoardStore((state) => state.retrySave);
   const boardPath = useBoardStore((state) => state.path);
@@ -52,6 +54,8 @@ export function KanbanBoard({ board }: { board: Board }) {
               setAddToColumnId(columnId);
               setIsAddCardOpen(true);
             }}
+            onRename={renameColumn}
+            onRemove={removeColumn}
           />
         ))}
         <AddColumn />

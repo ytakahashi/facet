@@ -188,9 +188,37 @@
 .column__name {
   font-size: 15px;
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.column__name-button {
+  display: block;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.column__name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 1px 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .column__header {
@@ -201,15 +229,33 @@
   margin-bottom: 12px;
 }
 
-.column__header button {
+.column__actions {
+  display: flex;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+.column__actions button {
   padding: 3px 7px;
   border: 1px solid var(--color-border);
   border-radius: 5px;
-  background: var(--color-bg);
+  background: var(--color-surface-raised);
   color: var(--color-text);
   cursor: pointer;
   font-size: 11px;
+}
+
+.column__actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.column__actions .column__add-card {
+  color: var(--color-accent);
+}
+
+.column__add-card:hover {
+  background: var(--color-accent-bg);
 }
 
 .column__cards {
@@ -238,12 +284,12 @@
   border: 1px dashed var(--color-border);
   border-radius: 8px;
   background: none;
-  color: var(--color-text);
+  color: var(--color-accent);
   cursor: pointer;
 }
 
 .add-column__open:hover {
-  background: var(--color-surface);
+  background: var(--color-accent-bg);
 }
 
 .add-column__form {
@@ -260,7 +306,7 @@
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-bg);
+  background: var(--color-surface-raised);
   color: var(--color-text-strong);
   box-sizing: border-box;
   font: inherit;
@@ -276,7 +322,7 @@
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-bg);
+  background: var(--color-surface-raised);
   color: var(--color-text-strong);
   font-size: 12px;
   cursor: pointer;
@@ -288,7 +334,7 @@
 }
 
 .card {
-  background: var(--color-bg);
+  background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 10px 12px;
@@ -399,7 +445,7 @@
   box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   color: var(--color-text);
 }
 
@@ -443,7 +489,7 @@
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   color: var(--color-text-strong);
   box-sizing: border-box;
   font: inherit;
@@ -481,7 +527,7 @@
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   color: var(--color-text-strong);
   cursor: pointer;
 }

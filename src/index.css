@@ -4,6 +4,11 @@
   --color-bg: #faf9fb;
   --color-border: #eae5d8;
   --color-surface: #f5f2ed;
+  /* Elements sitting on a surface (cards, buttons, inputs). Keeps the
+     elevation order bg < surface < raised in both themes; reusing
+     --color-bg for these inverts the order in dark mode, where the
+     background is darker than the surfaces, and they read as holes. */
+  --color-surface-raised: #ffffff;
   --color-accent: #68598a;
   --color-accent-bg: rgba(104, 89, 138, 0.08);
   --color-accent-warm: #c58f3c;
@@ -34,12 +39,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-text: #847e8b;
+    --color-text: #938c9c;
     --color-text-strong: #c7bfcd;
-    --color-bg: #040306;
-    --color-border: #211b15;
-    --color-surface: #131018;
-    --color-accent: #8675a9;
+    --color-bg: #0b0910;
+    --color-border: #2b2317;
+    --color-surface: #17131e;
+    --color-surface-raised: #211c2a;
+    /* Lifted from the light-mode hue so it stays readable as small
+       button text on dark surfaces. */
+    --color-accent: #9284b3;
     --color-accent-bg: rgba(134, 117, 169, 0.12);
     --color-accent-warm: #dca54c;
     --color-accent-warm-bg: rgba(220, 165, 76, 0.12);

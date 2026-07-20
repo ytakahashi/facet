@@ -3,13 +3,16 @@ import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element
 import type { Column as ColumnModel } from "../../domain/board.ts";
 import type { ColumnDropData } from "./dragData.ts";
 import { Card } from "./Card.tsx";
+import { ColumnHeader } from "./ColumnHeader.tsx";
 
 interface ColumnProps {
   column: ColumnModel;
   onAddCard: (columnId: string) => void;
+  onRename: (columnId: string, name: string) => void;
+  onRemove: (columnId: string) => void;
 }
 
-export function Column({ column, onAddCard }: ColumnProps) {
+export function Column({ column, onAddCard, onRename, onRemove }: ColumnProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isDraggedOver, setIsDraggedOver] = useState(false);
 
@@ -31,12 +34,12 @@ export function Column({ column, onAddCard }: ColumnProps) {
 
   return (
     <div className="column">
-      <div className="column__header">
-        <h2 className="column__name" title={column.name}>{column.name}</h2>
-        <button type="button" onClick={() => onAddCard(column.id)}>
-          + Add card
-        </button>
-      </div>
+      <ColumnHeader
+        column={column}
+        onAddCard={onAddCard}
+        onRename={onRename}
+        onRemove={onRemove}
+      />
       <div
         ref={ref}
         className={`column__cards${

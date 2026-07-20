@@ -63,6 +63,45 @@ export function addColumn(board: Board, column: Column): Board {
   return { ...board, columns: [...board.columns, column] };
 }
 
+// Expects a trimmed, non-empty name; the blank-name check is an invariant
+// guard (the inline rename UI reverts blank input instead of submitting it).
+export function renameColumn(
+  board: Board,
+  columnId: string,
+  name: string,
+): Board {
+  if (name.trim() === "") {
+    throw new Error("Column name must not be empty");
+  }
+  let found = false;
+  const columns = board.columns.map((column) => {
+    if (column.id !== columnId) return column;
+    found = true;
+    return { ...column, name };
+  });
+  if (!found) {
+    throw new Error(`Unknown column: ${columnId}`);
+  }
+  return { ...board, columns };
+}
+
+// Refuses to remove a column that still holds cards: card references carry
+// user data (priority, labels, order), and no code path may drop them
+// silently. The UI keeps the delete action disabled for non-empty columns.
+export function removeColumn(board: Board, columnId: string): Board {
+  const column = board.columns.find((c) => c.id === columnId);
+  if (!column) {
+    throw new Error(`Unknown column: ${columnId}`);
+  }
+  if (column.cards.length > 0) {
+    throw new Error(`Column is not empty: ${columnId}`);
+  }
+  return {
+    ...board,
+    columns: board.columns.filter((c) => c.id !== columnId),
+  };
+}
+
 // `to.index` is always "the index as currently seen in the destination
 // column" (append-to-end is expressed as Infinity, which Array.prototype
 // .splice clamps to the array length). When from/to are the same column,
