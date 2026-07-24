@@ -22,7 +22,7 @@ function App() {
       {status === "loaded" && board
         ? (
           <div className="board-workspace">
-            <FilterSidebar />
+            <FilterSidebar board={board} />
             <KanbanBoard board={board} />
             {markdownStatus !== "idle" && <MarkdownViewer />}
           </div>

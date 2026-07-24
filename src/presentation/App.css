@@ -231,6 +231,29 @@
   flex-wrap: wrap;
 }
 
+.filter-sidebar__section + .filter-sidebar__section {
+  margin-top: 20px;
+}
+
+.label-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label-filter-list__option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.label-filter-list__empty {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 12px;
+}
+
 .kanban-board {
   flex-grow: 1;
   display: flex;
