@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Board } from "../../domain/board.ts";
 import type { LabelColor } from "../../domain/label.ts";
-import { useBoardStore } from "../context/appContext.ts";
+import { useBoardStore, useFilterStore } from "../context/appContext.ts";
 import { resolveMove } from "./resolveMove.ts";
 import { Column } from "./Column.tsx";
 import { AddCardDialog } from "./AddCardDialog.tsx";
@@ -17,6 +17,7 @@ export function KanbanBoard({ board }: { board: Board }) {
   const saveError = useBoardStore((state) => state.saveError);
   const retrySave = useBoardStore((state) => state.retrySave);
   const boardPath = useBoardStore((state) => state.path);
+  const criteria = useFilterStore((state) => state.criteria);
   // Keep the last-targeted column around after closing so the dialog stays
   // mounted and its `open` prop can toggle through a real dialog.close() —
   // unmounting on every close bypasses the browser's native focus restore.
@@ -65,6 +66,7 @@ export function KanbanBoard({ board }: { board: Board }) {
         {board.columns.map((column) => (
           <Column
             column={column}
+            criteria={criteria}
             key={column.id}
             labelColors={labelColors}
             onAddCard={(columnId) => {

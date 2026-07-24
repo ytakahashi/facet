@@ -4,6 +4,7 @@ import {
   useNewBoardDialog,
 } from "./context/appContext.ts";
 import { DirectoryBrowser } from "./components/DirectoryBrowser.tsx";
+import { FilterSidebar } from "./components/FilterSidebar.tsx";
 import { KanbanBoard } from "./components/KanbanBoard.tsx";
 import { MarkdownViewer } from "./components/MarkdownViewer.tsx";
 import { NewBoardDialog } from "./components/NewBoardDialog.tsx";
@@ -21,6 +22,7 @@ function App() {
       {status === "loaded" && board
         ? (
           <div className="board-workspace">
+            <FilterSidebar />
             <KanbanBoard board={board} />
             {markdownStatus !== "idle" && <MarkdownViewer />}
           </div>

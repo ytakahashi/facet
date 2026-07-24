@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 import type { StoreApi, UseBoundStore } from "zustand";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import type { BoardState } from "../store/boardStore.ts";
+import type { FilterState } from "../store/filterStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import type { NewBoardDialogState } from "../store/newBoardDialogStore.ts";
 
@@ -23,6 +24,7 @@ export interface RecentBoards {
 export interface AppDependencies {
   boardStore: UseBoundStore<StoreApi<BoardState>>;
   directoryBrowsing: DirectoryBrowsing;
+  filterStore: UseBoundStore<StoreApi<FilterState>>;
   markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
   newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
   recentBoards: RecentBoards;
@@ -46,6 +48,10 @@ export function useBoardStore<T>(selector: (state: BoardState) => T): T {
 
 export function useDirectoryBrowsing(): DirectoryBrowsing {
   return useAppDependencies().directoryBrowsing;
+}
+
+export function useFilterStore<T>(selector: (state: FilterState) => T): T {
+  return useAppDependencies().filterStore(selector);
 }
 
 export function useMarkdownViewer<T>(

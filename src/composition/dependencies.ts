@@ -14,6 +14,7 @@ import { createMarkdownCard } from "../usecase/createMarkdownCard.ts";
 import { addExistingMarkdownCard } from "../usecase/addExistingMarkdownCard.ts";
 import type { AppDependencies } from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
+import { createFilterStore } from "../presentation/store/filterStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
 
@@ -54,6 +55,7 @@ export const appDependencies: AppDependencies = {
     createDirectory: (parentDirectory, name) =>
       createBoardDirectory(parentDirectory, name, { fileSystem }),
   },
+  filterStore: createFilterStore(),
   markdownViewer: createMarkdownViewerStore(
     (path) => viewMarkdown(path, { fileSystem }),
     (path, content) => saveMarkdown(path, content, { fileSystem }),

@@ -5,12 +5,15 @@ const PRIORITIES: Priority[] = ["low", "medium", "high"];
 interface PriorityPickerProps {
   priority: Priority | undefined;
   onChange: (priority: Priority | undefined) => void;
+  emptyLabel?: string;
 }
 
-// Fixed 4-option segment (None + the 3 Priority values). Selection commits
-// immediately, so unlike CardTitle/ColumnHeader there is no local editing
-// state to hold.
-export function PriorityPicker({ priority, onChange }: PriorityPickerProps) {
+// Fixed 4-option segment (an unset option + the 3 Priority values). Selection
+// commits immediately, so unlike CardTitle/ColumnHeader there is no local
+// editing state to hold.
+export function PriorityPicker(
+  { priority, onChange, emptyLabel = "None" }: PriorityPickerProps,
+) {
   return (
     <div className="priority-picker" role="group" aria-label="Priority">
       <button
@@ -19,7 +22,7 @@ export function PriorityPicker({ priority, onChange }: PriorityPickerProps) {
         aria-pressed={priority === undefined}
         onClick={() => onChange(undefined)}
       >
-        None
+        {emptyLabel}
       </button>
       {PRIORITIES.map((option) => (
         <button
