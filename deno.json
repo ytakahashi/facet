@@ -2,7 +2,10 @@
   "desktop": {
     "app": {
       "name": "Facet",
-      "identifier": "net.ytakahashi.facet"
+      "identifier": "net.ytakahashi.facet",
+      "icons": {
+        "macos": "./public/icon.icns"
+      }
     },
     "backend": "webview"
   },
