@@ -254,6 +254,33 @@
   font-size: 12px;
 }
 
+.column-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.column-filter-list__option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.column-filter-list__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.column-filter-list__empty {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 12px;
+}
+
 .kanban-board {
   flex-grow: 1;
   display: flex;
@@ -425,7 +452,14 @@
   background: var(--color-accent-warm-bg);
 }
 
-.column__empty-filter-note {
+/* Border only, no background: this can be combined with --dragged-over,
+   which is the one that owns the background. */
+.column__cards--hidden {
+  border: 1px dashed var(--color-border);
+}
+
+.column__empty-filter-note,
+.column__hidden-note {
   margin: 0;
   padding: 8px 4px;
   color: var(--color-text);

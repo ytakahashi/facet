@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { Board } from "../../domain/board.ts";
 import { isCardFilterActive } from "../../domain/cardFilter.ts";
 import { useBoardStore, useFilterStore } from "../context/appContext.ts";
+import { ColumnFilterList } from "./ColumnFilterList.tsx";
 import { LabelFilterList } from "./LabelFilterList.tsx";
 import { PriorityPicker } from "./PriorityPicker.tsx";
 
@@ -11,6 +12,9 @@ export function FilterSidebar({ board }: { board: Board }) {
   const isSidebarOpen = useFilterStore((state) => state.isSidebarOpen);
   const toggleSidebar = useFilterStore((state) => state.toggleSidebar);
   const toggleLabel = useFilterStore((state) => state.toggleLabel);
+  const toggleColumnVisibility = useFilterStore(
+    (state) => state.toggleColumnVisibility,
+  );
   const setPriority = useFilterStore((state) => state.setPriority);
   const syncLabels = useFilterStore((state) => state.syncLabels);
   const clear = useFilterStore((state) => state.clear);
@@ -48,7 +52,7 @@ export function FilterSidebar({ board }: { board: Board }) {
       <div className="filter-sidebar__header">
         <h2>Filters</h2>
         <div className="filter-sidebar__actions">
-          {isCardFilterActive(criteria) && (
+          {isCardFilterActive(board, criteria) && (
             <button
               type="button"
               className="filter-sidebar__clear"
@@ -82,6 +86,14 @@ export function FilterSidebar({ board }: { board: Board }) {
           labels={board.labels}
           selected={criteria.labels}
           onToggle={toggleLabel}
+        />
+      </section>
+      <section className="filter-sidebar__section">
+        <h3 className="filter-sidebar__section-title">Columns</h3>
+        <ColumnFilterList
+          columns={board.columns}
+          hiddenColumnIds={criteria.hiddenColumnIds}
+          onToggle={toggleColumnVisibility}
         />
       </section>
     </aside>

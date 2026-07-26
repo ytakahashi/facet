@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Column as ColumnModel } from "../../domain/board.ts";
 import {
+  areColumnCardsHidden,
   type CardFilterCriteria,
-  filterCardsPreservingIndex,
-  isCardFilterActive,
+  filterColumnCards,
 } from "../../domain/cardFilter.ts";
 import type { LabelColor } from "../../domain/label.ts";
 import type { ColumnDropData } from "./dragData.ts";
@@ -25,7 +25,14 @@ export function Column(
 ) {
   const ref = useRef<HTMLDivElement>(null);
   const [isDraggedOver, setIsDraggedOver] = useState(false);
-  const visibleCards = filterCardsPreservingIndex(column.cards, criteria);
+  const visibleCards = filterColumnCards(column, criteria);
+  const areCardsHidden = areColumnCardsHidden(column, criteria);
+  const cardCount = column.cards.length;
+  const cardsClassName = [
+    "column__cards",
+    areCardsHidden ? "column__cards--hidden" : "",
+    isDraggedOver ? "column__cards--dragged-over" : "",
+  ].filter(Boolean).join(" ");
 
   useEffect(() => {
     const element = ref.current;
@@ -51,12 +58,7 @@ export function Column(
         onRename={onRename}
         onRemove={onRemove}
       />
-      <div
-        ref={ref}
-        className={`column__cards${
-          isDraggedOver ? " column__cards--dragged-over" : ""
-        }`}
-      >
+      <div ref={ref} className={cardsClassName}>
         {visibleCards.map(({ card, index }) => (
           <Card
             card={card}
@@ -66,12 +68,23 @@ export function Column(
             labelColors={labelColors}
           />
         ))}
-        {visibleCards.length === 0 && column.cards.length > 0 &&
-          isCardFilterActive(criteria) && (
-          <p className="column__empty-filter-note">
-            No cards match the filter
-          </p>
-        )}
+        {
+          /* A card dropped into a hidden column vanishes on the spot, so the
+            note carries the count: watching it grow is the only feedback
+            that the drop landed. Cards can still only disappear here through
+            an active filter, which is why neither branch re-checks that. */
+        }
+        {areCardsHidden
+          ? cardCount > 0 && (
+            <p className="column__hidden-note">
+              {cardCount === 1 ? "1 card hidden" : `${cardCount} cards hidden`}
+            </p>
+          )
+          : visibleCards.length === 0 && cardCount > 0 && (
+            <p className="column__empty-filter-note">
+              No cards match the filter
+            </p>
+          )}
       </div>
     </div>
   );
