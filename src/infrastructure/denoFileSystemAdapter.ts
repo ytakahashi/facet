@@ -44,6 +44,15 @@ export class DenoFileSystemAdapter implements FileSystemPort {
     });
   }
 
+  async removeFile(path: string): Promise<void> {
+    return runFileSystemOperation("remove-file", path, async () => {
+      const result = await bindings.removeFile(path);
+      if (!result.removed) {
+        throw new FileSystemError(result.reason, "remove-file", path);
+      }
+    });
+  }
+
   readDir(path: string): Promise<DirEntry[]> {
     return runFileSystemOperation(
       "read-directory",

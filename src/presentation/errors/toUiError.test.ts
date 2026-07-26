@@ -79,6 +79,31 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps a Markdown delete failure to a message naming the file", () => {
+    const error = new UseCaseError(
+      "markdown.delete-failed",
+      { path: "/board/improve-search.md" },
+      { cause: new Error("Permission denied") },
+    );
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message:
+        "Failed to delete the Markdown file at /board/improve-search.md.",
+    });
+  });
+
+  it("maps a mid-operation board change to an operation-independent message", () => {
+    const error = new UseCaseError("card.board-changed");
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "The board changed. Reopen the board and try again.",
+    });
+  });
+
   it("maps a duplicate label name to the label name field", () => {
     const error = new UseCaseError("label.already-exists", { name: "ui" });
 

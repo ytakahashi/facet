@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { findCardByPath } from "../../domain/board.ts";
 import { useBoardStore, useMarkdownViewer } from "../context/appContext.ts";
+import { isCardSaving, isMarkdownDirty } from "../store/markdownViewerStore.ts";
 import { CardTitle } from "./CardTitle.tsx";
 import { LabelPickerDialog } from "./LabelPickerDialog.tsx";
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
@@ -10,9 +11,14 @@ export function MarkdownViewer() {
   const status = useMarkdownViewer((state) => state.status);
   const selectedPath = useMarkdownViewer((state) => state.selectedPath);
   const draft = useMarkdownViewer((state) => state.draft);
-  const content = useMarkdownViewer((state) => state.content);
+  const isDirty = useMarkdownViewer(isMarkdownDirty);
   const error = useMarkdownViewer((state) => state.error);
-  const isSaving = useMarkdownViewer((state) => state.isSaving);
+  // Scoped to the open card: a write still running for a card the user has
+  // since navigated away from must not label this card's button "Saving…".
+  const isSaving = useMarkdownViewer((state) =>
+    state.selectedPath !== undefined &&
+    isCardSaving(state, state.selectedPath)
+  );
   const saveError = useMarkdownViewer((state) => state.saveError);
   const updateDraft = useMarkdownViewer((state) => state.updateDraft);
   const save = useMarkdownViewer((state) => state.save);
@@ -32,8 +38,6 @@ export function MarkdownViewer() {
     : undefined;
 
   const [isLabelPickerOpen, setIsLabelPickerOpen] = useState(false);
-
-  const isDirty = draft !== undefined && draft !== content;
 
   return (
     <div className="markdown-viewer">

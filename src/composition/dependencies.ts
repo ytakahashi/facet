@@ -10,6 +10,7 @@ import { openBoard as openBoardUseCase } from "../usecase/openBoard.ts";
 import { saveBoard } from "../usecase/saveBoard.ts";
 import { viewMarkdown } from "../usecase/viewMarkdown.ts";
 import { saveMarkdown } from "../usecase/saveMarkdown.ts";
+import { deleteMarkdown } from "../usecase/deleteMarkdown.ts";
 import { createMarkdownCard } from "../usecase/createMarkdownCard.ts";
 import { addExistingMarkdownCard } from "../usecase/addExistingMarkdownCard.ts";
 import type { AppDependencies } from "../presentation/context/appContext.ts";
@@ -34,8 +35,8 @@ async function refreshRecentMenu(): Promise<void> {
 }
 
 export const appDependencies: AppDependencies = {
-  boardStore: createBoardStore(
-    async (path) => {
+  boardStore: createBoardStore({
+    openBoard: async (path) => {
       const board = await openBoardUseCase(path, {
         boardRepository,
         configRepository,
@@ -44,11 +45,13 @@ export const appDependencies: AppDependencies = {
       void refreshRecentMenu();
       return board;
     },
-    (path, board) => saveBoard(path, board, { boardRepository }),
-    (input) => createMarkdownCard(input, { fileSystem }),
-    (input) => addExistingMarkdownCard(input, { fileSystem }),
-    (input) => createBoard(input, { fileSystem, boardRepository }),
-  ),
+    saveBoard: (path, board) => saveBoard(path, board, { boardRepository }),
+    createMarkdownCard: (input) => createMarkdownCard(input, { fileSystem }),
+    addExistingMarkdownCard: (input) =>
+      addExistingMarkdownCard(input, { fileSystem }),
+    createBoard: (input) => createBoard(input, { fileSystem, boardRepository }),
+    deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
+  }),
   directoryBrowsing: {
     listDirectory: (path) => listDirectory(path, { fileSystem }),
     homeDirectory: () => getHomeDirectory({ fileSystem }),

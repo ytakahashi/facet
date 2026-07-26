@@ -222,6 +222,31 @@ export function removeLabelFromCard(
   return { ...board, columns };
 }
 
+// Drops only the board's reference to the card. Whether the Markdown file
+// itself is deleted is decided one layer up, where the file I/O lives, so this
+// stays a pure board transformation like the other card operations.
+// Labels the card used are left in the registry: the registry is the board's
+// vocabulary, independent of how many cards currently use a name.
+export function removeCard(board: Board, cardPath: string): Board {
+  const normalizedPath = normalizeCardPath(cardPath);
+  let found = false;
+  const columns = board.columns.map((column) => {
+    const index = column.cards.findIndex((c) =>
+      normalizeCardPath(c.path) === normalizedPath
+    );
+    if (index === -1) return column;
+    found = true;
+    return {
+      ...column,
+      cards: column.cards.filter((_, i) => i !== index),
+    };
+  });
+  if (!found) {
+    throw new Error(`Unknown card: ${cardPath}`);
+  }
+  return { ...board, columns };
+}
+
 // Expects a validated column: the caller generates a fresh id and trims the
 // name. The checks below are invariant guards, not user-facing validation.
 // Id uniqueness is still asserted here because hand-written ids from existing

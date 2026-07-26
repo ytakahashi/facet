@@ -12,6 +12,7 @@ import {
   findLabelDefinition,
   LabelAlreadyExistsError,
   moveCard,
+  removeCard,
   removeColumn,
   removeLabelDefinition,
   removeLabelFromCard,
@@ -625,6 +626,64 @@ describe("renameColumn", () => {
     const act = () => renameColumn(board, "missing", "New name");
 
     expect(act).toThrow("Unknown column: missing");
+  });
+});
+
+describe("removeCard", () => {
+  it("removes only the target card and keeps the other columns", () => {
+    const a = makeCard({ path: "a.md" });
+    const b = makeCard({ path: "b.md" });
+    const untouched = makeColumn({ id: "done", cards: [b] });
+    const board = makeBoard({
+      columns: [makeColumn({ id: "doing", cards: [a] }), untouched],
+    });
+
+    const result = removeCard(board, "a.md");
+
+    expect(result.columns[0].cards).toEqual([]);
+    expect(result.columns[1]).toBe(untouched);
+    expect(board.columns[0].cards).toEqual([a]);
+  });
+
+  it("matches a card through an equivalent path", () => {
+    const a = makeCard({ path: "a.md" });
+    const b = makeCard({ path: "notes/b.md" });
+    const board = makeBoard({
+      columns: [makeColumn({ id: "doing", cards: [a, b] })],
+    });
+
+    const result = removeCard(board, "./a.md");
+
+    expect(result.columns[0].cards).toEqual([b]);
+  });
+
+  it("rejects an unknown card", () => {
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "doing", cards: [makeCard({ path: "a.md" })] }),
+      ],
+    });
+
+    const act = () => removeCard(board, "missing.md");
+
+    expect(act).toThrow("Unknown card: missing.md");
+  });
+
+  it("keeps the labels the removed card used in the registry", () => {
+    const labels = [makeLabel({ name: "ui" }), makeLabel({ name: "bug" })];
+    const board = makeBoard({
+      labels,
+      columns: [
+        makeColumn({
+          id: "doing",
+          cards: [makeCard({ path: "a.md", labels: ["ui", "bug"] })],
+        }),
+      ],
+    });
+
+    const result = removeCard(board, "a.md");
+
+    expect(result.labels).toEqual(labels);
   });
 });
 

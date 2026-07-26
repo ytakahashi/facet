@@ -24,6 +24,10 @@ class FakeFileSystemPort implements FileSystemPort {
     throw new Error("not needed for this test");
   }
 
+  removeFile(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
+
   readDir(): Promise<DirEntry[]> {
     throw new Error("not needed for this test");
   }

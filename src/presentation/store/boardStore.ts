@@ -12,6 +12,7 @@ import {
   findLabelDefinition,
   LabelAlreadyExistsError,
   moveCard as moveCardDomain,
+  removeCard as removeCardDomain,
   removeColumn as removeColumnDomain,
   removeLabelDefinition as removeLabelDefinitionDomain,
   removeLabelFromCard as removeLabelFromCardDomain,
@@ -67,6 +68,7 @@ export interface BoardState {
   removeLabel: (name: string) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
+  removeCard: (path: string, options: RemoveCardOptions) => Promise<void>;
   retrySave: () => void;
 }
 
@@ -82,6 +84,10 @@ export interface ExistingCardInput {
   absolutePath: string;
 }
 
+export interface RemoveCardOptions {
+  deleteFile: boolean;
+}
+
 export type OpenBoard = (path: string) => Promise<Board>;
 export type CreateBoard = (input: CreateBoardInput) => Promise<string>;
 export type { SaveBoard };
@@ -91,14 +97,28 @@ export type CreateMarkdownCard = (
 export type AddExistingMarkdownCard = (
   input: AddExistingMarkdownCardInput,
 ) => Promise<Card>;
+export type DeleteMarkdown = (path: string) => Promise<void>;
 
-export function createBoardStore(
-  openBoard: OpenBoard,
-  saveBoard: SaveBoard,
-  createMarkdownCard: CreateMarkdownCard,
-  addExistingMarkdownCard: AddExistingMarkdownCard,
-  createBoard: CreateBoard,
-): UseBoundStore<StoreApi<BoardState>> {
+// Named rather than positional: the store keeps gaining file-touching use
+// cases, and a list of same-shaped function arguments stops being readable at
+// the call site long before it stops type-checking.
+export interface BoardStoreDeps {
+  openBoard: OpenBoard;
+  saveBoard: SaveBoard;
+  createMarkdownCard: CreateMarkdownCard;
+  addExistingMarkdownCard: AddExistingMarkdownCard;
+  createBoard: CreateBoard;
+  deleteMarkdown: DeleteMarkdown;
+}
+
+export function createBoardStore({
+  openBoard,
+  saveBoard,
+  createMarkdownCard,
+  addExistingMarkdownCard,
+  createBoard,
+  deleteMarkdown,
+}: BoardStoreDeps): UseBoundStore<StoreApi<BoardState>> {
   return create<BoardState>((set, get) => {
     const saveQueue = createBoardSaveQueue(saveBoard, {
       onSaving: () => set({ isSaving: true, saveError: undefined }),
@@ -409,6 +429,44 @@ export function createBoardStore(
           absolutePath: input.absolutePath,
         });
         return appendCard(initial.path, input.columnId, card);
+      },
+      removeCard: async (
+        cardPath: string,
+        { deleteFile }: RemoveCardOptions,
+      ) => {
+        const initial = get();
+        if (!initial.board || !initial.path) {
+          // Invariant violation, not a recoverable user error: the delete
+          // action only exists on a card rendered from an open board.
+          throw new Error("Open a board before deleting a card.");
+        }
+        // DeleteCardDialog resolved this card from the board, so an unknown
+        // path means it is already gone - the caller's goal is met either way.
+        const card = findCardByPath(initial.board, cardPath);
+        if (!card) return;
+
+        if (deleteFile) {
+          if (!card.absolutePath) {
+            // Invariant violation: the dialog disables the file option for a
+            // card whose path never resolved inside the board directory.
+            throw new Error(`Card path is not resolvable: ${cardPath}`);
+          }
+          // The file goes first: if this fails the board keeps the card, which
+          // still points at a file that is still there, so the state matches
+          // exactly what it was before. The other order would drop the last
+          // reference to a file that failed to delete.
+          await deleteMarkdown(card.absolutePath);
+        }
+
+        const current = get();
+        if (!current.board || current.path !== initial.path) {
+          // The native menu stays clickable while a modal dialog is open, so
+          // Open Recent can swap the board mid-delete.
+          throw new UseCaseError("card.board-changed");
+        }
+        const nextBoard = removeCardDomain(current.board, cardPath);
+        set({ board: nextBoard });
+        saveQueue.save(current.path, nextBoard);
       },
       retrySave: () => {
         const { board, path } = get();

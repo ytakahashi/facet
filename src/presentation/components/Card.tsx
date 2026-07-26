@@ -19,9 +19,12 @@ interface CardProps {
   columnId: string;
   index: number;
   labelColors: Map<string, LabelColor>;
+  onDelete: (card: CardModel) => void;
 }
 
-export function Card({ card, columnId, index, labelColors }: CardProps) {
+export function Card(
+  { card, columnId, index, labelColors, onDelete }: CardProps,
+) {
   const isSelected = useMarkdownViewer((state) =>
     state.selectedPath === card.path
   );
@@ -74,6 +77,25 @@ export function Card({ card, columnId, index, labelColors }: CardProps) {
       className={classNames.join(" ")}
       onClick={() => void selectCard(card)}
     >
+      {
+        /* Revealed on hover/focus-within (see App.css) rather than shown on
+          every card, which would put a row of × down each column. It stays in
+          the DOM either way, so it is still reachable by keyboard. Starting a
+          drag from it just drags the card, which is harmless. */
+      }
+      <button
+        type="button"
+        className="card__delete"
+        aria-label={`Delete ${card.displayTitle}`}
+        title="Delete card"
+        onClick={(event) => {
+          // The card itself opens the Markdown on click.
+          event.stopPropagation();
+          onDelete(card);
+        }}
+      >
+        ×
+      </button>
       {card.priority && (
         <span className={`card__priority card__priority--${card.priority}`}>
           {card.priority}

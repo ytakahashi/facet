@@ -39,8 +39,10 @@ export function toUiError(error: unknown): UiError {
       return { message: `Failed to save the board${atPath(path)}.` };
     case "card.already-on-board":
       return { message: "This Markdown is already on this board." };
+    // Raised by every board-mutating flow that awaits file I/O first, so the
+    // wording stays independent of which operation was interrupted.
     case "card.board-changed":
-      return { message: "The board changed while the Markdown was created." };
+      return { message: "The board changed. Reopen the board and try again." };
     case "card.create-failed":
       return { message: `Failed to create the Markdown file${atPath(path)}.` };
     case "card.file-already-exists":
@@ -80,6 +82,8 @@ export function toUiError(error: unknown): UiError {
         message: "A label with this name already exists.",
         field: "labelName",
       };
+    case "markdown.delete-failed":
+      return { message: `Failed to delete the Markdown file${atPath(path)}.` };
     case "markdown.load-failed":
       return { message: `Failed to load the Markdown file${atPath(path)}.` };
     case "markdown.save-failed":

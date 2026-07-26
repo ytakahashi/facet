@@ -41,6 +41,30 @@ win.bind(
   },
 );
 
+// Deno.errors instances do not survive the binding boundary, so a missing file
+// is classified here and reported as data, the same way createTextFile reports
+// already-exists.
+// Deno.remove without `recursive` still removes an *empty* directory, and a
+// board.yaml can name one (a hand-written path, or a directory literally named
+// "foo.md"), so directories are rejected explicitly rather than left to the
+// missing `recursive` flag. lstat, not stat, so the check describes the path
+// itself; a symlink to a Markdown file stays removable.
+win.bind("removeFile", async (path: unknown) => {
+  try {
+    const info = await Deno.lstat(path as string);
+    if (info.isDirectory) {
+      return { removed: false, reason: "is-a-directory" } as const;
+    }
+    await Deno.remove(path as string);
+    return { removed: true } as const;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      return { removed: false, reason: "not-found" } as const;
+    }
+    throw error;
+  }
+});
+
 win.bind("readDir", async (path: unknown) => {
   const entries = [];
   for await (const entry of Deno.readDir(path as string)) {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Board } from "../../domain/board.ts";
+import type { Card as CardModel } from "../../domain/card.ts";
 import type { LabelColor } from "../../domain/label.ts";
 import { useBoardStore, useFilterStore } from "../context/appContext.ts";
 import { resolveMove } from "./resolveMove.ts";
@@ -8,6 +9,7 @@ import { Column } from "./Column.tsx";
 import { AddCardDialog } from "./AddCardDialog.tsx";
 import { AddColumn } from "./AddColumn.tsx";
 import { BoardName } from "./BoardName.tsx";
+import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 
 export function KanbanBoard({ board }: { board: Board }) {
   const moveCard = useBoardStore((state) => state.moveCard);
@@ -23,6 +25,11 @@ export function KanbanBoard({ board }: { board: Board }) {
   // unmounting on every close bypasses the browser's native focus restore.
   const [addToColumnId, setAddToColumnId] = useState<string>();
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
+  // Kept after closing for the same reason as addToColumnId. Holding the card
+  // itself rather than its path keeps the dialog renderable in the moment
+  // between a successful delete and the close taking effect.
+  const [deleteTarget, setDeleteTarget] = useState<CardModel>();
+  const [isDeleteCardOpen, setIsDeleteCardOpen] = useState(false);
   // Built once per registry change and threaded down to Card, rather than
   // having every Card re-scan board.labels itself for each of its labels.
   const labelColors = useMemo(
@@ -38,6 +45,8 @@ export function KanbanBoard({ board }: { board: Board }) {
     // target from the previous board into the newly loaded board.
     setIsAddCardOpen(false);
     setAddToColumnId(undefined);
+    setIsDeleteCardOpen(false);
+    setDeleteTarget(undefined);
   }, [boardPath]);
 
   useEffect(() => {
@@ -73,6 +82,10 @@ export function KanbanBoard({ board }: { board: Board }) {
               setAddToColumnId(columnId);
               setIsAddCardOpen(true);
             }}
+            onDeleteCard={(card) => {
+              setDeleteTarget(card);
+              setIsDeleteCardOpen(true);
+            }}
             onRename={renameColumn}
             onRemove={removeColumn}
           />
@@ -85,6 +98,13 @@ export function KanbanBoard({ board }: { board: Board }) {
           columnId={addToColumnId}
           open={isAddCardOpen}
           onClose={() => setIsAddCardOpen(false)}
+        />
+      )}
+      {deleteTarget && (
+        <DeleteCardDialog
+          card={deleteTarget}
+          open={isDeleteCardOpen}
+          onClose={() => setIsDeleteCardOpen(false)}
         />
       )}
     </div>

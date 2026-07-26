@@ -26,6 +26,7 @@ export type UseCaseErrorCode =
   | "directory.invalid-name"
   | "directory.name-required"
   | "label.already-exists"
+  | "markdown.delete-failed"
   | "markdown.load-failed"
   | "markdown.save-failed"
   | "recent-boards.load-failed";

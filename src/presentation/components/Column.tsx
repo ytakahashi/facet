@@ -6,6 +6,7 @@ import {
   type CardFilterCriteria,
   filterColumnCards,
 } from "../../domain/cardFilter.ts";
+import type { Card as CardModel } from "../../domain/card.ts";
 import type { LabelColor } from "../../domain/label.ts";
 import type { ColumnDropData } from "./dragData.ts";
 import { Card } from "./Card.tsx";
@@ -16,12 +17,21 @@ interface ColumnProps {
   criteria: CardFilterCriteria;
   labelColors: Map<string, LabelColor>;
   onAddCard: (columnId: string) => void;
+  onDeleteCard: (card: CardModel) => void;
   onRename: (columnId: string, name: string) => void;
   onRemove: (columnId: string) => void;
 }
 
 export function Column(
-  { column, criteria, labelColors, onAddCard, onRename, onRemove }: ColumnProps,
+  {
+    column,
+    criteria,
+    labelColors,
+    onAddCard,
+    onDeleteCard,
+    onRename,
+    onRemove,
+  }: ColumnProps,
 ) {
   const ref = useRef<HTMLDivElement>(null);
   const [isDraggedOver, setIsDraggedOver] = useState(false);
@@ -66,6 +76,7 @@ export function Column(
             index={index}
             key={card.path}
             labelColors={labelColors}
+            onDelete={onDeleteCard}
           />
         ))}
         {

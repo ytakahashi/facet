@@ -8,6 +8,7 @@ function makeFileSystem(
   return {
     readTextFile: vi.fn(),
     writeTextFile: vi.fn(),
+    removeFile: vi.fn(),
     createTextFile: vi.fn(),
     readDir: vi.fn(),
     homeDirectory: vi.fn(),

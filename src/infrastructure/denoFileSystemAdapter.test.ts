@@ -25,6 +25,62 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
+  it("maps a missing file reported by the remove binding to a typed file-system error", async () => {
+    vi.stubGlobal("bindings", {
+      removeFile: vi.fn().mockResolvedValue({
+        removed: false,
+        reason: "not-found",
+      }),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () => fileSystem.removeFile("/board/card.md");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "not-found",
+      operation: "remove-file",
+      path: "/board/card.md",
+    });
+  });
+
+  it("maps a directory reported by the remove binding to a typed file-system error", async () => {
+    vi.stubGlobal("bindings", {
+      removeFile: vi.fn().mockResolvedValue({
+        removed: false,
+        reason: "is-a-directory",
+      }),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () => fileSystem.removeFile("/board/notes.md");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "is-a-directory",
+      operation: "remove-file",
+      path: "/board/notes.md",
+    });
+  });
+
+  it("wraps a failing remove binding with operation context", async () => {
+    const cause = new Error("Permission denied");
+    vi.stubGlobal("bindings", {
+      removeFile: vi.fn().mockRejectedValue(cause),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () => fileSystem.removeFile("/board/card.md");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "operation-failed",
+      operation: "remove-file",
+      path: "/board/card.md",
+      cause,
+    });
+  });
+
   it("wraps raw binding failures with operation context", async () => {
     const cause = new Error("Permission denied");
     vi.stubGlobal("bindings", {
