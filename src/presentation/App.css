@@ -281,16 +281,23 @@
   font-size: 12px;
 }
 
+/* A fixed frame: the name and the save-error banner stay put and the column
+   row below them is what scrolls, so this pane itself never does. */
 .kanban-board {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   padding: 24px;
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
+/* flex-shrink: 0 because overflow: hidden also removes the automatic minimum
+   height that would otherwise keep this from being squeezed: as a flex item of
+   a fixed-height pane, it gets clipped mid-glyph once the columns are taller
+   than the pane. The same applies to the input and the banner below. */
 .kanban-board__name {
+  flex-shrink: 0;
   font-size: 24px;
   margin: 0 0 20px;
   min-width: 0;
@@ -315,6 +322,7 @@
 /* Mirrors the h1's font and bottom margin so toggling into editing does not
    shift the columns below. */
 .kanban-board__name-input {
+  flex-shrink: 0;
   width: min(480px, 100%);
   margin: 0 0 20px;
   padding: 1px 5px;
@@ -329,6 +337,7 @@
 }
 
 .kanban-board__save-error {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -348,14 +357,18 @@
   cursor: pointer;
 }
 
+/* The board's only scrolling region, on both axes: horizontally once the
+   in-app "Add column" flow grows the board past the window width (columns keep
+   their min-width instead of squeezing), vertically once a column outgrows the
+   window. min-height: 0 is what lets it shrink to the space the name leaves
+   and scroll inside it, rather than pushing the pane. */
 .kanban-board__columns {
   flex-grow: 1;
+  min-height: 0;
   display: flex;
   gap: 16px;
   align-items: flex-start;
-  /* Columns keep their min-width and the row scrolls once the in-app
-     "Add column" flow grows the board past the window width. */
-  overflow-x: auto;
+  overflow: auto;
 }
 
 .column {

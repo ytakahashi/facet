@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Board } from "../../domain/board.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
@@ -12,6 +13,7 @@ import { BoardName } from "./BoardName.tsx";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 
 export function KanbanBoard({ board }: { board: Board }) {
+  const columnsRef = useRef<HTMLDivElement>(null);
   const moveCard = useBoardStore((state) => state.moveCard);
   const renameBoard = useBoardStore((state) => state.renameBoard);
   const renameColumn = useBoardStore((state) => state.renameColumn);
@@ -49,6 +51,17 @@ export function KanbanBoard({ board }: { board: Board }) {
     setDeleteTarget(undefined);
   }, [boardPath]);
 
+  // Dragging near an edge scrolls the column row, so a card can be carried to
+  // a destination that is off-screen when the drag starts. That row is the
+  // board's only scrolling region (see App.css), so registering it covers both
+  // axes. No canScroll filter is passed: every drag may scroll it.
+  useEffect(() => {
+    const columnsElement = columnsRef.current;
+    if (!columnsElement) return;
+
+    return autoScrollForElements({ element: columnsElement });
+  }, []);
+
   useEffect(() => {
     return monitorForElements({
       onDrop({ source, location }) {
@@ -71,7 +84,7 @@ export function KanbanBoard({ board }: { board: Board }) {
           <button type="button" onClick={retrySave}>Retry</button>
         </div>
       )}
-      <div className="kanban-board__columns">
+      <div ref={columnsRef} className="kanban-board__columns">
         {board.columns.map((column) => (
           <Column
             column={column}

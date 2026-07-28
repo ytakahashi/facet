@@ -13,6 +13,7 @@
     "jsr:@std/net@^1.0.6": "1.0.6",
     "jsr:@std/path@^1.1.6": "1.1.6",
     "jsr:@std/streams@^1.1.1": "1.1.1",
+    "npm:@atlaskit/pragmatic-drag-and-drop-auto-scroll@3.0.0": "3.0.0",
     "npm:@atlaskit/pragmatic-drag-and-drop-hitbox@2.0.0": "2.0.0",
     "npm:@atlaskit/pragmatic-drag-and-drop@2.0.1": "2.0.1",
     "npm:@types/node@26.1.1": "26.1.1",
@@ -78,6 +79,13 @@
     }
   },
   "npm": {
+    "@atlaskit/pragmatic-drag-and-drop-auto-scroll@3.0.0": {
+      "integrity": "sha512-8TlkMi417zIPrTnCpbNV0Ce63JTKBn3dGkqiadkGQROvzDAox7Y9TYRHpvbQiEdtPoHWnmyRBi+RsGDxXsQxgQ==",
+      "dependencies": [
+        "@atlaskit/pragmatic-drag-and-drop",
+        "@babel/runtime"
+      ]
+    },
     "@atlaskit/pragmatic-drag-and-drop-hitbox@2.0.0": {
       "integrity": "sha512-vkXCB/23pT8YgYU8biGmR9uu0fr9oWoaq2GMSKyiNPk3reA12XVrCdgB2SLBoB24Ic1FOm9PdaQJ9ZSUQdCVpw==",
       "dependencies": [
@@ -863,6 +871,7 @@
     ],
     "packageJson": {
       "dependencies": [
+        "npm:@atlaskit/pragmatic-drag-and-drop-auto-scroll@3.0.0",
         "npm:@atlaskit/pragmatic-drag-and-drop-hitbox@2.0.0",
         "npm:@atlaskit/pragmatic-drag-and-drop@2.0.1",
         "npm:@types/node@26.1.1",

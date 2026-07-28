@@ -147,12 +147,16 @@
   }
 }
 
+/* Fills the window exactly and never scrolls itself: the app is a fixed frame
+   whose panes (filter sidebar, board, markdown viewer) scroll on their own, so
+   headers and the sidebar stay put while their content moves. */
 #root {
   width: 100%;
-  min-height: 100svh;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 body {
