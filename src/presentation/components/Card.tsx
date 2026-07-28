@@ -49,6 +49,7 @@ export function Card(
       }),
       dropTargetForElements({
         element,
+        canDrop: ({ source }) => source.data.type === "card",
         getData: ({ input }) =>
           attachClosestEdge(data, {
             element,

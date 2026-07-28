@@ -1,8 +1,10 @@
+import type { RefObject } from "react";
 import { useState } from "react";
 import type { Column as ColumnModel } from "../../domain/board.ts";
 
 interface ColumnHeaderProps {
   column: ColumnModel;
+  dragHandleRef: RefObject<HTMLSpanElement | null>;
   onAddCard: (columnId: string) => void;
   onRename: (columnId: string, name: string) => void;
   onRemove: (columnId: string) => void;
@@ -10,6 +12,7 @@ interface ColumnHeaderProps {
 
 export function ColumnHeader({
   column,
+  dragHandleRef,
   onAddCard,
   onRename,
   onRemove,
@@ -34,6 +37,22 @@ export function ColumnHeader({
 
   return (
     <div className="column__header">
+      {
+        /* Dragging the column starts here rather than anywhere on the column:
+          cards are draggable inside it, and the rename input must keep its own
+          text selection. Deliberately not a button - it only responds to a
+          pointer drag, and a focusable control that ignores Enter would
+          promise a keyboard interaction that does not exist. The column
+          registers this element as its drag handle (see Column.tsx). */
+      }
+      <span
+        ref={dragHandleRef}
+        className="column__drag-handle"
+        title="Drag to reorder"
+        aria-hidden="true"
+      >
+        ⠿
+      </span>
       {isEditing
         ? (
           <input

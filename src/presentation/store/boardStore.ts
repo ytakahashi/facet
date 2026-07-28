@@ -12,6 +12,7 @@ import {
   findLabelDefinition,
   LabelAlreadyExistsError,
   moveCard as moveCardDomain,
+  moveColumn as moveColumnDomain,
   removeCard as removeCardDomain,
   removeColumn as removeColumnDomain,
   removeLabelDefinition as removeLabelDefinitionDomain,
@@ -54,6 +55,7 @@ export interface BoardState {
   openBoard: (path: string) => Promise<void>;
   createBoard: (input: CreateBoardInput) => Promise<void>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
+  moveColumn: (columnId: string, toIndex: number) => void;
   addColumn: (name: string) => void;
   renameBoard: (name: string) => void;
   renameColumn: (columnId: string, name: string) => void;
@@ -180,6 +182,22 @@ export function createBoardStore({
         const { board, path } = get();
         if (!board || !path) return;
         const nextBoard = moveCardDomain(board, from, to);
+        set({ board: nextBoard });
+        saveQueue.save(path, nextBoard);
+      },
+      moveColumn: (columnId: string, toIndex: number) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        // The dragged id comes from the DOM, so an unknown column is guarded
+        // here rather than left to throw from the domain layer.
+        if (!board.columns.some((column) => column.id === columnId)) return;
+        const nextBoard = moveColumnDomain(board, columnId, toIndex);
+        // Dropping a column back into its own slot leaves the row untouched;
+        // don't rewrite the board file for it.
+        const isUnchanged = nextBoard.columns.every((column, index) =>
+          column === board.columns[index]
+        );
+        if (isUnchanged) return;
         set({ board: nextBoard });
         saveQueue.save(path, nextBoard);
       },

@@ -403,6 +403,31 @@ export function removeLabelDefinition(board: Board, name: string): Board {
   return { ...board, labels, columns };
 }
 
+// `toIndex` follows the same convention as moveCard's `to.index`: the position
+// as currently rendered, before the column is lifted out of the row. Removing
+// it first shifts every later position down by one, so that shift is corrected
+// here and callers can always pass the position they see. Out-of-range values
+// are clamped by Array.prototype.splice, which is how "past the last column"
+// arrives from a drop on the right edge of the rightmost column.
+// Unlike a card, a column carries a board-unique id, so the source is
+// identified by id rather than by position.
+export function moveColumn(
+  board: Board,
+  columnId: string,
+  toIndex: number,
+): Board {
+  const fromIndex = board.columns.findIndex((column) => column.id === columnId);
+  if (fromIndex === -1) {
+    throw new Error(`Unknown column: ${columnId}`);
+  }
+
+  const columns = [...board.columns];
+  const [column] = columns.splice(fromIndex, 1);
+  columns.splice(fromIndex < toIndex ? toIndex - 1 : toIndex, 0, column);
+
+  return { ...board, columns };
+}
+
 // `to.index` is always "the index as currently seen in the destination
 // column" (append-to-end is expressed as Infinity, which Array.prototype
 // .splice clamps to the array length). When from/to are the same column,

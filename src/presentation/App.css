@@ -380,6 +380,35 @@
   box-sizing: border-box;
 }
 
+/* Faint until the column is hovered: the grip is an affordance, not something
+   every column should advertise at rest. */
+.column__drag-handle {
+  flex-shrink: 0;
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.35;
+  cursor: grab;
+}
+
+.column:hover .column__drag-handle {
+  opacity: 1;
+}
+
+.column--dragging {
+  opacity: 0.5;
+}
+
+/* The card's drop indicator turned on its side: a column is inserted before or
+   after the one it is hovering, not above or below it. */
+.column--drop-before {
+  box-shadow: -2px 0 0 var(--color-accent-warm);
+}
+
+.column--drop-after {
+  box-shadow: 2px 0 0 var(--color-accent-warm);
+}
+
 .column__name {
   font-size: 15px;
   margin: 0;

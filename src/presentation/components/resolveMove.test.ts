@@ -1,6 +1,6 @@
 import { attachClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { describe, expect, it } from "vitest";
-import type { CardDragData, ColumnDropData } from "./dragData.ts";
+import type { CardDragData, CardListDropData } from "./dragData.ts";
 import { resolveMove } from "./resolveMove.ts";
 
 // attachClosestEdge only reads element.getBoundingClientRect() and
@@ -25,7 +25,12 @@ function cardSource(data: CardDragData) {
 describe("resolveMove", () => {
   it("returns undefined when the drag source is not a card", () => {
     const result = resolveMove({ data: { type: "column" } }, [
-      { data: { type: "column", columnId: "doing" } satisfies ColumnDropData },
+      {
+        data: {
+          type: "card-list",
+          columnId: "doing",
+        } satisfies CardListDropData,
+      },
     ]);
 
     expect(result).toBeUndefined();
@@ -41,11 +46,11 @@ describe("resolveMove", () => {
 
   it("appends to the end of the column when dropped on empty column space", () => {
     const source = cardSource({ type: "card", columnId: "doing", index: 0 });
-    const columnTarget = {
-      data: { type: "column", columnId: "done" } satisfies ColumnDropData,
+    const cardListTarget = {
+      data: { type: "card-list", columnId: "done" } satisfies CardListDropData,
     };
 
-    const result = resolveMove(source, [columnTarget]);
+    const result = resolveMove(source, [cardListTarget]);
 
     expect(result).toEqual({
       from: { columnId: "doing", index: 0 },
@@ -61,11 +66,11 @@ describe("resolveMove", () => {
         "top",
       ),
     };
-    const columnTarget = {
-      data: { type: "column", columnId: "done" } satisfies ColumnDropData,
+    const cardListTarget = {
+      data: { type: "card-list", columnId: "done" } satisfies CardListDropData,
     };
 
-    const result = resolveMove(source, [cardTarget, columnTarget]);
+    const result = resolveMove(source, [cardTarget, cardListTarget]);
 
     expect(result).toEqual({
       from: { columnId: "doing", index: 0 },
@@ -81,11 +86,11 @@ describe("resolveMove", () => {
         "bottom",
       ),
     };
-    const columnTarget = {
-      data: { type: "column", columnId: "done" } satisfies ColumnDropData,
+    const cardListTarget = {
+      data: { type: "card-list", columnId: "done" } satisfies CardListDropData,
     };
 
-    const result = resolveMove(source, [cardTarget, columnTarget]);
+    const result = resolveMove(source, [cardTarget, cardListTarget]);
 
     expect(result).toEqual({
       from: { columnId: "doing", index: 0 },

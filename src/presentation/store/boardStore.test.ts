@@ -220,6 +220,57 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledTimes(2);
   });
 
+  it("reorders the columns and saves the board", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().moveColumn("doing", 2);
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalled());
+
+    expect(
+      useBoardStore.getState().board?.columns.map((column) => column.id),
+    ).toEqual(["done", "doing"]);
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("does not save when a column is dropped back into its own slot", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().moveColumn("doing", 1);
+
+    expect(useBoardStore.getState().board).toBe(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("ignores a move of a column that is not on the board", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().moveColumn("missing", 0);
+
+    expect(useBoardStore.getState().board).toBe(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
   it("appends a new column with the trimmed name at the right end and saves the board", async () => {
     const board = makeBoard();
     const saveBoard = vi.fn().mockResolvedValue(undefined);

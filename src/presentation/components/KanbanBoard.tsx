@@ -5,6 +5,7 @@ import type { Board } from "../../domain/board.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
 import type { LabelColor } from "../../domain/label.ts";
 import { useBoardStore, useFilterStore } from "../context/appContext.ts";
+import { resolveColumnMove } from "./resolveColumnMove.ts";
 import { resolveMove } from "./resolveMove.ts";
 import { Column } from "./Column.tsx";
 import { AddCardDialog } from "./AddCardDialog.tsx";
@@ -15,6 +16,7 @@ import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 export function KanbanBoard({ board }: { board: Board }) {
   const columnsRef = useRef<HTMLDivElement>(null);
   const moveCard = useBoardStore((state) => state.moveCard);
+  const moveColumn = useBoardStore((state) => state.moveColumn);
   const renameBoard = useBoardStore((state) => state.renameBoard);
   const renameColumn = useBoardStore((state) => state.renameColumn);
   const removeColumn = useBoardStore((state) => state.removeColumn);
@@ -62,14 +64,22 @@ export function KanbanBoard({ board }: { board: Board }) {
     return autoScrollForElements({ element: columnsElement });
   }, []);
 
+  // One monitor for both kinds of drag. Each resolver ignores the other's
+  // source type, so the order they are tried in carries no meaning.
   useEffect(() => {
     return monitorForElements({
       onDrop({ source, location }) {
-        const move = resolveMove(source, location.current.dropTargets);
-        if (move) moveCard(move.from, move.to);
+        const dropTargets = location.current.dropTargets;
+        const move = resolveMove(source, dropTargets);
+        if (move) {
+          moveCard(move.from, move.to);
+          return;
+        }
+        const columnMove = resolveColumnMove(source, dropTargets);
+        if (columnMove) moveColumn(columnMove.columnId, columnMove.toIndex);
       },
     });
-  }, [moveCard]);
+  }, [moveCard, moveColumn]);
 
   return (
     <div className="kanban-board">
@@ -85,10 +95,11 @@ export function KanbanBoard({ board }: { board: Board }) {
         </div>
       )}
       <div ref={columnsRef} className="kanban-board__columns">
-        {board.columns.map((column) => (
+        {board.columns.map((column, index) => (
           <Column
             column={column}
             criteria={criteria}
+            index={index}
             key={column.id}
             labelColors={labelColors}
             onAddCard={(columnId) => {

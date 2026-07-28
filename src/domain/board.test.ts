@@ -12,6 +12,7 @@ import {
   findLabelDefinition,
   LabelAlreadyExistsError,
   moveCard,
+  moveColumn,
   removeCard,
   removeColumn,
   removeLabelDefinition,
@@ -715,6 +716,100 @@ describe("removeColumn", () => {
     const board = makeBoard({ columns: [makeColumn({ id: "doing" })] });
 
     const act = () => removeColumn(board, "missing");
+
+    expect(act).toThrow("Unknown column: missing");
+  });
+});
+
+describe("moveColumn", () => {
+  // Indices are "as currently rendered", so moving right passes the position
+  // the column should end up in front of, before it is lifted out of the row.
+  it("moves a column to the right, absorbing the shift from its removal", () => {
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "ideas" }),
+        makeColumn({ id: "doing" }),
+        makeColumn({ id: "done" }),
+      ],
+    });
+
+    const result = moveColumn(board, "ideas", 2);
+
+    expect(result.columns.map((column) => column.id)).toEqual([
+      "doing",
+      "ideas",
+      "done",
+    ]);
+  });
+
+  it("moves a column to the left", () => {
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "ideas" }),
+        makeColumn({ id: "doing" }),
+        makeColumn({ id: "done" }),
+      ],
+    });
+
+    const result = moveColumn(board, "done", 0);
+
+    expect(result.columns.map((column) => column.id)).toEqual([
+      "done",
+      "ideas",
+      "doing",
+    ]);
+  });
+
+  it("keeps the order when a column is dropped back into its own slot", () => {
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "ideas" }),
+        makeColumn({ id: "doing" }),
+        makeColumn({ id: "done" }),
+      ],
+    });
+
+    const result = moveColumn(board, "doing", 1);
+
+    expect(result.columns.map((column) => column.id)).toEqual([
+      "ideas",
+      "doing",
+      "done",
+    ]);
+  });
+
+  it("clamps an index past the last column to the end of the row", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ id: "ideas" }), makeColumn({ id: "doing" })],
+    });
+
+    const result = moveColumn(board, "ideas", 5);
+
+    expect(result.columns.map((column) => column.id)).toEqual([
+      "doing",
+      "ideas",
+    ]);
+  });
+
+  it("keeps the moved column and its cards without copying them", () => {
+    const moved = makeColumn({ id: "ideas", cards: [makeCard()] });
+    const board = makeBoard({
+      columns: [moved, makeColumn({ id: "doing" })],
+    });
+
+    const result = moveColumn(board, "ideas", 2);
+
+    expect(result.columns[1]).toBe(moved);
+    expect(board.columns.map((column) => column.id)).toEqual([
+      "ideas",
+      "doing",
+    ]);
+  });
+
+  it("rejects an unknown column", () => {
+    const board = makeBoard({ columns: [makeColumn({ id: "ideas" })] });
+
+    const act = () => moveColumn(board, "missing", 0);
 
     expect(act).toThrow("Unknown column: missing");
   });

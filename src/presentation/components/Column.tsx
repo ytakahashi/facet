@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
+import {
+  draggable,
+  dropTargetForElements,
+} from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
+import {
+  attachClosestEdge,
+  extractClosestEdge,
+} from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import type { Column as ColumnModel } from "../../domain/board.ts";
 import {
   areColumnCardsHidden,
@@ -8,13 +17,14 @@ import {
 } from "../../domain/cardFilter.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
 import type { LabelColor } from "../../domain/label.ts";
-import type { ColumnDropData } from "./dragData.ts";
+import type { CardListDropData, ColumnDragData } from "./dragData.ts";
 import { Card } from "./Card.tsx";
 import { ColumnHeader } from "./ColumnHeader.tsx";
 
 interface ColumnProps {
   column: ColumnModel;
   criteria: CardFilterCriteria;
+  index: number;
   labelColors: Map<string, LabelColor>;
   onAddCard: (columnId: string) => void;
   onDeleteCard: (card: CardModel) => void;
@@ -26,6 +36,7 @@ export function Column(
   {
     column,
     criteria,
+    index,
     labelColors,
     onAddCard,
     onDeleteCard,
@@ -33,8 +44,12 @@ export function Column(
     onRemove,
   }: ColumnProps,
 ) {
-  const ref = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const columnRef = useRef<HTMLDivElement>(null);
+  const dragHandleRef = useRef<HTMLSpanElement>(null);
   const [isDraggedOver, setIsDraggedOver] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
   const visibleCards = filterColumnCards(column, criteria);
   const areCardsHidden = areColumnCardsHidden(column, criteria);
   const cardCount = column.cards.length;
@@ -43,15 +58,22 @@ export function Column(
     areCardsHidden ? "column__cards--hidden" : "",
     isDraggedOver ? "column__cards--dragged-over" : "",
   ].filter(Boolean).join(" ");
+  const className = [
+    "column",
+    isDragging ? "column--dragging" : "",
+    closestEdge === "left" ? "column--drop-before" : "",
+    closestEdge === "right" ? "column--drop-after" : "",
+  ].filter(Boolean).join(" ");
 
   useEffect(() => {
-    const element = ref.current;
+    const element = cardsRef.current;
     if (!element) return;
 
-    const data: ColumnDropData = { type: "column", columnId: column.id };
+    const data: CardListDropData = { type: "card-list", columnId: column.id };
 
     return dropTargetForElements({
       element,
+      canDrop: ({ source }) => source.data.type === "card",
       getData: () => data,
       getIsSticky: () => true,
       onDragEnter: () => setIsDraggedOver(true),
@@ -60,15 +82,61 @@ export function Column(
     });
   }, [column.id]);
 
+  useEffect(() => {
+    const element = columnRef.current;
+    const dragHandle = dragHandleRef.current;
+    if (!element || !dragHandle) return;
+
+    const data: ColumnDragData = {
+      type: "column",
+      columnId: column.id,
+      index,
+    };
+
+    return combine(
+      // The whole column is dragged, but only the handle starts the drag, so
+      // the preview shows what is being moved without swallowing the pointer
+      // interactions inside the column.
+      draggable({
+        element,
+        dragHandle,
+        getInitialData: () => data,
+        onDragStart: () => setIsDragging(true),
+        onDrop: () => setIsDragging(false),
+      }),
+      dropTargetForElements({
+        element,
+        // A column being dragged is not a destination for itself: excluding it
+        // keeps a meaningless indicator off the dragged column and leaves the
+        // drop with no target to resolve.
+        canDrop: ({ source }) =>
+          source.data.type === "column" && source.data.columnId !== column.id,
+        getData: ({ input }) =>
+          attachClosestEdge(data, {
+            element,
+            input,
+            allowedEdges: ["left", "right"],
+          }),
+        getIsSticky: () => true,
+        onDragEnter: (args) =>
+          setClosestEdge(extractClosestEdge(args.self.data)),
+        onDrag: (args) => setClosestEdge(extractClosestEdge(args.self.data)),
+        onDragLeave: () => setClosestEdge(null),
+        onDrop: () => setClosestEdge(null),
+      }),
+    );
+  }, [column.id, index]);
+
   return (
-    <div className="column">
+    <div ref={columnRef} className={className}>
       <ColumnHeader
         column={column}
+        dragHandleRef={dragHandleRef}
         onAddCard={onAddCard}
         onRename={onRename}
         onRemove={onRemove}
       />
-      <div ref={ref} className={cardsClassName}>
+      <div ref={cardsRef} className={cardsClassName}>
         {visibleCards.map(({ card, index }) => (
           <Card
             card={card}

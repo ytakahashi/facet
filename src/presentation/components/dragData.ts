@@ -1,7 +1,13 @@
 // Shared data contract for the drag-and-drop wiring: Card (drag source and
-// per-card drop target) and Column (drop target for the card list) attach
-// this data via getInitialData/getData, and resolveMove.ts reads it back
-// off the drop event to compute a move.
+// per-card drop target), the card list inside a Column, and Column itself
+// (drag source and drop target for reordering) attach this data via
+// getInitialData/getData, and resolveMove.ts / resolveColumnMove.ts read it
+// back off the drop event to compute a move.
+//
+// Two kinds of drag share one monitor, so every drop target declares a canDrop
+// keyed on `type`. That keeps the drop targets a card drag sees unchanged now
+// that columns are targets too, which is what lets resolveMove keep reading
+// the (innermost-first) target list by position.
 
 export interface CardDragData {
   [key: string]: unknown;
@@ -11,9 +17,17 @@ export interface CardDragData {
   index: number;
 }
 
-export interface ColumnDropData {
+export interface CardListDropData {
+  [key: string]: unknown;
+  [key: symbol]: unknown;
+  type: "card-list";
+  columnId: string;
+}
+
+export interface ColumnDragData {
   [key: string]: unknown;
   [key: symbol]: unknown;
   type: "column";
   columnId: string;
+  index: number;
 }
