@@ -41,6 +41,7 @@ describe("createMarkdownCard", () => {
     expect(result).toEqual({
       path: "ideas/Improve search.md",
       absolutePath: "/board/ideas/Improve search.md",
+      fileState: "available",
       labels: [],
       displayTitle: "Improve search",
     });

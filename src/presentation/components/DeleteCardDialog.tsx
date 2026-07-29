@@ -28,6 +28,10 @@ export function DeleteCardDialog(
   // blocks the Save button, not a write already on its way). Deleting now
   // would let that write recreate the file, so the confirm button waits it out.
   const isSaving = useMarkdownViewer((state) => isCardSaving(state, card.path));
+  // Offered only for a card whose file was there when the board loaded.
+  // A card the board could not read has nothing to promise the user will be
+  // deleted, and offering it anyway would read as "there is a file to lose".
+  const canDeleteFile = card.fileState === "available";
   const [deleteFile, setDeleteFile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<UiError>();
@@ -90,17 +94,23 @@ export function DeleteCardDialog(
             type="checkbox"
             checked={deleteFile}
             onChange={(event) => setDeleteFile(event.target.checked)}
-            disabled={isSubmitting || !card.absolutePath}
+            disabled={isSubmitting || !canDeleteFile}
           />
           <span>Also delete the Markdown file</span>
         </label>
-        {!card.absolutePath && (
+        {card.fileState === "unresolvable" && (
           <p className="delete-card-dialog__note">
             This card's path could not be resolved inside the board directory,
             so only the board reference can be removed.
           </p>
         )}
-        {deleteFile && card.absolutePath && (
+        {card.fileState === "missing" && (
+          <p className="delete-card-dialog__note">
+            There is no file at this path, so only the board reference can be
+            removed.
+          </p>
+        )}
+        {deleteFile && canDeleteFile && (
           <p className="delete-card-dialog__warning" role="alert">
             <span className="delete-card-dialog__path">
               {card.absolutePath}

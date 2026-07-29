@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Board } from "../../domain/board.ts";
+import type { Card } from "../../domain/card.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import type { BoardStoreDeps } from "./boardStore.ts";
@@ -29,7 +30,12 @@ function makeBoard(overrides: Partial<Board> = {}): Board {
       {
         id: "doing",
         name: "Doing",
-        cards: [{ path: "a.md", labels: [], displayTitle: "A" }],
+        cards: [{
+          path: "a.md",
+          fileState: "available",
+          labels: [],
+          displayTitle: "A",
+        }],
       },
       { id: "done", name: "Done", cards: [] },
     ],
@@ -135,7 +141,7 @@ describe("createBoardStore", () => {
 
     expect(useBoardStore.getState().board?.columns[0].cards).toEqual([]);
     expect(useBoardStore.getState().board?.columns[1].cards).toEqual([
-      { path: "a.md", labels: [], displayTitle: "A" },
+      { path: "a.md", fileState: "available", labels: [], displayTitle: "A" },
     ]);
   });
 
@@ -185,7 +191,7 @@ describe("createBoardStore", () => {
     );
 
     expect(useBoardStore.getState().board?.columns[1].cards).toEqual([
-      { path: "a.md", labels: [], displayTitle: "A" },
+      { path: "a.md", fileState: "available", labels: [], displayTitle: "A" },
     ]);
   });
 
@@ -852,6 +858,7 @@ describe("createBoardStore", () => {
     const card = {
       path: "new-card.md",
       absolutePath: "/board/new-card.md",
+      fileState: "available",
       labels: [],
       displayTitle: "New card",
     };
@@ -880,7 +887,7 @@ describe("createBoardStore", () => {
       title: "New card",
     });
     expect(useBoardStore.getState().board?.columns[0].cards).toEqual([
-      { path: "a.md", labels: [], displayTitle: "A" },
+      { path: "a.md", fileState: "available", labels: [], displayTitle: "A" },
       card,
     ]);
     expect(saveBoard).toHaveBeenCalledWith(
@@ -945,6 +952,7 @@ describe("createBoardStore", () => {
     const card = {
       path: "ideas/existing.md",
       absolutePath: "/board/ideas/existing.md",
+      fileState: "available",
       labels: [],
       displayTitle: "Existing",
     };
@@ -1018,9 +1026,10 @@ describe("createBoardStore", () => {
 
   it("rejects an existing card added while its Markdown is loading", async () => {
     const board = makeBoard();
-    const card = {
+    const card: Card = {
       path: "existing.md",
       absolutePath: "/board/existing.md",
+      fileState: "available",
       labels: [],
       displayTitle: "Existing",
     };
@@ -1063,6 +1072,7 @@ describe("createBoardStore", () => {
     const card = {
       path: "existing.md",
       absolutePath: "/board/existing.md",
+      fileState: "available",
       labels: [],
       displayTitle: "Existing",
     };
@@ -1122,6 +1132,7 @@ describe("createBoardStore", () => {
           cards: [{
             path: "a.md",
             absolutePath: "/board/a.md",
+            fileState: "available",
             labels: [],
             displayTitle: "A",
           }],
@@ -1158,6 +1169,7 @@ describe("createBoardStore", () => {
           cards: [{
             path: "a.md",
             absolutePath: "/board/a.md",
+            fileState: "available",
             labels: [],
             displayTitle: "A",
           }],
@@ -1193,6 +1205,7 @@ describe("createBoardStore", () => {
           cards: [{
             path: "a.md",
             absolutePath: "/board/a.md",
+            fileState: "available",
             labels: [],
             displayTitle: "A",
           }],

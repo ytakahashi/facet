@@ -9,7 +9,8 @@ import {
   attachClosestEdge,
   extractClosestEdge,
 } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import type { Card as CardModel } from "../../domain/card.ts";
+import type { Card as CardModel, CardFileState } from "../../domain/card.ts";
+import { isCardFileBroken } from "../../domain/card.ts";
 import type { LabelColor } from "../../domain/label.ts";
 import { useMarkdownViewer } from "../context/appContext.ts";
 import type { CardDragData } from "./dragData.ts";
@@ -66,7 +67,10 @@ export function Card(
     );
   }, [columnId, index]);
 
+  const isBroken = isCardFileBroken(card);
+
   const classNames = ["card"];
+  if (isBroken) classNames.push("card--missing");
   if (isSelected) classNames.push("card--selected");
   if (isDragging) classNames.push("card--dragging");
   if (closestEdge === "top") classNames.push("card--drop-before");
@@ -97,6 +101,15 @@ export function Card(
       >
         ×
       </button>
+      {
+        /* Not a button: the badge only states what the board observed when it
+          loaded this card, so it carries no action of its own. */
+      }
+      {isBroken && (
+        <span className="card__missing" title={missingHint(card.fileState)}>
+          Missing
+        </span>
+      )}
       {card.priority && (
         <span className={`card__priority card__priority--${card.priority}`}>
           {card.priority}
@@ -119,4 +132,13 @@ export function Card(
       )}
     </div>
   );
+}
+
+// The two broken states are told apart by wording rather than by two badges:
+// what to do about them differs, but neither is something the tile itself can
+// fix.
+function missingHint(fileState: CardFileState): string {
+  return fileState === "unresolvable"
+    ? "This card's path must point inside the board directory."
+    : "No file at this path.";
 }

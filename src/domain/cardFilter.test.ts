@@ -17,6 +17,7 @@ function makeCard(
 ): Card {
   return {
     path,
+    fileState: "available",
     priority,
     labels,
     displayTitle: path,

@@ -87,6 +87,7 @@ columns:
             {
               path: "improve-search.md",
               absolutePath: "/board/improve-search.md",
+              fileState: "available",
               priority: "high",
               labels: ["search"],
               displayTitle: "Improve search",
@@ -150,6 +151,80 @@ columns:
 
     expect(card.displayTitle).toBe("missing-card");
     expect(card.absolutePath).toBe("/board/missing-card.md");
+    expect(card.fileState).toBe("missing");
+  });
+
+  it("keeps loading the rest of the board when one card's markdown cannot be read", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+columns:
+  - id: doing
+    name: Doing
+    cards:
+      - path: missing-card.md
+        labels: []
+      - path: improve-search.md
+        labels: []
+`,
+      "/board/improve-search.md": "# Improve search",
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const board = await repository.load("/board/development.board.yaml");
+
+    expect(board.columns[0].cards.map((card) => card.fileState)).toEqual([
+      "missing",
+      "available",
+    ]);
+    expect(board.columns[0].cards[1].displayTitle).toBe("Improve search");
+  });
+
+  it("reads an empty markdown file as available", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+columns:
+  - id: doing
+    name: Doing
+    cards:
+      - path: empty.md
+        labels: []
+`,
+      "/board/empty.md": "",
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const board = await repository.load("/board/development.board.yaml");
+
+    expect(board.columns[0].cards[0].fileState).toBe("available");
+  });
+
+  it("marks cards whose path does not resolve inside the board directory as unresolvable", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+columns:
+  - id: doing
+    name: Doing
+    cards:
+      - path: /Users/someone/notes.md
+        labels: []
+      - path: ../outside.md
+        labels: []
+`,
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const board = await repository.load("/board/development.board.yaml");
+
+    for (const card of board.columns[0].cards) {
+      expect(card.fileState).toBe("unresolvable");
+      expect(card.absolutePath).toBeUndefined();
+    }
   });
 
   it("uses the YAML title override even when the markdown has a different H1", async () => {
@@ -191,6 +266,9 @@ describe("YamlBoardRepository.save", () => {
             {
               path: "improve-search.md",
               absolutePath: "/board/improve-search.md",
+              // Deliberately not "available": the file state observed while
+              // loading must not leak into the saved file.
+              fileState: "missing",
               titleOverride: "Custom title",
               priority: "high",
               labels: ["search"],

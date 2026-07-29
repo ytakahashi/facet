@@ -1,13 +1,26 @@
 import type { Label } from "./label.ts";
 import type { Priority } from "./priority.ts";
 
+export type CardFileState = "available" | "missing" | "unresolvable";
+
 export interface Card {
   path: string;
   absolutePath?: string;
+  // What the last read of this card's file found. Not part of board.yaml:
+  // whether a file exists is a fact about the file system, and copying it into
+  // the board file would create a second source of truth that goes stale the
+  // moment the file moves outside the app.
+  // "unresolvable" always comes with absolutePath undefined - the path never
+  // resolved inside the board directory, so there is nothing to read.
+  fileState: CardFileState;
   titleOverride?: string;
   priority?: Priority;
   labels: Label[];
   displayTitle: string;
+}
+
+export function isCardFileBroken(card: Card): boolean {
+  return card.fileState !== "available";
 }
 
 export function resolveCardTitle(
@@ -35,6 +48,9 @@ export function createCardReference(
   return {
     path,
     absolutePath,
+    // The caller has just read (or written) this file, so the card starts out
+    // known to be readable.
+    fileState: "available",
     labels: [],
     displayTitle: resolveCardTitle(undefined, markdownText, path),
   };

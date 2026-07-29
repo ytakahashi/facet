@@ -30,6 +30,7 @@ import type { LabelDefinition } from "./label.ts";
 function makeCard(overrides: Partial<Card> = {}): Card {
   return {
     path: "card.md",
+    fileState: "available",
     labels: [],
     displayTitle: "Card",
     ...overrides,

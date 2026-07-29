@@ -78,6 +78,10 @@ export class YamlBoardRepository implements BoardRepository {
     rawCard: RawCard,
   ): Promise<Card> {
     const resolved = resolveCardPath(boardDirectory, rawCard.path);
+    // A card whose file could not be read at all is reported as missing
+    // whatever the reason: a card that cannot be opened is broken from the
+    // board's point of view, and one unreadable file must not stop the whole
+    // board from loading.
     const markdownText = resolved.ok
       ? await this.tryReadTextFile(resolved.absolutePath)
       : undefined;
@@ -85,6 +89,13 @@ export class YamlBoardRepository implements BoardRepository {
     return {
       path: rawCard.path,
       absolutePath: resolved.ok ? resolved.absolutePath : undefined,
+      fileState: !resolved.ok
+        ? "unresolvable"
+        // An empty Markdown file reads as "", so the check is against
+        // undefined: only a failed read means the file is missing.
+        : markdownText === undefined
+        ? "missing"
+        : "available",
       titleOverride: rawCard.title,
       priority: rawCard.priority as Card["priority"],
       labels: rawCard.labels ?? [],

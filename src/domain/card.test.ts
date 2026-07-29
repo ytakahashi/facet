@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createCardReference, resolveCardTitle } from "./card.ts";
+import type { Card, CardFileState } from "./card.ts";
+import {
+  createCardReference,
+  isCardFileBroken,
+  resolveCardTitle,
+} from "./card.ts";
 
 describe("resolveCardTitle", () => {
   it("uses the YAML title override when present", () => {
@@ -46,8 +51,32 @@ describe("createCardReference", () => {
     expect(result).toEqual({
       path: "notes/card.md",
       absolutePath: "/board/notes/card.md",
+      fileState: "available",
       labels: [],
       displayTitle: "Card title",
     });
+  });
+});
+
+describe("isCardFileBroken", () => {
+  function makeCard(fileState: CardFileState): Card {
+    return {
+      path: "card.md",
+      fileState,
+      labels: [],
+      displayTitle: "Card",
+    };
+  }
+
+  it("treats a readable card as not broken", () => {
+    expect(isCardFileBroken(makeCard("available"))).toBe(false);
+  });
+
+  it("treats a card whose file could not be read as broken", () => {
+    expect(isCardFileBroken(makeCard("missing"))).toBe(true);
+  });
+
+  it("treats a card whose path does not resolve as broken", () => {
+    expect(isCardFileBroken(makeCard("unresolvable"))).toBe(true);
   });
 });
