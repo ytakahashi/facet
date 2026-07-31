@@ -1,6 +1,19 @@
 const win = new Deno.BrowserWindow({ title: "Facet" });
 
-win.bind("readTextFile", (path: unknown) => Deno.readTextFile(path as string));
+// Deno.errors instances do not survive the binding boundary, so a missing file
+// is classified here and reported as data, the same way createTextFile reports
+// already-exists. Callers that repair a card's path need "nothing is there"
+// told apart from "there but unreadable".
+win.bind("readTextFile", async (path: unknown) => {
+  try {
+    return { read: true, content: await Deno.readTextFile(path as string) };
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      return { read: false, reason: "not-found" } as const;
+    }
+    throw error;
+  }
+});
 
 win.bind(
   "writeTextFile",

@@ -15,6 +15,7 @@ function makeDeps(overrides: Partial<BoardStoreDeps> = {}): BoardStoreDeps {
     saveBoard: vi.fn(),
     createMarkdownCard: vi.fn(),
     addExistingMarkdownCard: vi.fn(),
+    relocateMarkdownCard: vi.fn(),
     createBoard: vi.fn(),
     deleteMarkdown: vi.fn(),
     ...overrides,
@@ -1254,5 +1255,170 @@ describe("createBoardStore", () => {
     expect(deleteMarkdown).not.toHaveBeenCalled();
     expect(saveBoard).not.toHaveBeenCalled();
     expect(useBoardStore.getState().board).toEqual(board);
+  });
+
+  function makeBrokenBoard(): Board {
+    return makeBoard({
+      columns: [
+        {
+          id: "doing",
+          name: "Doing",
+          cards: [{
+            path: "gone.md",
+            absolutePath: "/board/gone.md",
+            fileState: "missing",
+            labels: [],
+            displayTitle: "gone",
+          }],
+        },
+        { id: "done", name: "Done", cards: [] },
+      ],
+    });
+  }
+
+  const repairedCard: Card = {
+    path: "ideas/moved.md",
+    absolutePath: "/board/ideas/moved.md",
+    fileState: "available",
+    labels: [],
+    displayTitle: "Moved card",
+  };
+
+  it("replaces the repaired card in place and saves the board", async () => {
+    const board = makeBrokenBoard();
+    const relocateMarkdownCard = vi.fn().mockResolvedValue(repairedCard);
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+      relocateMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const result = await useBoardStore.getState().relocateCard(
+      "gone.md",
+      "/board/ideas/moved.md",
+    );
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+
+    expect(relocateMarkdownCard).toHaveBeenCalledWith({
+      boardPath: "/board/development.board.yaml",
+      card: board.columns[0].cards[0],
+      absolutePath: "/board/ideas/moved.md",
+    });
+    expect(result).toBe(repairedCard);
+    expect(useBoardStore.getState().board?.columns[0].cards).toEqual([
+      repairedCard,
+    ]);
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("leaves the board untouched when the file cannot be read", async () => {
+    const board = makeBrokenBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+      relocateMarkdownCard: vi.fn().mockRejectedValue(
+        new UseCaseError("card.file-not-found", {
+          path: "/board/ideas/moved.md",
+        }),
+      ),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().relocateCard("gone.md", "/board/ideas/moved.md");
+
+    await expect(act).rejects.toMatchObject({ code: "card.file-not-found" });
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("reports a repaired path that another card already holds", async () => {
+    const board = makeBoard({
+      columns: [
+        {
+          id: "doing",
+          name: "Doing",
+          cards: [{
+            path: "gone.md",
+            absolutePath: "/board/gone.md",
+            fileState: "missing",
+            labels: [],
+            displayTitle: "gone",
+          }],
+        },
+        { id: "done", name: "Done", cards: [repairedCard] },
+      ],
+    });
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+      relocateMarkdownCard: vi.fn().mockResolvedValue(repairedCard),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().relocateCard("gone.md", "/board/ideas/moved.md");
+
+    await expect(act).rejects.toMatchObject({
+      code: "card.already-on-board",
+      details: { path: "ideas/moved.md" },
+    });
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("reports a board change when another board is opened mid-repair", async () => {
+    const board = makeBrokenBoard();
+    let finishRelocate: () => void = () => {};
+    const relocating = new Promise<Card>((resolve) => {
+      finishRelocate = () => resolve(repairedCard);
+    });
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+      relocateMarkdownCard: vi.fn().mockReturnValue(relocating),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const repairing = useBoardStore.getState().relocateCard(
+      "gone.md",
+      "/board/ideas/moved.md",
+    );
+    useBoardStore.setState({ path: "/board/other.board.yaml" });
+    finishRelocate();
+
+    await expect(repairing).rejects.toMatchObject({
+      code: "card.board-changed",
+    });
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("reports a board change for a path that is no longer on the board", async () => {
+    const board = makeBrokenBoard();
+    const relocateMarkdownCard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      relocateMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().relocateCard(
+        "unknown.md",
+        "/board/ideas/moved.md",
+      );
+
+    await expect(act).rejects.toMatchObject({ code: "card.board-changed" });
+    expect(relocateMarkdownCard).not.toHaveBeenCalled();
   });
 });

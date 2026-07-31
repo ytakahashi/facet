@@ -14,6 +14,7 @@ export type UseCaseErrorCode =
   | "card.create-failed"
   | "card.file-already-exists"
   | "card.file-name-required"
+  | "card.file-not-found"
   | "card.invalid-file-name"
   | "card.load-failed"
   | "card.not-markdown-file"

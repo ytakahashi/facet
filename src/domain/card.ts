@@ -56,6 +56,26 @@ export function createCardReference(
   };
 }
 
+// Keeps everything the board knows about this card - its column position is
+// held by the board, and priority/labels/title override travel with the card
+// itself - and swaps only what pointing at another file changes. The title is
+// re-derived from the new file, so a card without an explicit title picks up
+// the new file's H1 instead of keeping the old file's.
+export function relocateCardReference(
+  card: Card,
+  path: string,
+  absolutePath: string,
+  markdownText: string,
+): Card {
+  return {
+    ...card,
+    path,
+    absolutePath,
+    fileState: "available",
+    displayTitle: resolveCardTitle(card.titleOverride, markdownText, path),
+  };
+}
+
 function findFirstH1(markdown: string): string | undefined {
   for (const line of markdown.split("\n")) {
     const match = /^#\s+(.+)$/.exec(line.trim());

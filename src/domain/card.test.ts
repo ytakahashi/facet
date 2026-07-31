@@ -3,6 +3,7 @@ import type { Card, CardFileState } from "./card.ts";
 import {
   createCardReference,
   isCardFileBroken,
+  relocateCardReference,
   resolveCardTitle,
 } from "./card.ts";
 
@@ -55,6 +56,61 @@ describe("createCardReference", () => {
       labels: [],
       displayTitle: "Card title",
     });
+  });
+});
+
+describe("relocateCardReference", () => {
+  function makeBrokenCard(overrides: Partial<Card> = {}): Card {
+    return {
+      path: "gone.md",
+      absolutePath: "/board/gone.md",
+      fileState: "missing",
+      priority: "high",
+      labels: ["search"],
+      displayTitle: "gone",
+      ...overrides,
+    };
+  }
+
+  it("points the card at the new file while keeping its board metadata", () => {
+    const result = relocateCardReference(
+      makeBrokenCard(),
+      "ideas/moved.md",
+      "/board/ideas/moved.md",
+      "# Moved card",
+    );
+
+    expect(result).toEqual({
+      path: "ideas/moved.md",
+      absolutePath: "/board/ideas/moved.md",
+      fileState: "available",
+      priority: "high",
+      labels: ["search"],
+      displayTitle: "Moved card",
+    });
+  });
+
+  it("keeps a title override instead of the new file's heading", () => {
+    const result = relocateCardReference(
+      makeBrokenCard({ titleOverride: "Custom title" }),
+      "ideas/moved.md",
+      "/board/ideas/moved.md",
+      "# Moved card",
+    );
+
+    expect(result.displayTitle).toBe("Custom title");
+    expect(result.titleOverride).toBe("Custom title");
+  });
+
+  it("falls back to the new file name when it has no heading", () => {
+    const result = relocateCardReference(
+      makeBrokenCard(),
+      "ideas/moved.md",
+      "/board/ideas/moved.md",
+      "Body without a heading",
+    );
+
+    expect(result.displayTitle).toBe("moved");
   });
 });
 

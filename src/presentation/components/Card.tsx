@@ -21,10 +21,11 @@ interface CardProps {
   index: number;
   labelColors: Map<string, LabelColor>;
   onDelete: (card: CardModel) => void;
+  onRepair: (card: CardModel) => void;
 }
 
 export function Card(
-  { card, columnId, index, labelColors, onDelete }: CardProps,
+  { card, columnId, index, labelColors, onDelete, onRepair }: CardProps,
 ) {
   const isSelected = useMarkdownViewer((state) =>
     state.selectedPath === card.path
@@ -80,7 +81,9 @@ export function Card(
     <div
       ref={ref}
       className={classNames.join(" ")}
-      onClick={() => void selectCard(card)}
+      // A broken card has nothing to show in the viewer, so its click goes to
+      // the repair dialog instead of a load error the user cannot act on.
+      onClick={() => isBroken ? onRepair(card) : void selectCard(card)}
     >
       {
         /* Revealed on hover/focus-within (see App.css) rather than shown on

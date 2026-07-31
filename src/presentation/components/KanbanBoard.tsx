@@ -12,6 +12,7 @@ import { AddCardDialog } from "./AddCardDialog.tsx";
 import { AddColumn } from "./AddColumn.tsx";
 import { BoardName } from "./BoardName.tsx";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
+import { MissingCardDialog } from "./MissingCardDialog.tsx";
 
 export function KanbanBoard({ board }: { board: Board }) {
   const columnsRef = useRef<HTMLDivElement>(null);
@@ -34,6 +35,9 @@ export function KanbanBoard({ board }: { board: Board }) {
   // between a successful delete and the close taking effect.
   const [deleteTarget, setDeleteTarget] = useState<CardModel>();
   const [isDeleteCardOpen, setIsDeleteCardOpen] = useState(false);
+  // Kept after closing for the same reason as deleteTarget.
+  const [repairTarget, setRepairTarget] = useState<CardModel>();
+  const [isMissingCardOpen, setIsMissingCardOpen] = useState(false);
   // Built once per registry change and threaded down to Card, rather than
   // having every Card re-scan board.labels itself for each of its labels.
   const labelColors = useMemo(
@@ -51,6 +55,8 @@ export function KanbanBoard({ board }: { board: Board }) {
     setAddToColumnId(undefined);
     setIsDeleteCardOpen(false);
     setDeleteTarget(undefined);
+    setIsMissingCardOpen(false);
+    setRepairTarget(undefined);
   }, [boardPath]);
 
   // Dragging near an edge scrolls the column row, so a card can be carried to
@@ -110,6 +116,10 @@ export function KanbanBoard({ board }: { board: Board }) {
               setDeleteTarget(card);
               setIsDeleteCardOpen(true);
             }}
+            onRepairCard={(card) => {
+              setRepairTarget(card);
+              setIsMissingCardOpen(true);
+            }}
             onRename={renameColumn}
             onRemove={removeColumn}
           />
@@ -122,6 +132,24 @@ export function KanbanBoard({ board }: { board: Board }) {
           columnId={addToColumnId}
           open={isAddCardOpen}
           onClose={() => setIsAddCardOpen(false)}
+        />
+      )}
+      {
+        /* Mounted before DeleteCardDialog so that when one hands over to the
+          other, the effect that closes this dialog runs before the effect that
+          opens that one - two dialogs must never be showModal() at once. */
+      }
+      {boardPath && repairTarget && (
+        <MissingCardDialog
+          card={repairTarget}
+          boardPath={boardPath}
+          open={isMissingCardOpen}
+          onClose={() => setIsMissingCardOpen(false)}
+          onRemoveFromBoard={(card) => {
+            setIsMissingCardOpen(false);
+            setDeleteTarget(card);
+            setIsDeleteCardOpen(true);
+          }}
         />
       )}
       {deleteTarget && (

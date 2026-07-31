@@ -28,6 +28,7 @@ interface ColumnProps {
   labelColors: Map<string, LabelColor>;
   onAddCard: (columnId: string) => void;
   onDeleteCard: (card: CardModel) => void;
+  onRepairCard: (card: CardModel) => void;
   onRename: (columnId: string, name: string) => void;
   onRemove: (columnId: string) => void;
 }
@@ -40,6 +41,7 @@ export function Column(
     labelColors,
     onAddCard,
     onDeleteCard,
+    onRepairCard,
     onRename,
     onRemove,
   }: ColumnProps,
@@ -145,6 +147,7 @@ export function Column(
             key={card.path}
             labelColors={labelColors}
             onDelete={onDeleteCard}
+            onRepair={onRepairCard}
           />
         ))}
         {

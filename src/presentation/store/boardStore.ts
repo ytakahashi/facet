@@ -20,6 +20,7 @@ import {
   renameBoard as renameBoardDomain,
   renameColumn as renameColumnDomain,
   renameLabelDefinition as renameLabelDefinitionDomain,
+  replaceCard as replaceCardDomain,
   setCardPriority as setCardPriorityDomain,
   setCardTitle as setCardTitleDomain,
   setLabelColor as setLabelColorDomain,
@@ -35,6 +36,7 @@ import {
 import type { AddExistingMarkdownCardInput } from "../../usecase/addExistingMarkdownCard.ts";
 import type { CreateBoardInput } from "../../usecase/createBoard.ts";
 import type { CreateMarkdownCardInput } from "../../usecase/createMarkdownCard.ts";
+import type { RelocateMarkdownCardInput } from "../../usecase/relocateMarkdownCard.ts";
 import type { SaveBoard } from "../../usecase/boardSaveQueue.ts";
 import { createBoardSaveQueue } from "../../usecase/boardSaveQueue.ts";
 import {
@@ -70,6 +72,7 @@ export interface BoardState {
   removeLabel: (name: string) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
+  relocateCard: (cardPath: string, absolutePath: string) => Promise<Card>;
   removeCard: (path: string, options: RemoveCardOptions) => Promise<void>;
   retrySave: () => void;
 }
@@ -99,6 +102,9 @@ export type CreateMarkdownCard = (
 export type AddExistingMarkdownCard = (
   input: AddExistingMarkdownCardInput,
 ) => Promise<Card>;
+export type RelocateMarkdownCard = (
+  input: RelocateMarkdownCardInput,
+) => Promise<Card>;
 export type DeleteMarkdown = (path: string) => Promise<void>;
 
 // Named rather than positional: the store keeps gaining file-touching use
@@ -109,6 +115,7 @@ export interface BoardStoreDeps {
   saveBoard: SaveBoard;
   createMarkdownCard: CreateMarkdownCard;
   addExistingMarkdownCard: AddExistingMarkdownCard;
+  relocateMarkdownCard: RelocateMarkdownCard;
   createBoard: CreateBoard;
   deleteMarkdown: DeleteMarkdown;
 }
@@ -118,6 +125,7 @@ export function createBoardStore({
   saveBoard,
   createMarkdownCard,
   addExistingMarkdownCard,
+  relocateMarkdownCard,
   createBoard,
   deleteMarkdown,
 }: BoardStoreDeps): UseBoundStore<StoreApi<BoardState>> {
@@ -447,6 +455,53 @@ export function createBoardStore({
           absolutePath: input.absolutePath,
         });
         return appendCard(initial.path, input.columnId, card);
+      },
+      relocateCard: async (cardPath: string, absolutePath: string) => {
+        const initial = get();
+        if (!initial.board || !initial.path) {
+          // Invariant violation, not a recoverable user error: the repair
+          // dialog only exists on a card rendered from an open board.
+          throw new Error("Open a board before relocating a card.");
+        }
+        // MissingCardDialog resolved this card from the board, so an unknown
+        // path means the board has moved on since it opened.
+        const card = findCardByPath(initial.board, cardPath);
+        if (!card) {
+          throw new UseCaseError("card.board-changed");
+        }
+
+        // Read first: a failure here must leave the board exactly as it was,
+        // with the card still pointing at the path the user has not fixed yet.
+        // No duplicate-path check before this - unlike creating a card, this
+        // only reads, so running it before the check costs nothing.
+        const repaired = await relocateMarkdownCard({
+          boardPath: initial.path,
+          card,
+          absolutePath,
+        });
+
+        const current = get();
+        if (!current.board || current.path !== initial.path) {
+          // The native menu stays clickable while a modal dialog is open, so
+          // Open Recent can swap the board mid-repair.
+          throw new UseCaseError("card.board-changed");
+        }
+        let nextBoard: Board;
+        try {
+          nextBoard = replaceCardDomain(current.board, cardPath, repaired);
+        } catch (cause) {
+          if (cause instanceof CardAlreadyExistsError) {
+            throw new UseCaseError(
+              "card.already-on-board",
+              { path: repaired.path },
+              { cause },
+            );
+          }
+          throw cause;
+        }
+        set({ board: nextBoard });
+        saveQueue.save(current.path, nextBoard);
+        return repaired;
       },
       removeCard: async (
         cardPath: string,
