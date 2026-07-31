@@ -79,6 +79,22 @@ export function resolveExistingMarkdownPath(
   return { absolutePath, relativePath: relative.path };
 }
 
+// Same rules as resolveNewMarkdownPath, for a caller that already holds the
+// whole path as one string (a typed or picked location) instead of the
+// directory and file name apart. Splitting it here keeps path arithmetic out
+// of the callers.
+export function resolveNewMarkdownPathAt(
+  boardPath: string,
+  absolutePath: string,
+): NewMarkdownPath {
+  const index = absolutePath.lastIndexOf("/");
+  return resolveNewMarkdownPath(
+    boardPath,
+    directoryOf(absolutePath),
+    absolutePath.slice(index + 1),
+  );
+}
+
 export function resolveNewMarkdownPath(
   boardPath: string,
   directory: string,

@@ -32,11 +32,14 @@ import {
   CardFileValidationError,
   resolveExistingMarkdownPath,
   resolveNewMarkdownPath,
+  resolveNewMarkdownPathAt,
 } from "../../domain/cardFile.ts";
+import { normalizeCardPath } from "../../domain/boardPath.ts";
 import type { AddExistingMarkdownCardInput } from "../../usecase/addExistingMarkdownCard.ts";
 import type { CreateBoardInput } from "../../usecase/createBoard.ts";
 import type { CreateMarkdownCardInput } from "../../usecase/createMarkdownCard.ts";
 import type { RelocateMarkdownCardInput } from "../../usecase/relocateMarkdownCard.ts";
+import type { RecreateMarkdownCardInput } from "../../usecase/recreateMarkdownCard.ts";
 import type { SaveBoard } from "../../usecase/boardSaveQueue.ts";
 import { createBoardSaveQueue } from "../../usecase/boardSaveQueue.ts";
 import {
@@ -73,6 +76,11 @@ export interface BoardState {
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
   relocateCard: (cardPath: string, absolutePath: string) => Promise<Card>;
+  recreateCard: (
+    cardPath: string,
+    absolutePath: string,
+    title: string,
+  ) => Promise<Card>;
   removeCard: (path: string, options: RemoveCardOptions) => Promise<void>;
   retrySave: () => void;
 }
@@ -105,6 +113,9 @@ export type AddExistingMarkdownCard = (
 export type RelocateMarkdownCard = (
   input: RelocateMarkdownCardInput,
 ) => Promise<Card>;
+export type RecreateMarkdownCard = (
+  input: RecreateMarkdownCardInput,
+) => Promise<Card>;
 export type DeleteMarkdown = (path: string) => Promise<void>;
 
 // Named rather than positional: the store keeps gaining file-touching use
@@ -116,6 +127,7 @@ export interface BoardStoreDeps {
   createMarkdownCard: CreateMarkdownCard;
   addExistingMarkdownCard: AddExistingMarkdownCard;
   relocateMarkdownCard: RelocateMarkdownCard;
+  recreateMarkdownCard: RecreateMarkdownCard;
   createBoard: CreateBoard;
   deleteMarkdown: DeleteMarkdown;
 }
@@ -126,6 +138,7 @@ export function createBoardStore({
   createMarkdownCard,
   addExistingMarkdownCard,
   relocateMarkdownCard,
+  recreateMarkdownCard,
   createBoard,
   deleteMarkdown,
 }: BoardStoreDeps): UseBoundStore<StoreApi<BoardState>> {
@@ -149,6 +162,38 @@ export function createBoardStore({
       let nextBoard: Board;
       try {
         nextBoard = addCardDomain(current.board, columnId, card);
+      } catch (cause) {
+        if (cause instanceof CardAlreadyExistsError) {
+          throw new UseCaseError(
+            "card.already-on-board",
+            { path: card.path },
+            { cause },
+          );
+        }
+        throw cause;
+      }
+      set({ board: nextBoard });
+      saveQueue.save(current.path, nextBoard);
+      return card;
+    }
+
+    // The tail every repair shares: the card was resolved from the board
+    // before the file I/O, so the board is re-read here to see whether it
+    // still is the one that was repaired.
+    function replaceCard(
+      boardPath: string,
+      cardPath: string,
+      card: Card,
+    ): Card {
+      const current = get();
+      if (!current.board || current.path !== boardPath) {
+        // The native menu stays clickable while a modal dialog is open, so
+        // Open Recent can swap the board mid-repair.
+        throw new UseCaseError("card.board-changed");
+      }
+      let nextBoard: Board;
+      try {
+        nextBoard = replaceCardDomain(current.board, cardPath, card);
       } catch (cause) {
         if (cause instanceof CardAlreadyExistsError) {
           throw new UseCaseError(
@@ -480,28 +525,53 @@ export function createBoardStore({
           absolutePath,
         });
 
-        const current = get();
-        if (!current.board || current.path !== initial.path) {
-          // The native menu stays clickable while a modal dialog is open, so
-          // Open Recent can swap the board mid-repair.
+        return replaceCard(initial.path, cardPath, repaired);
+      },
+      recreateCard: async (
+        cardPath: string,
+        absolutePath: string,
+        title: string,
+      ) => {
+        const initial = get();
+        if (!initial.board || !initial.path) {
+          throw new Error("Open a board before relocating a card.");
+        }
+        const card = findCardByPath(initial.board, cardPath);
+        if (!card) {
           throw new UseCaseError("card.board-changed");
         }
-        let nextBoard: Board;
+
+        let target: ReturnType<typeof resolveNewMarkdownPathAt>;
         try {
-          nextBoard = replaceCardDomain(current.board, cardPath, repaired);
+          target = resolveNewMarkdownPathAt(initial.path, absolutePath);
         } catch (cause) {
-          if (cause instanceof CardAlreadyExistsError) {
-            throw new UseCaseError(
-              "card.already-on-board",
-              { path: repaired.path },
-              { cause },
-            );
+          if (cause instanceof CardFileValidationError) {
+            throw cardFileValidationToUseCaseError(cause);
           }
           throw cause;
         }
-        set({ board: nextBoard });
-        saveQueue.save(current.path, nextBoard);
-        return repaired;
+        // Checked before the file is written, the way adding a card is: the
+        // repair would fail at replaceCard anyway, but only after leaving a
+        // file behind that no card on the board refers to. The card's own path
+        // is not a collision - writing the file it is missing is the point.
+        if (
+          normalizeCardPath(target.relativePath) !==
+            normalizeCardPath(card.path) &&
+          containsCardPath(initial.board, target.relativePath)
+        ) {
+          throw new UseCaseError("card.already-on-board", {
+            path: target.relativePath,
+          });
+        }
+
+        const repaired = await recreateMarkdownCard({
+          boardPath: initial.path,
+          card,
+          absolutePath,
+          title,
+        });
+
+        return replaceCard(initial.path, cardPath, repaired);
       },
       removeCard: async (
         cardPath: string,

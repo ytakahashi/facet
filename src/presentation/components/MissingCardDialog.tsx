@@ -7,7 +7,13 @@ import type { UiError } from "../errors/toUiError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import { MarkdownFileBrowser } from "./MarkdownFileBrowser.tsx";
 
-type RepairMode = "browse" | "path";
+type RepairMode = "new" | "browse" | "path";
+
+// A file that was deleted is the case worth opening on; a path that never
+// resolved is more likely to be a reference to a file that is really out there.
+function initialModeFor(card: Card): RepairMode {
+  return card.fileState === "missing" ? "new" : "browse";
+}
 
 interface MissingCardDialogProps {
   card: Card;
@@ -30,6 +36,7 @@ export function MissingCardDialog({
 }: MissingCardDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const relocateCard = useBoardStore((state) => state.relocateCard);
+  const recreateCard = useBoardStore((state) => state.recreateCard);
   const discardCard = useMarkdownViewer((state) => state.discardCard);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
   // The viewer normally holds no broken card (a broken tile opens this dialog
@@ -39,9 +46,14 @@ export function MissingCardDialog({
     state.selectedPath === card.path
   );
   const boardDirectory = directoryOf(boardPath);
-  const [mode, setMode] = useState<RepairMode>("browse");
+  const [mode, setMode] = useState<RepairMode>(initialModeFor(card));
   const [selectedPath, setSelectedPath] = useState<string>();
+  // Shared by both typed modes: they name the same thing, and only the verb
+  // differs - the file is there, or it is about to be written there.
   const [pathInput, setPathInput] = useState(card.path);
+  const [titleInput, setTitleInput] = useState(
+    card.titleOverride ?? card.displayTitle,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<UiError>();
 
@@ -49,22 +61,23 @@ export function MissingCardDialog({
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open && !dialog.open) {
-      setMode("browse");
+      setMode(initialModeFor(card));
       setSelectedPath(undefined);
       setPathInput(card.path);
+      setTitleInput(card.titleOverride ?? card.displayTitle);
       setError(undefined);
       dialog.showModal();
     } else if (!open && dialog.open) {
       dialog.close();
     }
-  }, [card.path, open]);
+  }, [card, open]);
 
-  async function repair(absolutePath: string) {
+  async function repair(run: () => Promise<Card>) {
     const previousPath = card.path;
     setIsSubmitting(true);
     setError(undefined);
     try {
-      const repaired = await relocateCard(previousPath, absolutePath);
+      const repaired = await run();
       setIsSubmitting(false);
       onClose();
       // Only the card the viewer is actually showing: a repair is not a reason
@@ -79,28 +92,42 @@ export function MissingCardDialog({
     }
   }
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (mode === "browse") {
-      if (!selectedPath) return;
-      await repair(selectedPath);
-      return;
-    }
-
+  // Undefined once the error is shown: the typed path never left the board
+  // directory, so there is nothing to hand on.
+  function resolveTypedPath(): string | undefined {
     const input = pathInput.trim();
-    if (!input) return;
+    if (!input) return undefined;
     const resolved = resolveCardPath(boardDirectory, input);
     if (!resolved.ok) {
       // Reuses the use case's wording: a typed path lands on the same rule as
       // a picked one, and the message should not say otherwise.
       setError(toUiError(new UseCaseError("card.outside-board-directory")));
+      return undefined;
+    }
+    return resolved.absolutePath;
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (mode === "browse") {
+      if (!selectedPath) return;
+      await repair(() => relocateCard(card.path, selectedPath));
       return;
     }
-    await repair(resolved.absolutePath);
+
+    const absolutePath = resolveTypedPath();
+    if (!absolutePath) return;
+    await repair(() =>
+      mode === "new"
+        ? recreateCard(card.path, absolutePath, titleInput)
+        : relocateCard(card.path, absolutePath)
+    );
   }
 
   const canSubmit = mode === "browse"
     ? Boolean(selectedPath)
+    : mode === "new"
+    ? Boolean(pathInput.trim()) && Boolean(titleInput.trim())
     : Boolean(pathInput.trim());
   // Only a card whose path resolved has somewhere to look again; an
   // unresolvable one has no target to re-read.
@@ -142,6 +169,18 @@ export function MissingCardDialog({
         >
           <button
             type="button"
+            className={mode === "new" ? "is-selected" : undefined}
+            aria-pressed={mode === "new"}
+            onClick={() => {
+              setMode("new");
+              setError(undefined);
+            }}
+            disabled={isSubmitting}
+          >
+            New Markdown
+          </button>
+          <button
+            type="button"
             className={mode === "browse" ? "is-selected" : undefined}
             aria-pressed={mode === "browse"}
             onClick={() => {
@@ -181,20 +220,42 @@ export function MissingCardDialog({
             </fieldset>
           )
           : (
-            <label>
-              <span>Path relative to the board directory</span>
-              <input
-                type="text"
-                value={pathInput}
-                onChange={(event) => {
-                  setPathInput(event.target.value);
-                  setError(undefined);
-                }}
-                disabled={isSubmitting}
-                autoFocus
-                required
-              />
-            </label>
+            <>
+              {
+                /* The title becomes the new file's H1, which is where a card
+                  without an explicit title reads its own from. */
+              }
+              {mode === "new" && (
+                <label>
+                  <span>Title</span>
+                  <input
+                    type="text"
+                    value={titleInput}
+                    onChange={(event) => {
+                      setTitleInput(event.target.value);
+                      setError(undefined);
+                    }}
+                    disabled={isSubmitting}
+                    autoFocus
+                    required
+                  />
+                </label>
+              )}
+              <label>
+                <span>Path relative to the board directory</span>
+                <input
+                  type="text"
+                  value={pathInput}
+                  onChange={(event) => {
+                    setPathInput(event.target.value);
+                    setError(undefined);
+                  }}
+                  disabled={isSubmitting}
+                  autoFocus={mode === "path"}
+                  required
+                />
+              </label>
+            </>
           )}
         {
           /* The manual refresh this app has instead of watching the file
@@ -204,7 +265,8 @@ export function MissingCardDialog({
           <button
             type="button"
             className="missing-card-dialog__recheck"
-            onClick={() => void repair(recheckPath)}
+            onClick={() =>
+              void repair(() => relocateCard(card.path, recheckPath))}
             disabled={isSubmitting}
           >
             Check again
@@ -229,6 +291,8 @@ export function MissingCardDialog({
           <button type="submit" disabled={isSubmitting || !canSubmit}>
             {isSubmitting
               ? "Updating…"
+              : mode === "new"
+              ? "Create file"
               : mode === "browse"
               ? "Use this file"
               : "Update path"}

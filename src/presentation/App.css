@@ -1110,6 +1110,12 @@
   font-size: 12px;
 }
 
+/* One more mode than the add dialog: repairing a reference can also mean
+   writing the file it is missing. */
+.missing-card-dialog__modes {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .missing-card-dialog__target {
   display: flex;
   flex-direction: column;
