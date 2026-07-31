@@ -93,6 +93,36 @@ export function addCard(board: Board, columnId: string, card: Card): Board {
   return { ...board, columns };
 }
 
+// Swaps the card in place, keeping its column and position: pointing a card at
+// another file changes what it references, not where it sits on the board.
+// A path change is checked against the rest of the board because the path is a
+// card's identity here (see containsCardPath).
+export function replaceCard(board: Board, cardPath: string, card: Card): Board {
+  const normalizedPath = normalizeCardPath(cardPath);
+  if (
+    normalizeCardPath(card.path) !== normalizedPath &&
+    containsCardPath(board, card.path)
+  ) {
+    throw new CardAlreadyExistsError(card.path);
+  }
+
+  let found = false;
+  const columns = board.columns.map((column) => {
+    const index = column.cards.findIndex((c) =>
+      normalizeCardPath(c.path) === normalizedPath
+    );
+    if (index === -1) return column;
+    found = true;
+    const cards = [...column.cards];
+    cards[index] = card;
+    return { ...column, cards };
+  });
+  if (!found) {
+    throw new Error(`Unknown card: ${cardPath}`);
+  }
+  return { ...board, columns };
+}
+
 // Expects a trimmed, non-empty title; the blank-title check is an invariant
 // guard (the inline rename UI reverts blank input instead of submitting it).
 // A title override always wins the display priority order (see

@@ -9,7 +9,8 @@ import {
   attachClosestEdge,
   extractClosestEdge,
 } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import type { Card as CardModel } from "../../domain/card.ts";
+import type { Card as CardModel, CardFileState } from "../../domain/card.ts";
+import { isCardFileBroken } from "../../domain/card.ts";
 import type { LabelColor } from "../../domain/label.ts";
 import { useMarkdownViewer } from "../context/appContext.ts";
 import type { CardDragData } from "./dragData.ts";
@@ -20,10 +21,11 @@ interface CardProps {
   index: number;
   labelColors: Map<string, LabelColor>;
   onDelete: (card: CardModel) => void;
+  onRepair: (card: CardModel) => void;
 }
 
 export function Card(
-  { card, columnId, index, labelColors, onDelete }: CardProps,
+  { card, columnId, index, labelColors, onDelete, onRepair }: CardProps,
 ) {
   const isSelected = useMarkdownViewer((state) =>
     state.selectedPath === card.path
@@ -66,7 +68,10 @@ export function Card(
     );
   }, [columnId, index]);
 
+  const isBroken = isCardFileBroken(card);
+
   const classNames = ["card"];
+  if (isBroken) classNames.push("card--missing");
   if (isSelected) classNames.push("card--selected");
   if (isDragging) classNames.push("card--dragging");
   if (closestEdge === "top") classNames.push("card--drop-before");
@@ -76,7 +81,9 @@ export function Card(
     <div
       ref={ref}
       className={classNames.join(" ")}
-      onClick={() => void selectCard(card)}
+      // A broken card has nothing to show in the viewer, so its click goes to
+      // the repair dialog instead of a load error the user cannot act on.
+      onClick={() => isBroken ? onRepair(card) : void selectCard(card)}
     >
       {
         /* Revealed on hover/focus-within (see App.css) rather than shown on
@@ -97,6 +104,15 @@ export function Card(
       >
         ×
       </button>
+      {
+        /* Not a button: the badge only states what the board observed when it
+          loaded this card, so it carries no action of its own. */
+      }
+      {isBroken && (
+        <span className="card__missing" title={missingHint(card.fileState)}>
+          Missing
+        </span>
+      )}
       {card.priority && (
         <span className={`card__priority card__priority--${card.priority}`}>
           {card.priority}
@@ -119,4 +135,17 @@ export function Card(
       )}
     </div>
   );
+}
+
+// The two broken states are told apart by wording rather than by two badges:
+// what to do about them differs, but neither is something the tile itself can
+// fix.
+function missingHint(fileState: CardFileState): string {
+  if (fileState === "unresolvable") {
+    return "This card's path must point inside the board directory.";
+  }
+  if (fileState === "unreadable") {
+    return "The file at this path could not be read.";
+  }
+  return "No file at this path.";
 }

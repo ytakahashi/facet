@@ -612,6 +612,29 @@
   color: var(--color-priority-high);
 }
 
+/* Dashed, not solid: the drop indicators are solid lines in this same colour,
+   so a permanent solid border here would read as one of them mid-drag.
+   Citrine rather than the destructive red - a missing file is something to
+   repair, not a warning about an action - and not the amethyst accent, which
+   already marks the selected card. */
+.card--missing {
+  border-color: var(--color-accent-warm);
+  border-style: dashed;
+}
+
+.card__missing {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-accent-warm-bg);
+  color: var(--color-accent-warm);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .card--selected {
   border-color: var(--color-accent);
   background: var(--color-accent-bg);
@@ -898,7 +921,8 @@
 
 .add-card-dialog,
 .new-board-dialog,
-.delete-card-dialog {
+.delete-card-dialog,
+.missing-card-dialog {
   width: min(520px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   padding: 0;
@@ -911,13 +935,15 @@
 
 .add-card-dialog::backdrop,
 .new-board-dialog::backdrop,
-.delete-card-dialog::backdrop {
+.delete-card-dialog::backdrop,
+.missing-card-dialog::backdrop {
   background: var(--color-accent-bg);
 }
 
 .add-card-dialog form,
 .new-board-dialog form,
-.delete-card-dialog form {
+.delete-card-dialog form,
+.missing-card-dialog form {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -926,12 +952,14 @@
 
 .add-card-dialog h2,
 .new-board-dialog h2,
-.delete-card-dialog h2 {
+.delete-card-dialog h2,
+.missing-card-dialog h2 {
   margin: 0;
 }
 
 .add-card-dialog label,
-.new-board-dialog label {
+.new-board-dialog label,
+.missing-card-dialog label {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -941,7 +969,8 @@
 }
 
 .add-card-dialog input,
-.new-board-dialog input {
+.new-board-dialog input,
+.missing-card-dialog input {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--color-border);
@@ -953,7 +982,8 @@
 }
 
 .add-card-dialog fieldset,
-.new-board-dialog fieldset {
+.new-board-dialog fieldset,
+.missing-card-dialog fieldset {
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -961,7 +991,8 @@
 }
 
 .add-card-dialog legend,
-.new-board-dialog legend {
+.new-board-dialog legend,
+.missing-card-dialog legend {
   margin-bottom: 6px;
   color: var(--color-text-strong);
   font-size: 13px;
@@ -970,14 +1001,16 @@
 
 .add-card-dialog__error,
 .new-board-dialog__error,
-.delete-card-dialog__error {
+.delete-card-dialog__error,
+.missing-card-dialog__error {
   color: var(--color-priority-high);
   font-size: 13px;
 }
 
 .add-card-dialog__actions,
 .new-board-dialog__actions,
-.delete-card-dialog__actions {
+.delete-card-dialog__actions,
+.missing-card-dialog__actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -986,9 +1019,12 @@
 .add-card-dialog__actions button,
 .new-board-dialog__actions button,
 .delete-card-dialog__actions button,
+.missing-card-dialog__actions button,
+.missing-card-dialog__recheck,
 .board-directory-picker button,
 .markdown-file-browser button,
-.add-card-dialog__modes button {
+.add-card-dialog__modes button,
+.missing-card-dialog__modes button {
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -997,20 +1033,23 @@
   cursor: pointer;
 }
 
-.add-card-dialog__modes {
+.add-card-dialog__modes,
+.missing-card-dialog__modes {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
 
-.add-card-dialog__modes button.is-selected {
+.add-card-dialog__modes button.is-selected,
+.missing-card-dialog__modes button.is-selected {
   border-color: var(--color-accent);
   background: var(--color-accent-bg);
 }
 
 .add-card-dialog button:disabled,
 .new-board-dialog button:disabled,
-.delete-card-dialog button:disabled {
+.delete-card-dialog button:disabled,
+.missing-card-dialog button:disabled {
   cursor: default;
   opacity: 0.5;
 }
@@ -1069,6 +1108,52 @@
   margin: -8px 0 0;
   color: var(--color-priority-high);
   font-size: 12px;
+}
+
+/* One more mode than the add dialog: repairing a reference can also mean
+   writing the file it is missing. */
+.missing-card-dialog__modes {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.missing-card-dialog__target {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.missing-card-dialog__title {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.missing-card-dialog__path {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* The same citrine as the tile's badge: both say "this reference is broken",
+   and the dialog is where that state gets explained. */
+.missing-card-dialog__reason {
+  margin: 4px 0 0;
+  color: var(--color-accent-warm);
+  font-size: 12px;
+}
+
+/* Sits apart from the confirm row: it repeats the current path rather than
+   acting on what the form holds. */
+.missing-card-dialog__recheck {
+  align-self: flex-start;
+}
+
+/* Leaving the repair behind is not the confirm action, so it sits away from
+   the pair on the right instead of next to them. */
+.missing-card-dialog__remove {
+  margin-right: auto;
 }
 
 /* Reuses the priority token that already stands for "high stakes" here rather

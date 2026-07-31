@@ -81,6 +81,39 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
+  it("returns the content reported by the read binding", async () => {
+    vi.stubGlobal("bindings", {
+      readTextFile: vi.fn().mockResolvedValue({
+        read: true,
+        content: "# Card\n",
+      }),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    await expect(fileSystem.readTextFile("/board/card.md")).resolves.toBe(
+      "# Card\n",
+    );
+  });
+
+  it("maps a missing file reported by the read binding to a typed file-system error", async () => {
+    vi.stubGlobal("bindings", {
+      readTextFile: vi.fn().mockResolvedValue({
+        read: false,
+        reason: "not-found",
+      }),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () => fileSystem.readTextFile("/board/card.md");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "not-found",
+      operation: "read-file",
+      path: "/board/card.md",
+    });
+  });
+
   it("wraps raw binding failures with operation context", async () => {
     const cause = new Error("Permission denied");
     vi.stubGlobal("bindings", {

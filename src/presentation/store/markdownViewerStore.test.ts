@@ -11,6 +11,7 @@ function makeCard(overrides: Partial<Card> = {}): Card {
   return {
     path: "improve-search.md",
     absolutePath: "/board/improve-search.md",
+    fileState: "available",
     labels: [],
     displayTitle: "Improve search",
     ...overrides,

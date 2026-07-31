@@ -4,6 +4,7 @@ import {
   normalizeMarkdownFileName,
   resolveExistingMarkdownPath,
   resolveNewMarkdownPath,
+  resolveNewMarkdownPathAt,
   suggestMarkdownFileName,
 } from "./cardFile.ts";
 
@@ -82,6 +83,51 @@ describe("initialMarkdown", () => {
     const act = () => initialMarkdown("  ");
 
     expect(act).toThrow(expect.objectContaining({ kind: "title-required" }));
+  });
+});
+
+describe("resolveNewMarkdownPathAt", () => {
+  it("splits a chosen path into a directory and a file name", () => {
+    const result = resolveNewMarkdownPathAt(
+      "/board/development.board.yaml",
+      "/board/ideas/new idea.md",
+    );
+
+    expect(result).toEqual({
+      absolutePath: "/board/ideas/new idea.md",
+      relativePath: "ideas/new idea.md",
+      fileName: "new idea.md",
+    });
+  });
+
+  it("applies the same file-name normalization as a picked directory", () => {
+    const result = resolveNewMarkdownPathAt(
+      "/board/development.board.yaml",
+      "/board/notes",
+    );
+
+    expect(result.relativePath).toBe("notes.md");
+  });
+
+  it("rejects a path outside the board directory", () => {
+    const act = () =>
+      resolveNewMarkdownPathAt(
+        "/board/development.board.yaml",
+        "/other/card.md",
+      );
+
+    expect(act).toThrow(
+      expect.objectContaining({ kind: "outside-board-directory" }),
+    );
+  });
+
+  it("rejects a path with no file name", () => {
+    const act = () =>
+      resolveNewMarkdownPathAt("/board/development.board.yaml", "/board/");
+
+    expect(act).toThrow(
+      expect.objectContaining({ kind: "file-name-required" }),
+    );
   });
 });
 

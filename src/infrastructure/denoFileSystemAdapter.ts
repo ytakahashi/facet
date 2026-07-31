@@ -19,12 +19,14 @@ async function runFileSystemOperation<T>(
 }
 
 export class DenoFileSystemAdapter implements FileSystemPort {
-  readTextFile(path: string): Promise<string> {
-    return runFileSystemOperation(
-      "read-file",
-      path,
-      () => bindings.readTextFile(path),
-    );
+  async readTextFile(path: string): Promise<string> {
+    return runFileSystemOperation("read-file", path, async () => {
+      const result = await bindings.readTextFile(path);
+      if (!result.read) {
+        throw new FileSystemError(result.reason, "read-file", path);
+      }
+      return result.content;
+    });
   }
 
   writeTextFile(path: string, content: string): Promise<void> {

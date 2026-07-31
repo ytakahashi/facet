@@ -79,6 +79,29 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps a missing Markdown file to a message naming the path", () => {
+    const error = new UseCaseError(
+      "card.file-not-found",
+      { path: "/board/moved.md" },
+      { cause: new Error("not-found") },
+    );
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "No Markdown file at this path at /board/moved.md.",
+    });
+  });
+
+  it("maps a location outside the board directory without naming an operation", () => {
+    const result = toUiError(new UseCaseError("card.outside-board-directory"));
+
+    expect(result).toEqual({
+      message: "Choose a location inside the board directory.",
+      field: "directory",
+    });
+  });
+
   it("maps a Markdown delete failure to a message naming the file", () => {
     const error = new UseCaseError(
       "markdown.delete-failed",

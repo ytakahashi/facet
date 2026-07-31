@@ -20,6 +20,7 @@ import {
   renameBoard,
   renameColumn,
   renameLabelDefinition,
+  replaceCard,
   setCardPriority,
   setCardTitle,
   setLabelColor,
@@ -30,6 +31,7 @@ import type { LabelDefinition } from "./label.ts";
 function makeCard(overrides: Partial<Card> = {}): Card {
   return {
     path: "card.md",
+    fileState: "available",
     labels: [],
     displayTitle: "Card",
     ...overrides,
@@ -210,6 +212,76 @@ describe("addCard", () => {
       );
 
     expect(act).toThrow(CardAlreadyExistsError);
+  });
+});
+
+describe("replaceCard", () => {
+  it("swaps the card in place, keeping its column and position", () => {
+    const target = makeCard({ path: "gone.md" });
+    const neighbour = makeCard({ path: "neighbour.md" });
+    const untouched = makeColumn({
+      id: "done",
+      cards: [makeCard({ path: "done.md" })],
+    });
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "doing", cards: [target, neighbour] }),
+        untouched,
+      ],
+    });
+    const repaired = makeCard({ path: "moved.md", displayTitle: "Moved" });
+
+    const result = replaceCard(board, "gone.md", repaired);
+
+    expect(result.columns[0].cards).toEqual([repaired, neighbour]);
+    expect(result.columns[1]).toBe(untouched);
+    expect(board.columns[0].cards[0]).toBe(target);
+  });
+
+  it("finds the card to replace after path normalization", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "a.md" })] })],
+    });
+    const repaired = makeCard({ path: "b.md" });
+
+    const result = replaceCard(board, "./a.md", repaired);
+
+    expect(result.columns[0].cards).toEqual([repaired]);
+  });
+
+  it("rejects a new path already held by another card", () => {
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "doing", cards: [makeCard({ path: "gone.md" })] }),
+        makeColumn({ id: "done", cards: [makeCard({ path: "taken.md" })] }),
+      ],
+    });
+
+    const act = () =>
+      replaceCard(board, "gone.md", makeCard({ path: "./taken.md" }));
+
+    expect(act).toThrow(CardAlreadyExistsError);
+  });
+
+  it("does not treat the card's own path as a collision", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "a.md" })] })],
+    });
+    const repaired = makeCard({ path: "a.md", displayTitle: "Reloaded" });
+
+    const result = replaceCard(board, "a.md", repaired);
+
+    expect(result.columns[0].cards).toEqual([repaired]);
+  });
+
+  it("rejects an unknown card path", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "a.md" })] })],
+    });
+
+    const act = () => replaceCard(board, "missing.md", makeCard());
+
+    expect(act).toThrow("Unknown card: missing.md");
   });
 });
 

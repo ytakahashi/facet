@@ -1,6 +1,10 @@
 import type { DirEntry } from "../domain/fileSystemPort.ts";
 import type { MenuItem } from "./denoApplicationMenu.ts";
 
+export type ReadTextFileResult =
+  | { read: true; content: string }
+  | { read: false; reason: "not-found" };
+
 export type CreateTextFileResult =
   | { created: true }
   | { created: false; reason: "already-exists" };
@@ -10,7 +14,7 @@ export type RemoveFileResult =
   | { removed: false; reason: "not-found" | "is-a-directory" };
 
 export interface Bindings {
-  readTextFile(path: string): Promise<string>;
+  readTextFile(path: string): Promise<ReadTextFileResult>;
   writeTextFile(path: string, content: string): Promise<void>;
   createTextFile(path: string, content: string): Promise<CreateTextFileResult>;
   removeFile(path: string): Promise<RemoveFileResult>;

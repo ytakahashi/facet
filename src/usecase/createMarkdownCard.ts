@@ -5,14 +5,9 @@ import {
   initialMarkdown,
   resolveNewMarkdownPath,
 } from "../domain/cardFile.ts";
-import {
-  FileSystemError,
-  type FileSystemPort,
-} from "../domain/fileSystemPort.ts";
-import {
-  cardFileValidationToUseCaseError,
-  UseCaseError,
-} from "./useCaseError.ts";
+import type { FileSystemPort } from "../domain/fileSystemPort.ts";
+import { createMarkdownFile } from "./createMarkdownFile.ts";
+import { cardFileValidationToUseCaseError } from "./useCaseError.ts";
 
 export interface CreateMarkdownCardInput {
   boardPath: string;
@@ -45,37 +40,7 @@ export async function createMarkdownCard(
     throw cause;
   }
 
-  let exists: boolean;
-  try {
-    exists = await fileSystem.exists(path.absolutePath);
-  } catch (cause) {
-    throw new UseCaseError(
-      "card.create-failed",
-      { path: path.absolutePath },
-      { cause },
-    );
-  }
-  if (exists) {
-    throw new UseCaseError("card.file-already-exists", {
-      path: path.absolutePath,
-    });
-  }
+  await createMarkdownFile(path.absolutePath, markdown, { fileSystem });
 
-  try {
-    await fileSystem.createTextFile(path.absolutePath, markdown);
-  } catch (cause) {
-    if (cause instanceof FileSystemError && cause.kind === "already-exists") {
-      throw new UseCaseError(
-        "card.file-already-exists",
-        { path: path.absolutePath },
-        { cause },
-      );
-    }
-    throw new UseCaseError(
-      "card.create-failed",
-      { path: path.absolutePath },
-      { cause },
-    );
-  }
   return createCardReference(path.relativePath, path.absolutePath, markdown);
 }

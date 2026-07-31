@@ -33,6 +33,7 @@ describe("addExistingMarkdownCard", () => {
     expect(result).toEqual({
       path: "ideas/existing.md",
       absolutePath: "/board/ideas/existing.md",
+      fileState: "available",
       labels: [],
       displayTitle: "Existing card",
     });
