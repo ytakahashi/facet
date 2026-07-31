@@ -4,7 +4,10 @@ import type { BoardRepository } from "../domain/boardRepository.ts";
 import { directoryOf, resolveCardPath } from "../domain/boardPath.ts";
 import type { Card } from "../domain/card.ts";
 import { resolveCardTitle } from "../domain/card.ts";
-import type { FileSystemPort } from "../domain/fileSystemPort.ts";
+import {
+  FileSystemError,
+  type FileSystemPort,
+} from "../domain/fileSystemPort.ts";
 import type { LabelColor, LabelDefinition } from "../domain/label.ts";
 
 // Trusts the parsed YAML's shape instead of validating it against a schema.
@@ -78,24 +81,20 @@ export class YamlBoardRepository implements BoardRepository {
     rawCard: RawCard,
   ): Promise<Card> {
     const resolved = resolveCardPath(boardDirectory, rawCard.path);
-    // A card whose file could not be read at all is reported as missing
-    // whatever the reason: a card that cannot be opened is broken from the
-    // board's point of view, and one unreadable file must not stop the whole
-    // board from loading.
-    const markdownText = resolved.ok
+    // One unreadable card must not stop the whole board from loading, but a
+    // missing file and a file that exists but cannot be read offer different
+    // recovery actions in the UI.
+    const readResult = resolved.ok
       ? await this.tryReadTextFile(resolved.absolutePath)
       : undefined;
+    const markdownText = readResult?.markdownText;
 
     return {
       path: rawCard.path,
       absolutePath: resolved.ok ? resolved.absolutePath : undefined,
       fileState: !resolved.ok
         ? "unresolvable"
-        // An empty Markdown file reads as "", so the check is against
-        // undefined: only a failed read means the file is missing.
-        : markdownText === undefined
-        ? "missing"
-        : "available",
+        : readResult?.fileState ?? "unreadable",
       titleOverride: rawCard.title,
       priority: rawCard.priority as Card["priority"],
       labels: rawCard.labels ?? [],
@@ -147,11 +146,22 @@ export class YamlBoardRepository implements BoardRepository {
     };
   }
 
-  private async tryReadTextFile(path: string): Promise<string | undefined> {
+  private async tryReadTextFile(path: string): Promise<{
+    markdownText?: string;
+    fileState: "available" | "missing" | "unreadable";
+  }> {
     try {
-      return await this.fileSystem.readTextFile(path);
-    } catch {
-      return undefined;
+      return {
+        markdownText: await this.fileSystem.readTextFile(path),
+        fileState: "available",
+      };
+    } catch (cause) {
+      return {
+        fileState: cause instanceof FileSystemError &&
+            cause.kind === "not-found"
+          ? "missing"
+          : "unreadable",
+      };
     }
   }
 }

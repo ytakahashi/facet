@@ -2,6 +2,10 @@ export type ResolvedCardPath =
   | { ok: true; absolutePath: string }
   | { ok: false; reason: "absolute-path" | "escapes-board-directory" };
 
+export function hasTrailingPathSeparator(path: string): boolean {
+  return path.trim().endsWith("/");
+}
+
 /**
  * Resolves a card's YAML-relative path against the board file's own directory,
  * rejecting anything that would land outside it.

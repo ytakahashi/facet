@@ -141,7 +141,11 @@ export function Card(
 // what to do about them differs, but neither is something the tile itself can
 // fix.
 function missingHint(fileState: CardFileState): string {
-  return fileState === "unresolvable"
-    ? "This card's path must point inside the board directory."
-    : "No file at this path.";
+  if (fileState === "unresolvable") {
+    return "This card's path must point inside the board directory.";
+  }
+  if (fileState === "unreadable") {
+    return "The file at this path could not be read.";
+  }
+  return "No file at this path.";
 }

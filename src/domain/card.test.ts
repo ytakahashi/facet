@@ -132,6 +132,10 @@ describe("isCardFileBroken", () => {
     expect(isCardFileBroken(makeCard("missing"))).toBe(true);
   });
 
+  it("treats an unreadable card as broken", () => {
+    expect(isCardFileBroken(makeCard("unreadable"))).toBe(true);
+  });
+
   it("treats a card whose path does not resolve as broken", () => {
     expect(isCardFileBroken(makeCard("unresolvable"))).toBe(true);
   });

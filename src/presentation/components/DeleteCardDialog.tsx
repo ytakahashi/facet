@@ -110,6 +110,12 @@ export function DeleteCardDialog(
             removed.
           </p>
         )}
+        {card.fileState === "unreadable" && (
+          <p className="delete-card-dialog__note">
+            The file at this path could not be read, so only the board reference
+            can be removed.
+          </p>
+        )}
         {deleteFile && canDeleteFile && (
           <p className="delete-card-dialog__warning" role="alert">
             <span className="delete-card-dialog__path">

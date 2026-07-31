@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   directoryOf,
+  hasTrailingPathSeparator,
   normalizeCardPath,
   resolveCardPath,
   toRelativeCardPath,
@@ -41,6 +42,13 @@ describe("resolveCardPath", () => {
     );
 
     expect(result).toEqual({ ok: false, reason: "escapes-board-directory" });
+  });
+});
+
+describe("hasTrailingPathSeparator", () => {
+  it("detects a trailing separator before a typed path is resolved", () => {
+    expect(hasTrailingPathSeparator("ideas/  ")).toBe(true);
+    expect(hasTrailingPathSeparator("ideas/card.md")).toBe(false);
   });
 });
 

@@ -1,7 +1,11 @@
 import type { Label } from "./label.ts";
 import type { Priority } from "./priority.ts";
 
-export type CardFileState = "available" | "missing" | "unresolvable";
+export type CardFileState =
+  | "available"
+  | "missing"
+  | "unreadable"
+  | "unresolvable";
 
 export interface Card {
   path: string;
@@ -12,6 +16,8 @@ export interface Card {
   // moment the file moves outside the app.
   // "unresolvable" always comes with absolutePath undefined - the path never
   // resolved inside the board directory, so there is nothing to read.
+  // "missing" is reserved for a not-found result. "unreadable" means the
+  // path resolved but the file could not be read for another reason.
   fileState: CardFileState;
   titleOverride?: string;
   priority?: Priority;

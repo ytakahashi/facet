@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { directoryOf, resolveCardPath } from "../../domain/boardPath.ts";
+import {
+  directoryOf,
+  hasTrailingPathSeparator,
+  resolveCardPath,
+} from "../../domain/boardPath.ts";
 import type { Card } from "../../domain/card.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { useBoardStore, useMarkdownViewer } from "../context/appContext.ts";
@@ -97,6 +101,10 @@ export function MissingCardDialog({
   function resolveTypedPath(): string | undefined {
     const input = pathInput.trim();
     if (!input) return undefined;
+    if (hasTrailingPathSeparator(input)) {
+      setError(toUiError(new UseCaseError("card.file-name-required")));
+      return undefined;
+    }
     const resolved = resolveCardPath(boardDirectory, input);
     if (!resolved.ok) {
       // Reuses the use case's wording: a typed path lands on the same rule as
@@ -131,7 +139,8 @@ export function MissingCardDialog({
     : Boolean(pathInput.trim());
   // Only a card whose path resolved has somewhere to look again; an
   // unresolvable one has no target to re-read.
-  const recheckPath = card.fileState === "missing"
+  const recheckPath = card.fileState === "missing" ||
+      card.fileState === "unreadable"
     ? card.absolutePath
     : undefined;
 
@@ -151,9 +160,7 @@ export function MissingCardDialog({
           <p className="missing-card-dialog__title">{card.displayTitle}</p>
           <p className="missing-card-dialog__path">{card.path}</p>
           <p className="missing-card-dialog__reason">
-            {card.fileState === "unresolvable"
-              ? "This card's path must point inside the board directory."
-              : "No file at this path."}
+            {missingReason(card)}
           </p>
         </div>
         {/* One input at a time, so an error never needs placing next to one. */}
@@ -301,4 +308,14 @@ export function MissingCardDialog({
       </form>
     </dialog>
   );
+}
+
+function missingReason(card: Card): string {
+  if (card.fileState === "unresolvable") {
+    return "This card's path must point inside the board directory.";
+  }
+  if (card.fileState === "unreadable") {
+    return "The file at this path could not be read.";
+  }
+  return "No file at this path.";
 }

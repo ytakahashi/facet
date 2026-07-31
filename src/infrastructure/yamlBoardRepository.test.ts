@@ -1,18 +1,27 @@
 import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
-import type { DirEntry, FileSystemPort } from "../domain/fileSystemPort.ts";
+import {
+  type DirEntry,
+  FileSystemError,
+  type FileSystemPort,
+} from "../domain/fileSystemPort.ts";
 import type { Board } from "../domain/board.ts";
 import { YamlBoardRepository } from "./yamlBoardRepository.ts";
 
 class FakeFileSystemPort implements FileSystemPort {
   private readonly files: Map<string, string>;
+  private readonly readErrors: Map<string, Error>;
   readonly writes: Array<{ path: string; content: string }> = [];
   // Recorded separately from writes so tests can assert which API was used:
   // create must go through the exclusive createTextFile, never writeTextFile.
   readonly creates: Array<{ path: string; content: string }> = [];
 
-  constructor(files: Record<string, string> = {}) {
+  constructor(
+    files: Record<string, string> = {},
+    readErrors: Record<string, Error> = {},
+  ) {
     this.files = new Map(Object.entries(files));
+    this.readErrors = new Map(Object.entries(readErrors));
   }
 
   removeFile(): Promise<void> {
@@ -28,9 +37,13 @@ class FakeFileSystemPort implements FileSystemPort {
   }
 
   readTextFile(path: string): Promise<string> {
+    const readError = this.readErrors.get(path);
+    if (readError) return Promise.reject(readError);
     const content = this.files.get(path);
     if (content === undefined) {
-      return Promise.reject(new Error(`file not found: ${path}`));
+      return Promise.reject(
+        new FileSystemError("not-found", "read-file", path),
+      );
     }
     return Promise.resolve(content);
   }
@@ -179,6 +192,36 @@ columns:
       "available",
     ]);
     expect(board.columns[0].cards[1].displayTitle).toBe("Improve search");
+  });
+
+  it("distinguishes an unreadable markdown from a missing one", async () => {
+    const unreadablePath = "/board/private.md";
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+columns:
+  - id: doing
+    name: Doing
+    cards:
+      - path: private.md
+        labels: []
+`,
+    }, {
+      [unreadablePath]: new FileSystemError(
+        "operation-failed",
+        "read-file",
+        unreadablePath,
+      ),
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const board = await repository.load("/board/development.board.yaml");
+    const card = board.columns[0].cards[0];
+
+    expect(card.fileState).toBe("unreadable");
+    expect(card.absolutePath).toBe(unreadablePath);
+    expect(card.displayTitle).toBe("private");
   });
 
   it("reads an empty markdown file as available", async () => {
