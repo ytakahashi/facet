@@ -65,6 +65,33 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps a directory at the destination to a file name error", () => {
+    const error = new UseCaseError("card.file-is-a-directory", {
+      path: "/board/ideas.md",
+    });
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "A directory already exists at /board/ideas.md.",
+      field: "fileName",
+    });
+  });
+
+  it("maps a move failure without exposing its cause", () => {
+    const error = new UseCaseError(
+      "card.move-failed",
+      { path: "/board/ideas/card.md" },
+      { cause: new Error("Permission denied") },
+    );
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message: "Failed to move the Markdown file at /board/ideas/card.md.",
+    });
+  });
+
   it("maps an existing Markdown read failure without exposing its cause", () => {
     const error = new UseCaseError(
       "card.load-failed",

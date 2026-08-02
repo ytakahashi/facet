@@ -55,6 +55,22 @@ export class DenoFileSystemAdapter implements FileSystemPort {
     });
   }
 
+  async renameFile(fromPath: string, toPath: string): Promise<void> {
+    return runFileSystemOperation("rename-file", fromPath, async () => {
+      const result = await bindings.renameFile(fromPath, toPath);
+      if (!result.renamed) {
+        // Reported against the path the reason is about: something in the way
+        // is about where the file was going, a missing file about where it
+        // came from.
+        throw new FileSystemError(
+          result.reason,
+          "rename-file",
+          result.reason === "not-found" ? fromPath : toPath,
+        );
+      }
+    });
+  }
+
   readDir(path: string): Promise<DirEntry[]> {
     return runFileSystemOperation(
       "read-directory",

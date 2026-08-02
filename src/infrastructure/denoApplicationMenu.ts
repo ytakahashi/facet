@@ -1,8 +1,8 @@
 import type { FileSystemPort } from "../domain/fileSystemPort.ts";
 
 // Mirrors the JSON shape Deno Desktop's win.setApplicationMenu expects.
-// Kept local to this file (not imported from a Deno types package) since
-// main.ts treats the menu as an opaque pass-through value.
+// Kept local to this file (not imported from a Deno types package) since the
+// desktop host treats the menu as an opaque pass-through value.
 // `enabled` is required on the "item" variant - omitting it made Deno
 // Desktop silently drop the entire containing top-level menu on-device
 // (confirmed: a File menu with one enabled-less item disappeared while

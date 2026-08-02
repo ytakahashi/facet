@@ -11,6 +11,7 @@ function makeFileSystem(
     readTextFile: vi.fn().mockResolvedValue("# Moved card\n\nBody"),
     writeTextFile: vi.fn(),
     removeFile: vi.fn(),
+    renameFile: vi.fn(),
     createTextFile: vi.fn(),
     readDir: vi.fn(),
     homeDirectory: vi.fn(),

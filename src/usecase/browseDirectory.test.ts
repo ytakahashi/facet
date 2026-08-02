@@ -33,6 +33,10 @@ class FakeFileSystemPort implements FileSystemPort {
     throw new Error("not needed for this test");
   }
 
+  renameFile(): Promise<void> {
+    throw new Error("not needed for this test");
+  }
+
   readDir(path: string): Promise<DirEntry[]> {
     if (this.failure) return Promise.reject(this.failure);
     return Promise.resolve(this.dirs.get(path) ?? []);

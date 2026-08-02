@@ -50,6 +50,15 @@ export function toUiError(error: unknown): UiError {
         message: `A file already exists${atPath(path)}.`,
         field: "fileName",
       };
+    // Told apart from a plain collision: naming a file that is not there is
+    // worse than saying nothing, and either the file name or the directory can
+    // be changed to get out of the way - the same two fields a collision is
+    // fixed from.
+    case "card.file-is-a-directory":
+      return {
+        message: `A directory already exists${atPath(path)}.`,
+        field: "fileName",
+      };
     case "card.file-name-required":
       return { message: "File name is required.", field: "fileName" };
     // Told apart from card.load-failed: after choosing or typing a path, what
@@ -60,6 +69,8 @@ export function toUiError(error: unknown): UiError {
       return { message: "Enter a single valid file name.", field: "fileName" };
     case "card.load-failed":
       return { message: `Failed to load the Markdown file${atPath(path)}.` };
+    case "card.move-failed":
+      return { message: `Failed to move the Markdown file${atPath(path)}.` };
     case "card.not-markdown-file":
       return { message: "Select a Markdown (.md) file." };
     // Reached both by picking a directory and by typing a path, so the wording

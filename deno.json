@@ -10,10 +10,15 @@
     "backend": "webview"
   },
   "imports": {
+    "@std/assert": "jsr:@std/assert@^1",
     "@std/http/file-server": "jsr:@std/http@^1/file-server"
   },
+  "test": {
+    "include": ["desktop/"]
+  },
   "tasks": {
-    "desktop": "deno task build && deno desktop --allow-read --allow-write --allow-env --allow-net --exclude node_modules --include dist main.ts",
-    "desktop:hmr": "deno task build && deno desktop --hmr --allow-read --allow-write --allow-env --allow-net --exclude node_modules --include dist main.ts"
+    "desktop": "deno task build && deno desktop --allow-read --allow-write --allow-env --allow-net --exclude node_modules --include dist desktop/main.ts",
+    "desktop:hmr": "deno task build && deno desktop --hmr --allow-read --allow-write --allow-env --allow-net --exclude node_modules --include dist desktop/main.ts",
+    "test": "vitest run && deno test --allow-read --allow-write"
   }
 }
