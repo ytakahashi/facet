@@ -17,6 +17,7 @@ function makeDeps(overrides: Partial<BoardStoreDeps> = {}): BoardStoreDeps {
     addExistingMarkdownCard: vi.fn(),
     relocateMarkdownCard: vi.fn(),
     recreateMarkdownCard: vi.fn(),
+    renameMarkdownCard: vi.fn(),
     createBoard: vi.fn(),
     deleteMarkdown: vi.fn(),
     ...overrides,
@@ -1552,5 +1553,267 @@ describe("createBoardStore", () => {
 
     await expect(act).rejects.toMatchObject({ code: "card.board-changed" });
     expect(relocateMarkdownCard).not.toHaveBeenCalled();
+  });
+
+  const movedCard: Card = {
+    path: "ideas/search.md",
+    absolutePath: "/board/ideas/search.md",
+    fileState: "available",
+    labels: [],
+    displayTitle: "A",
+  };
+
+  it("replaces the moved card in place and saves the board", async () => {
+    const board = makeBoard();
+    const renameMarkdownCard = vi.fn().mockResolvedValue(movedCard);
+    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+      renameMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const result = await useBoardStore.getState().renameCardFile(
+      "a.md",
+      "/board/ideas",
+      "search.md",
+    );
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+
+    expect(renameMarkdownCard).toHaveBeenCalledWith({
+      boardPath: "/board/development.board.yaml",
+      card: board.columns[0].cards[0],
+      directory: "/board/ideas",
+      fileName: "search.md",
+    });
+    expect(result).toBe(movedCard);
+    // The column and the position within it are the board's, not the card's,
+    // so moving the file must not disturb either.
+    expect(useBoardStore.getState().board?.columns[0].cards).toEqual([
+      movedCard,
+    ]);
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+    );
+  });
+
+  it("does nothing for the path the card already has", async () => {
+    const board = makeBoard();
+    const renameMarkdownCard = vi.fn();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+      renameMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const result = await useBoardStore.getState().renameCardFile(
+      "a.md",
+      "/board",
+      "a.md",
+    );
+
+    expect(result).toBe(board.columns[0].cards[0]);
+    expect(renameMarkdownCard).not.toHaveBeenCalled();
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("treats a change of letter case as a rename rather than as no change", async () => {
+    const board = makeBoard();
+    const renameMarkdownCard = vi.fn().mockResolvedValue(movedCard);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      renameMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    await useBoardStore.getState().renameCardFile("a.md", "/board", "A.md");
+
+    expect(renameMarkdownCard).toHaveBeenCalledWith({
+      boardPath: "/board/development.board.yaml",
+      card: board.columns[0].cards[0],
+      directory: "/board",
+      fileName: "A.md",
+    });
+  });
+
+  it("refuses a destination another card already holds, before the file moves", async () => {
+    const board = makeBoard({
+      columns: [
+        {
+          id: "doing",
+          name: "Doing",
+          cards: [{
+            path: "a.md",
+            absolutePath: "/board/a.md",
+            fileState: "available",
+            labels: [],
+            displayTitle: "A",
+          }],
+        },
+        { id: "done", name: "Done", cards: [movedCard] },
+      ],
+    });
+    const renameMarkdownCard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      renameMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().renameCardFile(
+        "a.md",
+        "/board/ideas",
+        "search.md",
+      );
+
+    await expect(act).rejects.toMatchObject({
+      code: "card.already-on-board",
+      details: { path: "ideas/search.md" },
+    });
+    expect(renameMarkdownCard).not.toHaveBeenCalled();
+  });
+
+  it("refuses a destination a missing card holds in a different letter case", async () => {
+    const board = makeBoard({
+      columns: [
+        {
+          id: "doing",
+          name: "Doing",
+          cards: [{
+            path: "a.md",
+            absolutePath: "/board/a.md",
+            fileState: "available",
+            labels: [],
+            displayTitle: "A",
+          }],
+        },
+        {
+          id: "done",
+          name: "Done",
+          // Its file is gone, so the file system cannot report the collision:
+          // renaming onto it would leave two cards over one file.
+          cards: [{
+            path: "Test1.md",
+            absolutePath: "/board/Test1.md",
+            fileState: "missing",
+            labels: [],
+            displayTitle: "Test1",
+          }],
+        },
+      ],
+    });
+    const renameMarkdownCard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      renameMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().renameCardFile("a.md", "/board", "test1.md");
+
+    await expect(act).rejects.toMatchObject({
+      code: "card.already-on-board",
+      details: { path: "test1.md" },
+    });
+    expect(renameMarkdownCard).not.toHaveBeenCalled();
+  });
+
+  it("rejects a destination outside the board directory before the file moves", async () => {
+    const board = makeBoard();
+    const renameMarkdownCard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      renameMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().renameCardFile("a.md", "/other", "search.md");
+
+    await expect(act).rejects.toMatchObject({
+      code: "card.outside-board-directory",
+    });
+    expect(renameMarkdownCard).not.toHaveBeenCalled();
+  });
+
+  it("leaves the board untouched when the file cannot be moved", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      saveBoard,
+      renameMarkdownCard: vi.fn().mockRejectedValue(
+        new UseCaseError("card.file-already-exists", {
+          path: "/board/ideas/search.md",
+        }),
+      ),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().renameCardFile(
+        "a.md",
+        "/board/ideas",
+        "search.md",
+      );
+
+    await expect(act).rejects.toMatchObject({
+      code: "card.file-already-exists",
+    });
+    expect(useBoardStore.getState().board).toEqual(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
+  it("reports a board change when another board is opened mid-move", async () => {
+    const board = makeBoard();
+    const otherBoard = makeBoard({ name: "Other" });
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: vi.fn()
+        .mockResolvedValueOnce(board)
+        .mockResolvedValueOnce(otherBoard),
+      renameMarkdownCard: async () => {
+        // The native menu stays clickable while the modal dialog is open.
+        await useBoardStore.getState().openBoard("/board/other.board.yaml");
+        return movedCard;
+      },
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().renameCardFile(
+        "a.md",
+        "/board/ideas",
+        "search.md",
+      );
+
+    await expect(act).rejects.toMatchObject({ code: "card.board-changed" });
+  });
+
+  it("reports a board change for a path that is not on the board", async () => {
+    const board = makeBoard();
+    const renameMarkdownCard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(board),
+      renameMarkdownCard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const act = () =>
+      useBoardStore.getState().renameCardFile(
+        "unknown.md",
+        "/board/ideas",
+        "search.md",
+      );
+
+    await expect(act).rejects.toMatchObject({ code: "card.board-changed" });
+    expect(renameMarkdownCard).not.toHaveBeenCalled();
   });
 });

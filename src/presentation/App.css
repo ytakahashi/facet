@@ -887,7 +887,11 @@
   margin-top: 10px;
 }
 
-.markdown-viewer__labels-button {
+/* Same look as the labels button above it: two buttons in the same meta band
+   that both open a dialog should not read as two different kinds of control. */
+.markdown-viewer__labels-button,
+.markdown-viewer__path-button {
+  flex-shrink: 0;
   font-size: 12px;
   padding: 2px 6px;
   border: none;
@@ -896,7 +900,8 @@
   cursor: pointer;
 }
 
-.markdown-viewer__labels-button:hover {
+.markdown-viewer__labels-button:hover,
+.markdown-viewer__path-button:hover {
   background: var(--color-accent-bg);
   border-radius: 4px;
 }
@@ -944,7 +949,8 @@
 .add-card-dialog,
 .new-board-dialog,
 .delete-card-dialog,
-.missing-card-dialog {
+.missing-card-dialog,
+.rename-card-file-dialog {
   width: min(520px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   padding: 0;
@@ -958,14 +964,16 @@
 .add-card-dialog::backdrop,
 .new-board-dialog::backdrop,
 .delete-card-dialog::backdrop,
-.missing-card-dialog::backdrop {
+.missing-card-dialog::backdrop,
+.rename-card-file-dialog::backdrop {
   background: var(--color-accent-bg);
 }
 
 .add-card-dialog form,
 .new-board-dialog form,
 .delete-card-dialog form,
-.missing-card-dialog form {
+.missing-card-dialog form,
+.rename-card-file-dialog form {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -975,13 +983,15 @@
 .add-card-dialog h2,
 .new-board-dialog h2,
 .delete-card-dialog h2,
-.missing-card-dialog h2 {
+.missing-card-dialog h2,
+.rename-card-file-dialog h2 {
   margin: 0;
 }
 
 .add-card-dialog label,
 .new-board-dialog label,
-.missing-card-dialog label {
+.missing-card-dialog label,
+.rename-card-file-dialog label {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -992,7 +1002,8 @@
 
 .add-card-dialog input,
 .new-board-dialog input,
-.missing-card-dialog input {
+.missing-card-dialog input,
+.rename-card-file-dialog input {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--color-border);
@@ -1005,7 +1016,8 @@
 
 .add-card-dialog fieldset,
 .new-board-dialog fieldset,
-.missing-card-dialog fieldset {
+.missing-card-dialog fieldset,
+.rename-card-file-dialog fieldset {
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -1014,7 +1026,8 @@
 
 .add-card-dialog legend,
 .new-board-dialog legend,
-.missing-card-dialog legend {
+.missing-card-dialog legend,
+.rename-card-file-dialog legend {
   margin-bottom: 6px;
   color: var(--color-text-strong);
   font-size: 13px;
@@ -1024,7 +1037,8 @@
 .add-card-dialog__error,
 .new-board-dialog__error,
 .delete-card-dialog__error,
-.missing-card-dialog__error {
+.missing-card-dialog__error,
+.rename-card-file-dialog__error {
   color: var(--color-priority-high);
   font-size: 13px;
 }
@@ -1032,7 +1046,8 @@
 .add-card-dialog__actions,
 .new-board-dialog__actions,
 .delete-card-dialog__actions,
-.missing-card-dialog__actions {
+.missing-card-dialog__actions,
+.rename-card-file-dialog__actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -1046,7 +1061,8 @@
 .board-directory-picker button,
 .markdown-file-browser button,
 .add-card-dialog__modes button,
-.missing-card-dialog__modes button {
+.missing-card-dialog__modes button,
+.rename-card-file-dialog__actions button {
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -1071,7 +1087,8 @@
 .add-card-dialog button:disabled,
 .new-board-dialog button:disabled,
 .delete-card-dialog button:disabled,
-.missing-card-dialog button:disabled {
+.missing-card-dialog button:disabled,
+.rename-card-file-dialog button:disabled {
   cursor: default;
   opacity: 0.5;
 }
@@ -1093,7 +1110,8 @@
   font-weight: 500;
 }
 
-.delete-card-dialog__path {
+.delete-card-dialog__path,
+.rename-card-file-dialog__path {
   margin: 0;
   font-family: var(--mono);
   font-size: 12px;
@@ -1117,7 +1135,8 @@
   opacity: 0.5;
 }
 
-.delete-card-dialog__note {
+.delete-card-dialog__note,
+.rename-card-file-dialog__note {
   margin: -8px 0 0;
   color: var(--color-text);
   font-size: 12px;

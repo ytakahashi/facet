@@ -15,6 +15,7 @@ import { createMarkdownCard } from "../usecase/createMarkdownCard.ts";
 import { addExistingMarkdownCard } from "../usecase/addExistingMarkdownCard.ts";
 import { relocateMarkdownCard } from "../usecase/relocateMarkdownCard.ts";
 import { recreateMarkdownCard } from "../usecase/recreateMarkdownCard.ts";
+import { renameMarkdownCard } from "../usecase/renameMarkdownCard.ts";
 import type { AppDependencies } from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
 import { createFilterStore } from "../presentation/store/filterStore.ts";
@@ -55,6 +56,7 @@ export const appDependencies: AppDependencies = {
       relocateMarkdownCard(input, { fileSystem }),
     recreateMarkdownCard: (input) =>
       recreateMarkdownCard(input, { fileSystem }),
+    renameMarkdownCard: (input) => renameMarkdownCard(input, { fileSystem }),
     createBoard: (input) => createBoard(input, { fileSystem, boardRepository }),
     deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
   }),

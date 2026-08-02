@@ -35,6 +35,11 @@ export interface MarkdownViewerState {
   // the file. The path argument limits this to the card actually deleted - the
   // delete can start from any card on the board, not just the open one.
   discardCard: (path: string) => void;
+  // Follows a card whose file was moved, keeping what is on screen. The draft
+  // is deliberately preserved - the file moved, its contents did not - and
+  // absolutePath has to move with it or the next save would write back to the
+  // path the file just left and recreate it there.
+  retargetCard: (previousPath: string, card: Card) => void;
 }
 
 export type ViewMarkdown = (path: string) => Promise<string>;
@@ -182,6 +187,17 @@ export function createMarkdownViewerStore(
       if (get().selectedPath !== path) return;
       generation++;
       set(CLOSED_STATE);
+    },
+    retargetCard: (previousPath: string, card: Card) => {
+      // The rename flow only ever moves the card the viewer has open, but the
+      // check is kept as the same defense line the other path-scoped actions
+      // draw.
+      if (get().selectedPath !== previousPath) return;
+      // The generation counter is left alone: nothing is in flight (the rename
+      // UI appears only once the card is loaded, and it waits for a pending
+      // save), and bumping it would throw away a result that belongs to this
+      // very file.
+      set({ selectedPath: card.path, absolutePath: card.absolutePath });
     },
   }));
 }
