@@ -90,6 +90,23 @@ export function MarkdownViewer() {
         </div>
       )}
 
+      {card && (
+        <div className="markdown-viewer__path">
+          {
+            /* The board-relative path, the same form the board file stores. The
+            absolute path goes in the tooltip: it is what the user needs when
+            leaving for Finder or another editor, but it is too long to sit in
+            this row. */
+          }
+          <span
+            className="markdown-viewer__path-text"
+            title={card.absolutePath}
+          >
+            {card.path}
+          </span>
+        </div>
+      )}
+
       {card && board && (
         <LabelPickerDialog
           key={card.path}

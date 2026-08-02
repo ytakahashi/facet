@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   directoryOf,
+  fileNameOf,
   hasTrailingPathSeparator,
   normalizeCardPath,
   resolveCardPath,
@@ -59,6 +60,18 @@ describe("directoryOf", () => {
     );
 
     expect(directory).toBe("/boards/my-project");
+  });
+});
+
+describe("fileNameOf", () => {
+  it("returns the last segment with its extension", () => {
+    expect(fileNameOf("/boards/my-project/ideas/improve-search.md")).toBe(
+      "improve-search.md",
+    );
+  });
+
+  it("returns a path without a separator unchanged", () => {
+    expect(fileNameOf("improve-search.md")).toBe("improve-search.md");
   });
 });
 

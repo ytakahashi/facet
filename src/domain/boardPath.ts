@@ -49,6 +49,14 @@ export function directoryOf(path: string): string {
   return index === -1 ? "" : path.slice(0, index);
 }
 
+// The counterpart to directoryOf: everything after the last separator. The
+// extension is kept - this names the file, it does not describe it, so it is
+// not the same thing as the filename a card falls back to for its title.
+export function fileNameOf(path: string): string {
+  const index = path.lastIndexOf("/");
+  return index === -1 ? path : path.slice(index + 1);
+}
+
 export type RelativeCardPathResult =
   | { ok: true; path: string }
   | { ok: false; reason: "outside-board-directory" | "not-a-file" };

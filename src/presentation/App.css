@@ -842,7 +842,7 @@
 }
 
 .markdown-viewer__meta {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .priority-picker {
@@ -899,6 +899,28 @@
 .markdown-viewer__labels-button:hover {
   background: var(--color-accent-bg);
   border-radius: 4px;
+}
+
+.markdown-viewer__path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Truncated rather than wrapped: the row is a label for the open file, not
+   content to read, and the tooltip carries the absolute path in full.
+   min-width: 0 because a flex item defaults to min-width: auto and would
+   refuse to shrink below a long path with no spaces to break at, pushing it
+   out of the panel instead of ellipsizing it. */
+.markdown-viewer__path-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--color-text);
 }
 
 .markdown-viewer__placeholder {
