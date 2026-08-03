@@ -10,13 +10,15 @@ import {
 } from "../domain/fileSystemPort.ts";
 import type { LabelColor, LabelDefinition } from "../domain/label.ts";
 
-// Trusts the parsed YAML's shape instead of validating it against a schema.
-// A malformed field (wrong type, missing key) surfaces as an odd value
-// downstream (e.g. an unexpected string in a typed union) rather than a
-// clear parse error. Deliberately out of scope for this phase, which only
-// reads boards nobody has written back to yet; revisit once this app can
-// write these files itself, since a bug in that path could produce exactly
-// this kind of malformed input.
+// Trusts the parsed YAML's shape instead of validating it against a schema:
+// beyond load()'s check that `columns` is an array, a malformed field (wrong
+// type, missing key) surfaces as an odd value downstream (e.g. an unexpected
+// string in a typed union) rather than as a clear parse error.
+//
+// save() and create() write these files through toRaw(), so the shape holds
+// for boards this app produced. What stays unchecked is a hand-edited file -
+// and a board this app wrote through a bug in toRaw(), which would then be
+// read back without complaint.
 interface RawCard {
   path: string;
   title?: string;

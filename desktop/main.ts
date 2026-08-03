@@ -17,6 +17,8 @@ win.bind("readTextFile", async (path: unknown) => {
   }
 });
 
+// Deno Desktop binding handlers must resolve to a serializable value.
+// Void operations therefore return null explicitly.
 win.bind(
   "writeTextFile",
   async (path: unknown, content: unknown) => {
@@ -25,6 +27,13 @@ win.bind(
   },
 );
 
+// Exclusive through createNew rather than an exists() check followed by a
+// write: creating a card's Markdown must never land on a file that is already
+// there, and only the open(2) flag decides that without leaving a gap for one
+// to appear in. An existing file is reported as data, the way removeFile
+// reports a missing one.
+// The write loops because a single write() may be partial, which would
+// otherwise leave a truncated file behind a "created" result.
 win.bind(
   "createTextFile",
   async (path: unknown, content: unknown) => {

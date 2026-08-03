@@ -9,6 +9,14 @@
      --color-bg for these inverts the order in dark mode, where the
      background is darker than the surfaces, and they read as holes. */
   --color-surface-raised: #ffffff;
+  /* Two accents, divided by what a state means rather than by where it sits.
+     Amethyst marks what currently holds: the selected card, and the controls
+     that add or clear something. Citrine marks what is in flight or unsettled:
+     drop indicators and drag-over surfaces for as long as a drag lasts, and a
+     card whose file no longer resolves. Choosing between them by eye is what
+     lets the two blur into reading as one interchangeable highlight.
+     Each pairs a foreground with a low-alpha wash of its own hue, so -bg is
+     the hover/fill half of the pair and never stands in for the text colour. */
   --color-accent: #68598a;
   --color-accent-bg: rgba(104, 89, 138, 0.08);
   --color-accent-warm: #c58f3c;
@@ -30,8 +38,9 @@
      Every value here is darkened only as far as needed to clear WCAG AA
      4.5:1 for small text against a white surface tinted with its own
      10%-alpha background. `neutral` is the fallback for a label name with
-     no matching registry entry (e.g. a hand-edited board.yaml), kept
-     identical to the pre-Phase-12 plain .card__label look. */
+     no matching registry entry (e.g. a hand-edited board.yaml): it keeps the
+     plain, uncoloured .card__label look rather than borrowing one of the
+     twelve, so an unrecognised name never reads as a deliberate colour. */
   --color-label-ruby: #792028;
   --color-label-ruby-bg: rgba(121, 32, 40, 0.1);
   --color-label-amber: #795420;

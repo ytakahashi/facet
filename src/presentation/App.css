@@ -946,6 +946,10 @@
   color: var(--color-text);
 }
 
+/* Every dialog shares one frame, backdrop, form, heading and button set, so a
+   new one joins these selector lists rather than restating them. Restating is
+   how two dialogs drift into looking like different kinds of window, and how
+   one of them ends up styled for only one colour scheme. */
 .add-card-dialog,
 .new-board-dialog,
 .delete-card-dialog,

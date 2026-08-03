@@ -60,8 +60,8 @@ export function containsCardPath(board: Board, path: string): boolean {
   );
 }
 
-// A card's path is unique across the whole board (containsCardPath is what
-// enforces that on add), so it can be located without a columnId.
+// Card operations address a card by path, so no column id or index is needed.
+// addCard and replaceCard prevent those operations from introducing duplicates.
 export function findCardByPath(board: Board, path: string): Card | undefined {
   const normalizedPath = normalizeCardPath(path);
   for (const column of board.columns) {
