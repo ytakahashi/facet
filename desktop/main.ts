@@ -1,3 +1,5 @@
+import { renameFile } from "./renameFile.ts";
+
 const win = new Deno.BrowserWindow({ title: "Facet" });
 
 // Deno.errors instances do not survive the binding boundary, so a missing file
@@ -78,6 +80,15 @@ win.bind("removeFile", async (path: unknown) => {
   }
 });
 
+// Kept in its own module so it can be exercised against a real file system:
+// the reasons it is careful (case-insensitive volumes, hard links, the two
+// meanings of NotFound) are all facts about the file system rather than about
+// this application, and a stubbed test would only restate the assumptions.
+win.bind(
+  "renameFile",
+  (from: unknown, to: unknown) => renameFile(from as string, to as string),
+);
+
 win.bind("readDir", async (path: unknown) => {
   const entries = [];
   for await (const entry of Deno.readDir(path as string)) {
@@ -135,7 +146,12 @@ win.bind("nextMenuClick", () => {
   });
 });
 
-const distDir = new URL("./dist", import.meta.url).pathname;
+// Relative to this file, which sits one level below the project root the
+// build writes dist/ into. Resolved against import.meta.url rather than the
+// working directory so it holds both when run from source and from inside a
+// compiled binary, where the same layout is reproduced in the virtual file
+// system.
+const distDir = new URL("../dist", import.meta.url).pathname;
 
 // Loaded lazily (not as a static top-level import) to work around a Deno
 // Desktop bug where a jsr:/remote import that's actually used breaks

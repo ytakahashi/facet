@@ -1,7 +1,7 @@
 import type { Card } from "./card.ts";
 import type { LabelColor, LabelDefinition } from "./label.ts";
 import type { Priority } from "./priority.ts";
-import { normalizeCardPath } from "./boardPath.ts";
+import { isSameCardPath, normalizeCardPath } from "./boardPath.ts";
 
 export interface Column {
   id: string;
@@ -49,10 +49,14 @@ export class LabelAlreadyExistsError extends Error {
   }
 }
 
+// Whether the board already holds a card over this file. Compared with
+// isSameCardPath rather than exactly: a path that only differs from an
+// existing one in letter case or Unicode composition can still name the same
+// file, and the board must not end up with two cards over it. The file system
+// cannot answer this - the card in the way may be one whose file is missing.
 export function containsCardPath(board: Board, path: string): boolean {
-  const normalizedPath = normalizeCardPath(path);
   return board.columns.some((column) =>
-    column.cards.some((card) => normalizeCardPath(card.path) === normalizedPath)
+    column.cards.some((card) => isSameCardPath(card.path, path))
   );
 }
 
@@ -99,8 +103,11 @@ export function addCard(board: Board, columnId: string, card: Card): Board {
 // card's identity here (see containsCardPath).
 export function replaceCard(board: Board, cardPath: string, card: Card): Board {
   const normalizedPath = normalizeCardPath(cardPath);
+  // The card being replaced is not in its own way. Its own path is recognised
+  // with the same comparison containsCardPath uses, so re-spelling a file name
+  // - the case-only rename - is not read as a collision with itself.
   if (
-    normalizeCardPath(card.path) !== normalizedPath &&
+    !isSameCardPath(card.path, cardPath) &&
     containsCardPath(board, card.path)
   ) {
     throw new CardAlreadyExistsError(card.path);

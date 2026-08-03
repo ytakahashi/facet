@@ -7,5 +7,9 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "node",
+    // The desktop host's tests run under Deno, against a real file system;
+    // picked up here they would only fail on the Deno globals they exist to
+    // exercise.
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 });

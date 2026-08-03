@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   directoryOf,
+  fileNameOf,
   hasTrailingPathSeparator,
+  isSameCardPath,
   normalizeCardPath,
   resolveCardPath,
   toRelativeCardPath,
@@ -59,6 +61,44 @@ describe("directoryOf", () => {
     );
 
     expect(directory).toBe("/boards/my-project");
+  });
+});
+
+describe("fileNameOf", () => {
+  it("returns the last segment with its extension", () => {
+    expect(fileNameOf("/boards/my-project/ideas/improve-search.md")).toBe(
+      "improve-search.md",
+    );
+  });
+
+  it("returns a path without a separator unchanged", () => {
+    expect(fileNameOf("improve-search.md")).toBe("improve-search.md");
+  });
+});
+
+describe("isSameCardPath", () => {
+  it("treats a path as the same as itself", () => {
+    expect(isSameCardPath("ideas/card.md", "ideas/card.md")).toBe(true);
+  });
+
+  it("treats paths that differ only in letter case as the same file", () => {
+    expect(isSameCardPath("Test1.md", "test1.md")).toBe(true);
+    expect(isSameCardPath("Ideas/Card.md", "ideas/card.md")).toBe(true);
+  });
+
+  it("treats composed and decomposed spellings as the same file", () => {
+    // The same name as the app composes it and as the file system hands it
+    // back.
+    expect(isSameCardPath("caf\u00e9.md", "cafe\u0301.md")).toBe(true);
+  });
+
+  it("looks past redundant path segments", () => {
+    expect(isSameCardPath("./ideas/card.md", "ideas/card.md")).toBe(true);
+  });
+
+  it("keeps genuinely different paths apart", () => {
+    expect(isSameCardPath("ideas/card.md", "ideas/other.md")).toBe(false);
+    expect(isSameCardPath("card.md", "ideas/card.md")).toBe(false);
   });
 });
 

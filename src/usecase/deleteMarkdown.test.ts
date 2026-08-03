@@ -11,6 +11,7 @@ function makeFileSystem(
     writeTextFile: vi.fn(),
     createTextFile: vi.fn(),
     removeFile,
+    renameFile: vi.fn(),
     readDir: vi.fn(),
     homeDirectory: vi.fn(),
     exists: vi.fn(),

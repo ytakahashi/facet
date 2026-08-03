@@ -13,6 +13,7 @@ function makeFileSystem(
     readTextFile: vi.fn(),
     writeTextFile: vi.fn(),
     removeFile: vi.fn(),
+    renameFile: vi.fn(),
     createTextFile: vi.fn(),
     readDir: vi.fn(),
     homeDirectory: vi.fn(),

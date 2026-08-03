@@ -497,4 +497,85 @@ describe("createMarkdownViewerStore", () => {
       "# Improve search (edited)",
     );
   });
+
+  it("follows a moved card without disturbing what is on screen", async () => {
+    const card = makeCard();
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      vi.fn(),
+      neverDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
+
+    useMarkdownViewer.getState().retargetCard(
+      card.path,
+      makeCard({
+        path: "ideas/search.md",
+        absolutePath: "/board/ideas/search.md",
+      }),
+    );
+
+    expect(useMarkdownViewer.getState().selectedPath).toBe("ideas/search.md");
+    expect(useMarkdownViewer.getState().absolutePath).toBe(
+      "/board/ideas/search.md",
+    );
+    expect(useMarkdownViewer.getState().status).toBe("loaded");
+    expect(useMarkdownViewer.getState().content).toBe("# Improve search");
+    expect(useMarkdownViewer.getState().draft).toBe(
+      "# Improve search (edited)",
+    );
+  });
+
+  it("saves to the new path after following a moved card", async () => {
+    const card = makeCard();
+    const saveMarkdown = vi.fn().mockResolvedValue(undefined);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      saveMarkdown,
+      neverDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
+    useMarkdownViewer.getState().retargetCard(
+      card.path,
+      makeCard({
+        path: "ideas/search.md",
+        absolutePath: "/board/ideas/search.md",
+      }),
+    );
+
+    await useMarkdownViewer.getState().save();
+
+    // The point of following the move: writing to the old path would put the
+    // file back where it was just taken from.
+    expect(saveMarkdown).toHaveBeenCalledWith(
+      "/board/ideas/search.md",
+      "# Improve search (edited)",
+    );
+    expect(useMarkdownViewer.getState().content).toBe(
+      "# Improve search (edited)",
+    );
+  });
+
+  it("leaves the viewer alone when a different card is retargeted", async () => {
+    const card = makeCard();
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      vi.fn(),
+      neverDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+
+    useMarkdownViewer.getState().retargetCard(
+      "redesign-sidebar.md",
+      makeCard({
+        path: "ideas/search.md",
+        absolutePath: "/board/ideas/search.md",
+      }),
+    );
+
+    expect(useMarkdownViewer.getState().selectedPath).toBe(card.path);
+    expect(useMarkdownViewer.getState().absolutePath).toBe(card.absolutePath);
+  });
 });

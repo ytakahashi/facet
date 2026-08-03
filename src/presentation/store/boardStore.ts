@@ -34,12 +34,13 @@ import {
   resolveNewMarkdownPath,
   resolveNewMarkdownPathAt,
 } from "../../domain/cardFile.ts";
-import { normalizeCardPath } from "../../domain/boardPath.ts";
+import { isSameCardPath, normalizeCardPath } from "../../domain/boardPath.ts";
 import type { AddExistingMarkdownCardInput } from "../../usecase/addExistingMarkdownCard.ts";
 import type { CreateBoardInput } from "../../usecase/createBoard.ts";
 import type { CreateMarkdownCardInput } from "../../usecase/createMarkdownCard.ts";
 import type { RelocateMarkdownCardInput } from "../../usecase/relocateMarkdownCard.ts";
 import type { RecreateMarkdownCardInput } from "../../usecase/recreateMarkdownCard.ts";
+import type { RenameMarkdownCardInput } from "../../usecase/renameMarkdownCard.ts";
 import type { SaveBoard } from "../../usecase/boardSaveQueue.ts";
 import { createBoardSaveQueue } from "../../usecase/boardSaveQueue.ts";
 import {
@@ -81,6 +82,12 @@ export interface BoardState {
     absolutePath: string,
     title: string,
   ) => Promise<Card>;
+  // Named for the file, not the card: renameCard changes the card's title.
+  renameCardFile: (
+    cardPath: string,
+    directory: string,
+    fileName: string,
+  ) => Promise<Card>;
   removeCard: (path: string, options: RemoveCardOptions) => Promise<void>;
   retrySave: () => void;
 }
@@ -116,6 +123,9 @@ export type RelocateMarkdownCard = (
 export type RecreateMarkdownCard = (
   input: RecreateMarkdownCardInput,
 ) => Promise<Card>;
+export type RenameMarkdownCard = (
+  input: RenameMarkdownCardInput,
+) => Promise<Card>;
 export type DeleteMarkdown = (path: string) => Promise<void>;
 
 // Named rather than positional: the store keeps gaining file-touching use
@@ -128,6 +138,7 @@ export interface BoardStoreDeps {
   addExistingMarkdownCard: AddExistingMarkdownCard;
   relocateMarkdownCard: RelocateMarkdownCard;
   recreateMarkdownCard: RecreateMarkdownCard;
+  renameMarkdownCard: RenameMarkdownCard;
   createBoard: CreateBoard;
   deleteMarkdown: DeleteMarkdown;
 }
@@ -139,6 +150,7 @@ export function createBoardStore({
   addExistingMarkdownCard,
   relocateMarkdownCard,
   recreateMarkdownCard,
+  renameMarkdownCard,
   createBoard,
   deleteMarkdown,
 }: BoardStoreDeps): UseBoundStore<StoreApi<BoardState>> {
@@ -555,8 +567,7 @@ export function createBoardStore({
         // file behind that no card on the board refers to. The card's own path
         // is not a collision - writing the file it is missing is the point.
         if (
-          normalizeCardPath(target.relativePath) !==
-            normalizeCardPath(card.path) &&
+          !isSameCardPath(target.relativePath, card.path) &&
           containsCardPath(initial.board, target.relativePath)
         ) {
           throw new UseCaseError("card.already-on-board", {
@@ -572,6 +583,66 @@ export function createBoardStore({
         });
 
         return replaceCard(initial.path, cardPath, repaired);
+      },
+      renameCardFile: async (
+        cardPath: string,
+        directory: string,
+        fileName: string,
+      ) => {
+        const initial = get();
+        if (!initial.board || !initial.path) {
+          // Invariant violation, not a recoverable user error: the rename
+          // dialog only exists on a card the viewer has open, which requires a
+          // loaded board.
+          throw new Error("Open a board before moving a card's file.");
+        }
+        const card = findCardByPath(initial.board, cardPath);
+        if (!card) {
+          throw new UseCaseError("card.board-changed");
+        }
+
+        let target: ReturnType<typeof resolveNewMarkdownPath>;
+        try {
+          target = resolveNewMarkdownPath(initial.path, directory, fileName);
+        } catch (cause) {
+          if (cause instanceof CardFileValidationError) {
+            throw cardFileValidationToUseCaseError(cause);
+          }
+          throw cause;
+        }
+        // Submitting the path the card already has asks for nothing; don't
+        // move a file onto itself or rewrite the board file for it. A change
+        // of letter case is not the same path - it goes on and is renamed.
+        if (
+          normalizeCardPath(target.relativePath) ===
+            normalizeCardPath(card.path)
+        ) {
+          return card;
+        }
+        // Checked before the file moves, the way creating one is: replaceCard
+        // would reject the collision anyway, but only after the file had
+        // already left the path the board still points at. The board's own
+        // uniqueness cannot be read off the file system - the card occupying
+        // the path may itself be missing its file.
+        // The card's own path is not a collision: re-spelling this file's name
+        // is the point of the operation.
+        if (
+          !isSameCardPath(target.relativePath, card.path) &&
+          containsCardPath(initial.board, target.relativePath)
+        ) {
+          throw new UseCaseError("card.already-on-board", {
+            path: target.relativePath,
+          });
+        }
+
+        const moved = await renameMarkdownCard({
+          boardPath: initial.path,
+          card,
+          directory,
+          fileName,
+        });
+
+        return replaceCard(initial.path, cardPath, moved);
       },
       removeCard: async (
         cardPath: string,

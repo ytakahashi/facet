@@ -263,6 +263,31 @@ describe("replaceCard", () => {
     expect(act).toThrow(CardAlreadyExistsError);
   });
 
+  it("rejects a new path another card holds in a different letter case", () => {
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "doing", cards: [makeCard({ path: "gone.md" })] }),
+        makeColumn({ id: "done", cards: [makeCard({ path: "Taken.md" })] }),
+      ],
+    });
+
+    const act = () =>
+      replaceCard(board, "gone.md", makeCard({ path: "taken.md" }));
+
+    expect(act).toThrow(CardAlreadyExistsError);
+  });
+
+  it("accepts re-spelling the card's own path in another letter case", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "Sample.md" })] })],
+    });
+    const renamed = makeCard({ path: "sample.md" });
+
+    const result = replaceCard(board, "Sample.md", renamed);
+
+    expect(result.columns[0].cards).toEqual([renamed]);
+  });
+
   it("does not treat the card's own path as a collision", () => {
     const board = makeBoard({
       columns: [makeColumn({ cards: [makeCard({ path: "a.md" })] })],
@@ -896,6 +921,23 @@ describe("containsCardPath", () => {
     const result = containsCardPath(board, "notes/card.md");
 
     expect(result).toBe(true);
+  });
+
+  it("finds a path that differs only in letter case", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "Test1.md" })] })],
+    });
+
+    // One file on a case-insensitive volume, so one card.
+    expect(containsCardPath(board, "test1.md")).toBe(true);
+  });
+
+  it("finds a path that differs only in Unicode composition", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "caf\u00e9.md" })] })],
+    });
+
+    expect(containsCardPath(board, "cafe\u0301.md")).toBe(true);
   });
 });
 

@@ -81,6 +81,99 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
+  it("resolves when the rename binding reports the file was moved", async () => {
+    const renameFile = vi.fn().mockResolvedValue({ renamed: true });
+    vi.stubGlobal("bindings", { renameFile });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    await expect(
+      fileSystem.renameFile("/board/card.md", "/board/ideas/card.md"),
+    ).resolves.toBeUndefined();
+    expect(renameFile).toHaveBeenCalledWith(
+      "/board/card.md",
+      "/board/ideas/card.md",
+    );
+  });
+
+  it("reports an occupied rename destination against the destination path", async () => {
+    vi.stubGlobal("bindings", {
+      renameFile: vi.fn().mockResolvedValue({
+        renamed: false,
+        reason: "already-exists",
+      }),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () =>
+      fileSystem.renameFile("/board/card.md", "/board/ideas/card.md");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "already-exists",
+      operation: "rename-file",
+      path: "/board/ideas/card.md",
+    });
+  });
+
+  it("reports a directory at the rename destination against the destination path", async () => {
+    vi.stubGlobal("bindings", {
+      renameFile: vi.fn().mockResolvedValue({
+        renamed: false,
+        reason: "is-a-directory",
+      }),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () =>
+      fileSystem.renameFile("/board/card.md", "/board/ideas.md");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "is-a-directory",
+      operation: "rename-file",
+      path: "/board/ideas.md",
+    });
+  });
+
+  it("reports a missing rename source against the source path", async () => {
+    vi.stubGlobal("bindings", {
+      renameFile: vi.fn().mockResolvedValue({
+        renamed: false,
+        reason: "not-found",
+      }),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () =>
+      fileSystem.renameFile("/board/card.md", "/board/ideas/card.md");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "not-found",
+      operation: "rename-file",
+      path: "/board/card.md",
+    });
+  });
+
+  it("wraps a failing rename binding with operation context", async () => {
+    const cause = new Error("Permission denied");
+    vi.stubGlobal("bindings", {
+      renameFile: vi.fn().mockRejectedValue(cause),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () =>
+      fileSystem.renameFile("/board/card.md", "/board/ideas/card.md");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "operation-failed",
+      operation: "rename-file",
+      path: "/board/card.md",
+      cause,
+    });
+  });
+
   it("returns the content reported by the read binding", async () => {
     vi.stubGlobal("bindings", {
       readTextFile: vi.fn().mockResolvedValue({

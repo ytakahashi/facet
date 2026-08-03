@@ -1,4 +1,4 @@
-import { directoryOf, toRelativeCardPath } from "./boardPath.ts";
+import { directoryOf, fileNameOf, toRelativeCardPath } from "./boardPath.ts";
 
 export type CardFileValidationErrorKind =
   | "title-required"
@@ -87,11 +87,10 @@ export function resolveNewMarkdownPathAt(
   boardPath: string,
   absolutePath: string,
 ): NewMarkdownPath {
-  const index = absolutePath.lastIndexOf("/");
   return resolveNewMarkdownPath(
     boardPath,
     directoryOf(absolutePath),
-    absolutePath.slice(index + 1),
+    fileNameOf(absolutePath),
   );
 }
 
