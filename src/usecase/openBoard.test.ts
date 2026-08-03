@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { AppConfig } from "../domain/appConfig.ts";
 import { emptyAppConfig } from "../domain/appConfig.ts";
 import type { Board } from "../domain/board.ts";
@@ -125,6 +125,7 @@ describe("openBoard", () => {
   });
 
   it("still returns the board when recording history fails", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const board: Board = {
       version: 1,
       name: "Development",
@@ -140,5 +141,10 @@ describe("openBoard", () => {
     });
 
     expect(result).toEqual(board);
+    expect(consoleWarn).toHaveBeenCalledWith(
+      "Failed to record board history:",
+      expect.any(Error),
+    );
+    consoleWarn.mockRestore();
   });
 });
