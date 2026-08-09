@@ -1,6 +1,6 @@
-// Mirrors RenameFileResult on the webview side: Deno.errors instances do not
-// survive the binding boundary, so every reason a move did not happen is
-// reported as data.
+// Mirrors RenameFileResult on the webview side, for the reason fileSystem.ts
+// gives for the rest of them: Deno.errors instances do not survive the binding
+// boundary, so every reason a move did not happen is reported as data.
 export type RenameFileResult =
   | { renamed: true }
   | {
