@@ -1,0 +1,42 @@
+name: Deno
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v7
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.4
+
+      - name: Setup
+        run: deno install
+
+      - name: Lint
+        run: deno task lint
+
+      - name: Check code format
+        run: deno fmt --check
+
+      - name: Run Tests
+        run: deno task test
+
+      - name: Build
+        run: deno task build
