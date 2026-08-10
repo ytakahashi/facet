@@ -4,7 +4,7 @@
       "name": "Facet",
       "identifier": "net.ytakahashi.facet",
       "icons": {
-        "macos": "./public/icon.icns"
+        "macos": "./build/icon.icns"
       }
     },
     "backend": "webview"
