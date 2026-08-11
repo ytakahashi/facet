@@ -4,5 +4,85 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+  },
+  // Enforces the import directions ARCHITECTURE.md describes, including the
+  // process boundary between src/ and desktop/.
+  //
+  // Patterns match the import specifier as written, so they are anchored with
+  // `**/` rather than spelled relatively: `../usecase/*` stops matching the
+  // moment a layer gains a subdirectory and one more `../` appears, which
+  // would drop the boundary without failing any check.
+  //
+  // A more specific override replaces this rule rather than merging into it,
+  // so each layer restates every boundary that applies to it.
+  "overrides": [
+    {
+      "files": ["src/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": ["**/desktop/**"]
+        }]
+      }
+    },
+    {
+      "files": ["src/domain/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/usecase/**",
+            "**/infrastructure/**",
+            "**/presentation/**",
+            "**/composition/**",
+            "**/desktop/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/usecase/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/presentation/**",
+            "**/composition/**",
+            "**/desktop/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/infrastructure/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/usecase/**",
+            "**/presentation/**",
+            "**/composition/**",
+            "**/desktop/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["desktop/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": ["**/src/**"]
+        }]
+      }
+    }
+  ]
 }
