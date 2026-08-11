@@ -8,6 +8,7 @@ import {
   EMPTY_CARD_FILTER,
   filterColumnCards,
   isCardFilterActive,
+  isCardHidden,
 } from "./cardFilter.ts";
 
 function makeCard(
@@ -125,6 +126,19 @@ describe("card filters", () => {
 
     expect(areColumnCardsHidden(column, criteria)).toBe(true);
     expect(areColumnCardsHidden(makeColumn("doing"), criteria)).toBe(false);
+  });
+
+  it("reports a card as hidden by its column or by its own fields", () => {
+    const card = makeCard("shipped.md", "high", ["bug"]);
+    const hiddenColumn = makeCriteria({ hiddenColumnIds: new Set(["done"]) });
+    const otherPriority = makeCriteria({ priority: "low" });
+    const otherLabel = makeCriteria({ labels: new Set(["chore"]) });
+
+    expect(isCardHidden(card, "done", hiddenColumn)).toBe(true);
+    expect(isCardHidden(card, "done", otherPriority)).toBe(true);
+    expect(isCardHidden(card, "done", otherLabel)).toBe(true);
+    expect(isCardHidden(card, "done", EMPTY_CARD_FILTER)).toBe(false);
+    expect(isCardHidden(card, "doing", hiddenColumn)).toBe(false);
   });
 
   it("keeps each matching card's index in the column's card array", () => {
