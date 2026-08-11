@@ -57,6 +57,20 @@ export function cardMatchesFilter(
   return true;
 }
 
+// Answers "is this one card on screen right now", which the column-wide
+// question below cannot be asked for a single card: a card reached from
+// outside the board layout (a search hit, say) knows its column only by id,
+// and needs both axes - its column's visibility and its own fields - folded
+// into one answer.
+export function isCardHidden(
+  card: Card,
+  columnId: string,
+  criteria: CardFilterCriteria,
+): boolean {
+  return criteria.hiddenColumnIds.has(columnId) ||
+    !cardMatchesFilter(card, criteria);
+}
+
 // The single entry point for "what does this column show".
 export function filterColumnCards(
   column: Column,

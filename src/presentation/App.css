@@ -954,7 +954,8 @@
 .new-board-dialog,
 .delete-card-dialog,
 .missing-card-dialog,
-.rename-card-file-dialog {
+.rename-card-file-dialog,
+.card-search-dialog {
   width: min(520px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   padding: 0;
@@ -969,7 +970,8 @@
 .new-board-dialog::backdrop,
 .delete-card-dialog::backdrop,
 .missing-card-dialog::backdrop,
-.rename-card-file-dialog::backdrop {
+.rename-card-file-dialog::backdrop,
+.card-search-dialog::backdrop {
   background: var(--color-accent-bg);
 }
 
@@ -1280,6 +1282,125 @@
 .board-directory-picker__create input {
   min-width: 0;
   padding: 5px 8px;
+}
+
+/* Sits near the top of the window rather than centred: it is opened from the
+   keyboard and left again immediately, so the eye travels as little as
+   possible between the query and the results. */
+.card-search-dialog {
+  margin-top: 12vh;
+}
+
+.card-search-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.card-search-dialog__input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 15px;
+}
+
+/* Capped rather than sized to the dialog's own max-height: the frame is
+   shared with the other dialogs, and a scroll region inside it would have to
+   restate that height to subtract the input from it. */
+.card-search-dialog__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.card-search-dialog__result {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 0;
+
+  &:hover {
+    background: var(--color-surface);
+  }
+}
+
+/* The selected row is a static state, so it takes the amethyst accent - the
+   same one a selected card carries. */
+.card-search-dialog__result--selected,
+.card-search-dialog__result--selected:hover {
+  background: var(--color-accent-bg);
+}
+
+.card-search-dialog__result-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-search-dialog__result-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.card-search-dialog__result-column {
+  flex-shrink: 0;
+  color: var(--color-text);
+}
+
+/* The path is what gives way when the row runs out of width: the column and
+   the notes are short and fixed, and the title above already says which card
+   this is. */
+.card-search-dialog__result-path {
+  font-family: var(--mono);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-search-dialog__result-note {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Matches the badge a card tile carries for the same state. */
+.card-search-dialog__result-note--missing {
+  background: var(--color-accent-warm-bg);
+  color: var(--color-accent-warm);
+}
+
+.card-search-dialog__empty {
+  padding: 6px 10px;
+  color: var(--color-text);
+  font-size: 13px;
 }
 
 .label-picker-dialog {
