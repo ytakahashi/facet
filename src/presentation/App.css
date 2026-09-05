@@ -766,12 +766,43 @@
   color: var(--color-label-morganite);
 }
 
+/* The drag handle between the board and the editor. It carries the divider
+   the pane used to draw, so the line and the 6px hit area cannot drift
+   apart. */
+.pane-resizer {
+  flex: 0 0 6px;
+  border-left: 1px solid var(--color-border);
+  cursor: col-resize;
+  /* Stops the browser from claiming the gesture as a scroll. */
+  touch-action: none;
+}
+
+.pane-resizer:hover,
+.pane-resizer:focus-visible {
+  background: var(--color-border);
+  outline: none;
+}
+
+/* The cursor and the selection lock have to survive the pointer leaving the
+   handle, which is most of a drag, so they are set on <body> instead. */
+body.is-pane-resizing,
+body.is-pane-resizing * {
+  /* Existing interactive children set pointer/grab cursors themselves. The
+     drag cursor must win over those declarations while capture is active. */
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* The width comes from paneLayoutStore as an inline style. max-width is the
+   backstop for a window that shrinks below the width already set: it keeps
+   the pane off the whole window without overwriting the stored value, so
+   widening the window restores it. Same share as the cap the drag applies
+   (MAX_VIEWER_WIDTH_RATIO), so the two never disagree. */
 .markdown-viewer {
-  width: 380px;
+  max-width: 85%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--color-border);
   padding: 24px;
   box-sizing: border-box;
   overflow-y: auto;
