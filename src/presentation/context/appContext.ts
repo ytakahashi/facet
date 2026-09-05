@@ -5,6 +5,7 @@ import type { BoardState } from "../store/boardStore.ts";
 import type { FilterState } from "../store/filterStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import type { NewBoardDialogState } from "../store/newBoardDialogStore.ts";
+import type { PaneLayoutState } from "../store/paneLayoutStore.ts";
 
 export interface DirectoryBrowsing {
   listDirectory(path: string): Promise<DirEntry[]>;
@@ -27,6 +28,7 @@ export interface AppDependencies {
   filterStore: UseBoundStore<StoreApi<FilterState>>;
   markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
   newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
+  paneLayout: UseBoundStore<StoreApi<PaneLayoutState>>;
   recentBoards: RecentBoards;
 }
 
@@ -64,6 +66,10 @@ export function useNewBoardDialog<T>(
   selector: (state: NewBoardDialogState) => T,
 ): T {
   return useAppDependencies().newBoardDialog(selector);
+}
+
+export function usePaneLayout<T>(selector: (state: PaneLayoutState) => T): T {
+  return useAppDependencies().paneLayout(selector);
 }
 
 export function useRecentBoards(): RecentBoards {

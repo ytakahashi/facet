@@ -21,6 +21,7 @@ import { createBoardStore } from "../presentation/store/boardStore.ts";
 import { createFilterStore } from "../presentation/store/filterStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
+import { createPaneLayoutStore } from "../presentation/store/paneLayoutStore.ts";
 
 const fileSystem = new DenoFileSystemAdapter();
 const boardRepository = new YamlBoardRepository(fileSystem);
@@ -73,6 +74,7 @@ export const appDependencies: AppDependencies = {
     () => confirm("Discard unsaved changes to this Markdown file?"),
   ),
   newBoardDialog: createNewBoardDialogStore(),
+  paneLayout: createPaneLayoutStore(),
   recentBoards: {
     list: () => listRecentBoards({ configRepository }),
   },
