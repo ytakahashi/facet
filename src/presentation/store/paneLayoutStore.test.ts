@@ -25,4 +25,20 @@ describe("createPaneLayoutStore", () => {
 
     expect(usePaneLayout.getState().viewerWidth).toBe(DEFAULT_VIEWER_WIDTH);
   });
+
+  it("starts in edit mode", () => {
+    const usePaneLayout = createPaneLayoutStore();
+
+    expect(usePaneLayout.getState().viewerMode).toBe("edit");
+  });
+
+  it("keeps the selected mode independently of the viewer width", () => {
+    const usePaneLayout = createPaneLayoutStore();
+
+    usePaneLayout.getState().setViewerMode("preview");
+    usePaneLayout.getState().setViewerWidth(520);
+    usePaneLayout.getState().resetViewerWidth();
+
+    expect(usePaneLayout.getState().viewerMode).toBe("preview");
+  });
 });

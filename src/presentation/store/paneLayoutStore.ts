@@ -2,14 +2,18 @@ import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import { DEFAULT_VIEWER_WIDTH } from "../components/viewerWidth.ts";
 
-// The Markdown viewer's width lives here rather than in markdownViewerStore:
-// that store resets itself whenever the viewer closes, and the width has to
-// outlive the card it was set on. Deliberately not persisted - it is a view
-// of the window, not state about the app or the board.
+export type ViewerMode = "edit" | "preview";
+
+// Viewer preferences live here rather than in markdownViewerStore: that store
+// resets itself whenever the viewer closes, while layout and display choices
+// have to outlive the card they were set on. Deliberately not persisted - they
+// are a view of the window, not state about the app or the board.
 export interface PaneLayoutState {
   viewerWidth: number;
   setViewerWidth: (width: number) => void;
   resetViewerWidth: () => void;
+  viewerMode: ViewerMode;
+  setViewerMode: (mode: ViewerMode) => void;
 }
 
 export function createPaneLayoutStore(): UseBoundStore<
@@ -21,5 +25,7 @@ export function createPaneLayoutStore(): UseBoundStore<
     // wide the workspace is.
     setViewerWidth: (width) => set({ viewerWidth: width }),
     resetViewerWidth: () => set({ viewerWidth: DEFAULT_VIEWER_WIDTH }),
+    viewerMode: "edit",
+    setViewerMode: (mode) => set({ viewerMode: mode }),
   }));
 }

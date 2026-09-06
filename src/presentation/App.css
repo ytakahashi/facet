@@ -963,6 +963,40 @@ body.is-pane-resizing * {
   color: var(--color-text);
 }
 
+.markdown-viewer__mode-switch {
+  align-self: flex-start;
+  display: flex;
+  margin-bottom: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.markdown-viewer__mode-switch button {
+  padding: 4px 10px;
+  border: none;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.markdown-viewer__mode-switch button:last-child {
+  border-right: none;
+}
+
+.markdown-viewer__mode-switch button[aria-pressed="true"] {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+
+.markdown-viewer__mode-switch button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
 .markdown-editor {
   flex: 1;
   min-height: 0;
@@ -975,6 +1009,162 @@ body.is-pane-resizing * {
   border-radius: 6px;
   background: var(--color-surface-raised);
   color: var(--color-text);
+}
+
+.markdown-preview {
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  margin: 24px 0 8px;
+  color: var(--color-text-strong);
+  font-family: var(--heading);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-preview h1:first-child,
+.markdown-preview h2:first-child,
+.markdown-preview h3:first-child,
+.markdown-preview h4:first-child,
+.markdown-preview h5:first-child,
+.markdown-preview h6:first-child {
+  margin-top: 0;
+}
+
+.markdown-preview h1 {
+  font-size: 24px;
+}
+
+.markdown-preview h2 {
+  font-size: 20px;
+}
+
+.markdown-preview h3 {
+  font-size: 17px;
+}
+
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  font-size: 15px;
+}
+
+.markdown-preview p,
+.markdown-preview ul,
+.markdown-preview ol,
+.markdown-preview blockquote,
+.markdown-preview pre,
+.markdown-preview table {
+  margin: 0 0 16px;
+}
+
+.markdown-preview > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: 24px;
+}
+
+.markdown-preview li + li {
+  margin-top: 4px;
+}
+
+.markdown-preview .contains-task-list,
+.markdown-preview .task-list-item {
+  list-style: none;
+}
+
+.markdown-preview .contains-task-list {
+  padding-left: 0;
+}
+
+.markdown-preview blockquote {
+  padding-left: 12px;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.markdown-preview hr {
+  margin: 20px 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.markdown-preview code {
+  display: inline;
+  padding: 2px 4px;
+  background: var(--color-surface);
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+.markdown-preview pre {
+  padding: 12px;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.markdown-preview pre code {
+  display: block;
+  padding: 0;
+  background: none;
+}
+
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.markdown-preview th {
+  color: var(--color-text-strong);
+  background: var(--color-surface);
+}
+
+.markdown-preview input[type="checkbox"] {
+  margin: 0 6px 0 0;
+}
+
+.markdown-preview__link {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.markdown-preview__image {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font-style: italic;
 }
 
 /* Every dialog shares one frame, backdrop, form, heading and button set, so a

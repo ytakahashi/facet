@@ -24,8 +24,11 @@ A local-first Markdown kanban desktop app for macOS.
 Click a card to read and edit its Markdown beside the board.
 
 - Plain text editing, saved back to the file the card points at
+- Edit and GFM Preview modes, including tables, task lists and strikethrough
 - The file's path is shown above the text, and the file can be renamed or moved
   into a subdirectory from there
+- Preview shows link text and image alt text without navigating or loading
+  external resources
 
 ## Files
 
