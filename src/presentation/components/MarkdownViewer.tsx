@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { findCardByPath } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import {
@@ -14,6 +14,14 @@ import { PaneResizer } from "./PaneResizer.tsx";
 import { RenameCardFileDialog } from "./RenameCardFileDialog.tsx";
 import { PriorityPicker } from "./PriorityPicker.tsx";
 import { clampViewerWidth, VIEWER_WIDTH_STEP } from "./viewerWidth.ts";
+
+// The Markdown parser is large enough to dominate the initial bundle, while
+// edit mode does not need it. Load that dependency only when preview is shown.
+const MarkdownPreview = lazy(() =>
+  import("./MarkdownPreview.tsx").then((module) => ({
+    default: module.MarkdownPreview,
+  }))
+);
 
 export function MarkdownViewer() {
   const status = useMarkdownViewer((state) => state.status);
@@ -35,6 +43,8 @@ export function MarkdownViewer() {
   const width = usePaneLayout((state) => state.viewerWidth);
   const setWidth = usePaneLayout((state) => state.setViewerWidth);
   const resetWidth = usePaneLayout((state) => state.resetViewerWidth);
+  const viewerMode = usePaneLayout((state) => state.viewerMode);
+  const setViewerMode = usePaneLayout((state) => state.setViewerMode);
 
   const board = useBoardStore((state) => state.board);
   const boardPath = useBoardStore((state) => state.path);
@@ -191,7 +201,41 @@ export function MarkdownViewer() {
         )}
         {status === "error" && error && <p role="alert">{error}</p>}
         {status === "loaded" && draft !== undefined && (
-          <MarkdownEditor value={draft} onChange={updateDraft} />
+          <>
+            <div
+              className="markdown-viewer__mode-switch"
+              role="group"
+              aria-label="Markdown view"
+            >
+              <button
+                type="button"
+                aria-pressed={viewerMode === "edit"}
+                onClick={() => setViewerMode("edit")}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                aria-pressed={viewerMode === "preview"}
+                onClick={() => setViewerMode("preview")}
+              >
+                Preview
+              </button>
+            </div>
+            {viewerMode === "edit"
+              ? <MarkdownEditor value={draft} onChange={updateDraft} />
+              : (
+                <Suspense
+                  fallback={
+                    <p className="markdown-viewer__placeholder">
+                      Loading preview…
+                    </p>
+                  }
+                >
+                  <MarkdownPreview markdown={draft} />
+                </Suspense>
+              )}
+          </>
         )}
       </div>
     </>
