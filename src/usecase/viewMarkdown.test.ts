@@ -33,8 +33,13 @@ class FakeFileSystemPort implements FileSystemPort {
     return Promise.resolve(content);
   }
 
-  readTextFileWithRevision(): Promise<{ content: string; revision: string }> {
-    throw new Error("not needed for this test");
+  readTextFileWithRevision(
+    path: string,
+  ): Promise<{ content: string; revision: string }> {
+    return this.readTextFile(path).then((content) => ({
+      content,
+      revision: "revision-1",
+    }));
   }
 
   writeTextFile(): Promise<string> {
@@ -64,7 +69,10 @@ describe("viewMarkdown", () => {
       fileSystem,
     });
 
-    expect(result).toBe("# Improve search");
+    expect(result).toEqual({
+      content: "# Improve search",
+      revision: "revision-1",
+    });
   });
 
   it("maps read failures to a Markdown load error", async () => {

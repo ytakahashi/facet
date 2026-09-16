@@ -963,6 +963,42 @@ body.is-pane-resizing * {
   color: var(--color-text);
 }
 
+.markdown-viewer__save-conflict {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-priority-high);
+  border-radius: 6px;
+  color: var(--color-priority-high);
+  font-size: 13px;
+}
+
+.markdown-viewer__save-conflict p {
+  margin: 0;
+}
+
+.markdown-viewer__save-conflict p + p {
+  margin-top: 4px;
+}
+
+.markdown-viewer__save-conflict-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.markdown-viewer__save-conflict-actions button {
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.markdown-viewer__save-conflict-actions button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .markdown-viewer__mode-switch {
   align-self: flex-start;
   display: flex;
