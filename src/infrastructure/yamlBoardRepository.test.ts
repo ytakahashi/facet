@@ -52,9 +52,13 @@ class FakeFileSystemPort implements FileSystemPort {
     return Promise.resolve(content);
   }
 
-  writeTextFile(path: string, content: string): Promise<void> {
+  readTextFileWithRevision(): Promise<{ content: string; revision: string }> {
+    throw new Error("not needed for this test");
+  }
+
+  writeTextFile(path: string, content: string): Promise<string> {
     this.writes.push({ path, content });
-    return Promise.resolve();
+    return Promise.resolve("revision");
   }
 
   createTextFile(path: string, content: string): Promise<void> {

@@ -8,6 +8,7 @@ function makeFileSystem(
 ): FileSystemPort {
   return {
     readTextFile: vi.fn(),
+    readTextFileWithRevision: vi.fn(),
     writeTextFile: vi.fn(),
     createTextFile: vi.fn(),
     removeFile,

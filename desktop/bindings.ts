@@ -1,8 +1,10 @@
 import type {
   CreateTextFileResult,
   DirEntry,
+  FileRevision,
   ReadTextFileResult,
   RemoveFileResult,
+  WriteTextFileResult,
 } from "./fileSystem.ts";
 import type { RenameFileResult } from "./renameFile.ts";
 
@@ -15,7 +17,11 @@ import type { RenameFileResult } from "./renameFile.ts";
 // own parameter types; left to its default, they widen to `any`.
 export interface HostBindings {
   readTextFile(path: string): Promise<ReadTextFileResult>;
-  writeTextFile(path: string, content: string): Promise<void>;
+  writeTextFile(
+    path: string,
+    content: string,
+    expectedRevision?: FileRevision,
+  ): Promise<WriteTextFileResult>;
   createTextFile(path: string, content: string): Promise<CreateTextFileResult>;
   removeFile(path: string): Promise<RemoveFileResult>;
   renameFile(fromPath: string, toPath: string): Promise<RenameFileResult>;

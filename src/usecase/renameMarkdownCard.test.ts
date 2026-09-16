@@ -9,6 +9,7 @@ function makeFileSystem(
 ): FileSystemPort {
   return {
     readTextFile: vi.fn().mockResolvedValue("# Improve search\n\nBody"),
+    readTextFileWithRevision: vi.fn(),
     writeTextFile: vi.fn(),
     removeFile: vi.fn(),
     renameFile: vi.fn(),

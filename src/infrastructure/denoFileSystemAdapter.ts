@@ -1,5 +1,6 @@
 import {
   type DirEntry,
+  type FileRevision,
   FileSystemError,
   type FileSystemOperation,
   type FileSystemPort,
@@ -20,20 +21,38 @@ async function runFileSystemOperation<T>(
 
 export class DenoFileSystemAdapter implements FileSystemPort {
   async readTextFile(path: string): Promise<string> {
+    return (await this.readTextFileWithRevision(path)).content;
+  }
+
+  async readTextFileWithRevision(
+    path: string,
+  ): Promise<{ content: string; revision: FileRevision }> {
     return runFileSystemOperation("read-file", path, async () => {
       const result = await bindings.readTextFile(path);
       if (!result.read) {
         throw new FileSystemError(result.reason, "read-file", path);
       }
-      return result.content;
+      return { content: result.content, revision: result.revision };
     });
   }
 
-  writeTextFile(path: string, content: string): Promise<void> {
+  writeTextFile(
+    path: string,
+    content: string,
+    expectedRevision?: FileRevision,
+  ): Promise<FileRevision> {
     return runFileSystemOperation(
       "write-file",
       path,
-      () => bindings.writeTextFile(path, content),
+      async () => {
+        const result = expectedRevision === undefined
+          ? await bindings.writeTextFile(path, content)
+          : await bindings.writeTextFile(path, content, expectedRevision);
+        if (!result.written) {
+          throw new FileSystemError(result.reason, "write-file", path);
+        }
+        return result.revision;
+      },
     );
   }
 

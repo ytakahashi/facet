@@ -179,6 +179,7 @@ describe("DenoFileSystemAdapter", () => {
       readTextFile: vi.fn().mockResolvedValue({
         read: true,
         content: "# Card\n",
+        revision: "revision-1",
       }),
     });
     const fileSystem = new DenoFileSystemAdapter();
@@ -186,6 +187,21 @@ describe("DenoFileSystemAdapter", () => {
     await expect(fileSystem.readTextFile("/board/card.md")).resolves.toBe(
       "# Card\n",
     );
+  });
+
+  it("returns content and revision reported by the read binding", async () => {
+    vi.stubGlobal("bindings", {
+      readTextFile: vi.fn().mockResolvedValue({
+        read: true,
+        content: "# Card\n",
+        revision: "revision-1",
+      }),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    await expect(
+      fileSystem.readTextFileWithRevision("/board/card.md"),
+    ).resolves.toEqual({ content: "# Card\n", revision: "revision-1" });
   });
 
   it("maps a missing file reported by the read binding to a typed file-system error", async () => {
@@ -220,6 +236,82 @@ describe("DenoFileSystemAdapter", () => {
       name: "FileSystemError",
       kind: "operation-failed",
       operation: "read-file",
+      path: "/board/card.md",
+      cause,
+    });
+  });
+
+  it("passes the expected revision to the write binding and returns the next one", async () => {
+    const writeTextFile = vi.fn().mockResolvedValue({
+      written: true,
+      revision: "revision-2",
+    });
+    vi.stubGlobal("bindings", { writeTextFile });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    await expect(
+      fileSystem.writeTextFile("/board/card.md", "# Card\n", "revision-1"),
+    ).resolves.toBe("revision-2");
+    expect(writeTextFile).toHaveBeenCalledWith(
+      "/board/card.md",
+      "# Card\n",
+      "revision-1",
+    );
+  });
+
+  it("omits the optional binding argument when no revision is expected", async () => {
+    const writeTextFile = vi.fn().mockResolvedValue({
+      written: true,
+      revision: "revision-1",
+    });
+    vi.stubGlobal("bindings", { writeTextFile });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    await fileSystem.writeTextFile("/board/card.md", "# Card\n");
+
+    expect(writeTextFile).toHaveBeenCalledWith(
+      "/board/card.md",
+      "# Card\n",
+    );
+  });
+
+  it.each(["revision-mismatch", "not-found"] as const)(
+    "maps a %s write result to a typed file-system error",
+    async (reason) => {
+      vi.stubGlobal("bindings", {
+        writeTextFile: vi.fn().mockResolvedValue({ written: false, reason }),
+      });
+      const fileSystem = new DenoFileSystemAdapter();
+
+      const act = () =>
+        fileSystem.writeTextFile(
+          "/board/card.md",
+          "# Card\n",
+          "revision-1",
+        );
+
+      await expect(act).rejects.toMatchObject({
+        name: "FileSystemError",
+        kind: reason,
+        operation: "write-file",
+        path: "/board/card.md",
+      });
+    },
+  );
+
+  it("wraps a failing write binding with operation context", async () => {
+    const cause = new Error("Permission denied");
+    vi.stubGlobal("bindings", {
+      writeTextFile: vi.fn().mockRejectedValue(cause),
+    });
+    const fileSystem = new DenoFileSystemAdapter();
+
+    const act = () => fileSystem.writeTextFile("/board/card.md", "# Card\n");
+
+    await expect(act).rejects.toMatchObject({
+      name: "FileSystemError",
+      kind: "operation-failed",
+      operation: "write-file",
       path: "/board/card.md",
       cause,
     });

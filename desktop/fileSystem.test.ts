@@ -35,10 +35,11 @@ Deno.test("readTextFile reads a file's content", async () => {
   await withTempDir(async (dir) => {
     await Deno.writeTextFile(`${dir}/card.md`, "# Card\n");
 
-    assertEquals(await readTextFile(`${dir}/card.md`), {
-      read: true,
-      content: "# Card\n",
-    });
+    const result = await readTextFile(`${dir}/card.md`);
+
+    if (!result.read) throw new Error("expected the fixture file to exist");
+    assertEquals(result.content, "# Card\n");
+    assertEquals(result.revision.length > 0, true);
   });
 });
 
@@ -66,9 +67,87 @@ Deno.test("writeTextFile replaces the whole of an existing file", async () => {
   await withTempDir(async (dir) => {
     await Deno.writeTextFile(`${dir}/card.md`, "# A much longer card\n");
 
-    await writeTextFile(`${dir}/card.md`, "# Card\n");
+    const result = await writeTextFile(`${dir}/card.md`, "# Card\n");
 
+    if (!result.written) throw new Error("expected the write to succeed");
+    assertEquals(result.revision.length > 0, true);
     assertEquals(await Deno.readTextFile(`${dir}/card.md`), "# Card\n");
+  });
+});
+
+Deno.test("writeTextFile writes when the expected revision matches", async () => {
+  await withTempDir(async (dir) => {
+    const path = `${dir}/card.md`;
+    await Deno.writeTextFile(path, "# Before\n");
+    const read = await readTextFile(path);
+    if (!read.read) throw new Error("expected the fixture file to exist");
+
+    const result = await writeTextFile(path, "# After\n", read.revision);
+
+    if (!result.written) throw new Error("expected the write to succeed");
+    assertEquals(await Deno.readTextFile(path), "# After\n");
+    assertEquals(await readTextFile(path), {
+      read: true,
+      content: "# After\n",
+      revision: result.revision,
+    });
+  });
+});
+
+Deno.test("writeTextFile refuses a stale revision without changing the file", async () => {
+  await withTempDir(async (dir) => {
+    const path = `${dir}/card.md`;
+    await Deno.writeTextFile(path, "# Original\n");
+    const read = await readTextFile(path);
+    if (!read.read) throw new Error("expected the fixture file to exist");
+    await Deno.writeTextFile(path, "# External change\n");
+
+    assertEquals(await writeTextFile(path, "# Facet change\n", read.revision), {
+      written: false,
+      reason: "revision-mismatch",
+    });
+    assertEquals(await Deno.readTextFile(path), "# External change\n");
+  });
+});
+
+Deno.test("writeTextFile gives the same revision to the same content", async () => {
+  await withTempDir(async (dir) => {
+    const path = `${dir}/card.md`;
+    const first = await writeTextFile(path, "# Card\n");
+    const second = await writeTextFile(path, "# Card\n");
+
+    assertEquals(first, second);
+  });
+});
+
+Deno.test("writeTextFile still creates a file without an expected revision", async () => {
+  await withTempDir(async (dir) => {
+    const path = `${dir}/card.md`;
+
+    assertEquals((await writeTextFile(path, "# Card\n")).written, true);
+    assertEquals(await Deno.readTextFile(path), "# Card\n");
+  });
+});
+
+Deno.test("writeTextFile treats a null boundary value as no expected revision", async () => {
+  await withTempDir(async (dir) => {
+    const path = `${dir}/card.md`;
+    await Deno.writeTextFile(path, "# Before\n");
+
+    assertEquals((await writeTextFile(path, "# After\n", null)).written, true);
+    assertEquals(await Deno.readTextFile(path), "# After\n");
+  });
+});
+
+Deno.test("writeTextFile does not create a missing file when a revision is expected", async () => {
+  await withTempDir(async (dir) => {
+    const path = `${dir}/gone.md`;
+
+    assertEquals(await writeTextFile(path, "# Card\n", "old-revision"), {
+      written: false,
+      reason: "not-found",
+    });
+    assertEquals(await exists(path), false);
   });
 });
 
