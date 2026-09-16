@@ -1,10 +1,14 @@
 import { parse, stringify } from "yaml";
 import type { Board, Column } from "../domain/board.ts";
-import type { BoardRepository } from "../domain/boardRepository.ts";
+import type {
+  BoardRepository,
+  LoadedBoard,
+} from "../domain/boardRepository.ts";
 import { directoryOf, resolveCardPath } from "../domain/boardPath.ts";
 import type { Card } from "../domain/card.ts";
 import { resolveCardTitle } from "../domain/card.ts";
 import {
+  type FileRevision,
   FileSystemError,
   type FileSystemPort,
 } from "../domain/fileSystemPort.ts";
@@ -51,9 +55,10 @@ export class YamlBoardRepository implements BoardRepository {
     this.fileSystem = fileSystem;
   }
 
-  async load(path: string): Promise<Board> {
-    const yamlText = await this.fileSystem.readTextFile(path);
-    const raw = parse(yamlText) as RawBoard | null;
+  async load(path: string): Promise<LoadedBoard> {
+    const { content, revision } = await this.fileSystem
+      .readTextFileWithRevision(path);
+    const raw = parse(content) as RawBoard | null;
 
     if (!raw || !Array.isArray(raw.columns)) {
       throw new Error(`Invalid board file: ${path}`);
@@ -75,7 +80,10 @@ export class YamlBoardRepository implements BoardRepository {
       color: rawLabel.color as LabelColor,
     }));
 
-    return { version: raw.version, name: raw.name, labels, columns };
+    return {
+      board: { version: raw.version, name: raw.name, labels, columns },
+      revision,
+    };
   }
 
   private async loadCard(
@@ -112,8 +120,16 @@ export class YamlBoardRepository implements BoardRepository {
   // original document, so any comments or custom formatting in the file
   // are lost on save. Acceptable because board.yaml isn't meant to be
   // hand-maintained with comments - the app owns the file once it exists.
-  async save(path: string, board: Board): Promise<void> {
-    await this.fileSystem.writeTextFile(path, stringify(this.toRaw(board)));
+  save(
+    path: string,
+    board: Board,
+    expectedRevision?: FileRevision,
+  ): Promise<FileRevision> {
+    return this.fileSystem.writeTextFile(
+      path,
+      stringify(this.toRaw(board)),
+      expectedRevision,
+    );
   }
 
   // Exclusive create: createTextFile's create-new semantics guarantee an

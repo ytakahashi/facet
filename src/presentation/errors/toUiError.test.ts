@@ -156,6 +156,18 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps an external board change without exposing its cause", () => {
+    const error = new UseCaseError(
+      "board.conflict",
+      { path: "/board/development.board.yaml" },
+      { cause: new Error("revision-mismatch") },
+    );
+
+    expect(toUiError(error)).toEqual({
+      message: "The board file changed outside Facet.",
+    });
+  });
+
   it("maps a removed Markdown file to a message naming the path", () => {
     const error = new UseCaseError(
       "markdown.file-gone",

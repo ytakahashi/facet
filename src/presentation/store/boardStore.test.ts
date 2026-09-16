@@ -12,7 +12,7 @@ import { createBoardStore } from "./boardStore.ts";
 function makeDeps(overrides: Partial<BoardStoreDeps> = {}): BoardStoreDeps {
   return {
     openBoard: vi.fn(),
-    saveBoard: vi.fn(),
+    saveBoard: vi.fn().mockResolvedValue("revision-next"),
     createMarkdownCard: vi.fn(),
     addExistingMarkdownCard: vi.fn(),
     relocateMarkdownCard: vi.fn(),
@@ -20,6 +20,8 @@ function makeDeps(overrides: Partial<BoardStoreDeps> = {}): BoardStoreDeps {
     renameMarkdownCard: vi.fn(),
     createBoard: vi.fn(),
     deleteMarkdown: vi.fn(),
+    confirmDiscardBoard: vi.fn(() => true),
+    confirmOverwriteBoard: vi.fn(() => true),
     ...overrides,
   };
 }
@@ -46,11 +48,23 @@ function makeBoard(overrides: Partial<Board> = {}): Board {
   };
 }
 
+function loaded(board: Board, revision = "revision-1") {
+  return { board, revision };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 describe("createBoardStore", () => {
   it("moves to loaded with the board once openBoard resolves", async () => {
     const board = makeBoard();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
     }));
 
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -77,7 +91,7 @@ describe("createBoardStore", () => {
 
   it("creates a board and opens it from the created path", async () => {
     const board = makeBoard();
-    const openBoard = vi.fn().mockResolvedValue(board);
+    const openBoard = vi.fn().mockResolvedValue(loaded(board));
     const createBoard = vi.fn().mockResolvedValue(
       "/boards/facet.board.yaml",
     );
@@ -130,9 +144,9 @@ describe("createBoardStore", () => {
 
   it("updates the board immediately, before the save resolves", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn(() => new Promise<void>(() => {}));
+    const saveBoard = vi.fn(() => new Promise<string>(() => {}));
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -150,9 +164,9 @@ describe("createBoardStore", () => {
 
   it("saves the moved board at the board's path", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -168,6 +182,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -178,7 +193,7 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn().mockRejectedValue(saveFailedError);
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -205,9 +220,9 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn()
       .mockRejectedValueOnce(saveFailedError)
-      .mockResolvedValue(undefined);
+      .mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -231,9 +246,9 @@ describe("createBoardStore", () => {
 
   it("reorders the columns and saves the board", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -247,14 +262,15 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
   it("does not save when a column is dropped back into its own slot", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -267,9 +283,9 @@ describe("createBoardStore", () => {
 
   it("ignores a move of a column that is not on the board", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -282,9 +298,9 @@ describe("createBoardStore", () => {
 
   it("appends a new column with the trimmed name at the right end and saves the board", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -302,14 +318,15 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
   it("assigns each added column a unique non-empty id", async () => {
     const board = makeBoard();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
-      saveBoard: vi.fn().mockResolvedValue(undefined),
+      openBoard: () => Promise.resolve(loaded(board)),
+      saveBoard: vi.fn().mockResolvedValue("revision-2"),
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
@@ -328,7 +345,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -346,7 +363,7 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn().mockRejectedValue(saveFailedError);
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -368,9 +385,9 @@ describe("createBoardStore", () => {
 
   it("renames the board with the trimmed name and saves it", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -382,6 +399,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -389,7 +407,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -403,9 +421,9 @@ describe("createBoardStore", () => {
 
   it("renames a column with the trimmed name and saves the board", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -422,6 +440,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -429,7 +448,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -443,9 +462,9 @@ describe("createBoardStore", () => {
 
   it("removes an empty column and saves the board", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -458,6 +477,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -465,7 +485,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -478,9 +498,9 @@ describe("createBoardStore", () => {
 
   it("renames a card with the trimmed title and saves the board", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -494,6 +514,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -501,7 +522,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -517,7 +538,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -530,9 +551,9 @@ describe("createBoardStore", () => {
 
   it("sets a card's priority and saves the board", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -545,14 +566,15 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
   it("clears a card's priority when set to undefined", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -567,6 +589,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenLastCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-2",
     );
   });
 
@@ -574,7 +597,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -589,7 +612,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -602,9 +625,9 @@ describe("createBoardStore", () => {
 
   it("creates a label and saves the board", async () => {
     const board = makeBoard();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -618,6 +641,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -625,7 +649,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -640,7 +664,7 @@ describe("createBoardStore", () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -659,9 +683,9 @@ describe("createBoardStore", () => {
     const board = makeBoard({
       labels: [{ name: "ui", color: "ruby" }],
     });
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -683,7 +707,7 @@ describe("createBoardStore", () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -701,7 +725,7 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -717,9 +741,9 @@ describe("createBoardStore", () => {
 
   it("changes a label's color and saves the board", async () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -736,7 +760,7 @@ describe("createBoardStore", () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -751,9 +775,9 @@ describe("createBoardStore", () => {
     const board = makeBoard({
       labels: [{ name: "ui", color: "ruby" }],
     });
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -771,9 +795,9 @@ describe("createBoardStore", () => {
 
   it("adds a label to a card and saves the board", async () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -787,14 +811,15 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
   it("does not change or save the board when adding a label already on the card", async () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -810,7 +835,7 @@ describe("createBoardStore", () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -824,9 +849,9 @@ describe("createBoardStore", () => {
 
   it("removes a label from a card and saves the board", async () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -845,7 +870,7 @@ describe("createBoardStore", () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -865,10 +890,10 @@ describe("createBoardStore", () => {
       labels: [],
       displayTitle: "New card",
     };
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const createMarkdownCard = vi.fn().mockResolvedValue(card);
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       createMarkdownCard,
     }));
@@ -896,6 +921,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -903,7 +929,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const createMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       createMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -929,7 +955,7 @@ describe("createBoardStore", () => {
       }),
     );
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       createMarkdownCard,
     }));
@@ -959,10 +985,10 @@ describe("createBoardStore", () => {
       labels: [],
       displayTitle: "Existing",
     };
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const addExistingMarkdownCard = vi.fn().mockResolvedValue(card);
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       addExistingMarkdownCard,
     }));
@@ -986,7 +1012,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const addExistingMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       addExistingMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1010,7 +1036,7 @@ describe("createBoardStore", () => {
       }),
     );
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       addExistingMarkdownCard,
     }));
@@ -1042,7 +1068,7 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       addExistingMarkdownCard: vi.fn().mockReturnValue(loading),
     }));
@@ -1085,7 +1111,7 @@ describe("createBoardStore", () => {
       }),
     );
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       addExistingMarkdownCard: vi.fn().mockResolvedValue(card),
     }));
@@ -1105,9 +1131,9 @@ describe("createBoardStore", () => {
   it("drops the card reference without touching the file when the file is kept", async () => {
     const board = makeBoard();
     const deleteMarkdown = vi.fn();
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       deleteMarkdown,
     }));
@@ -1123,6 +1149,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -1147,9 +1174,10 @@ describe("createBoardStore", () => {
       calls.push(`delete:${path}`);
     });
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard: vi.fn(async () => {
         calls.push("save");
+        return "revision-2";
       }),
       deleteMarkdown,
     }));
@@ -1181,7 +1209,7 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       deleteMarkdown: vi.fn().mockRejectedValue(
         new UseCaseError("markdown.delete-failed", { path: "/board/a.md" }),
@@ -1221,7 +1249,7 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       deleteMarkdown: vi.fn().mockReturnValue(deleting),
     }));
@@ -1244,7 +1272,7 @@ describe("createBoardStore", () => {
     const deleteMarkdown = vi.fn();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       deleteMarkdown,
     }));
@@ -1289,9 +1317,9 @@ describe("createBoardStore", () => {
   it("replaces the repaired card in place and saves the board", async () => {
     const board = makeBrokenBoard();
     const relocateMarkdownCard = vi.fn().mockResolvedValue(repairedCard);
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       relocateMarkdownCard,
     }));
@@ -1317,6 +1345,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -1324,7 +1353,7 @@ describe("createBoardStore", () => {
     const board = makeBrokenBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       relocateMarkdownCard: vi.fn().mockRejectedValue(
         new UseCaseError("card.file-not-found", {
@@ -1361,7 +1390,7 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       relocateMarkdownCard: vi.fn().mockResolvedValue(repairedCard),
     }));
@@ -1386,7 +1415,7 @@ describe("createBoardStore", () => {
     });
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       relocateMarkdownCard: vi.fn().mockReturnValue(relocating),
     }));
@@ -1415,9 +1444,9 @@ describe("createBoardStore", () => {
       displayTitle: "Back again",
     };
     const recreateMarkdownCard = vi.fn().mockResolvedValue(recreated);
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       recreateMarkdownCard,
     }));
@@ -1445,6 +1474,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -1467,7 +1497,7 @@ describe("createBoardStore", () => {
     });
     const recreateMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       recreateMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1490,7 +1520,7 @@ describe("createBoardStore", () => {
     const board = makeBrokenBoard();
     const recreateMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       recreateMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1512,7 +1542,7 @@ describe("createBoardStore", () => {
     const board = makeBrokenBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       recreateMarkdownCard: vi.fn().mockRejectedValue(
         new UseCaseError("card.file-already-exists", {
@@ -1540,7 +1570,7 @@ describe("createBoardStore", () => {
     const board = makeBrokenBoard();
     const relocateMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       relocateMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1566,9 +1596,9 @@ describe("createBoardStore", () => {
   it("replaces the moved card in place and saves the board", async () => {
     const board = makeBoard();
     const renameMarkdownCard = vi.fn().mockResolvedValue(movedCard);
-    const saveBoard = vi.fn().mockResolvedValue(undefined);
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       renameMarkdownCard,
     }));
@@ -1598,6 +1628,7 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledWith(
       "/board/development.board.yaml",
       useBoardStore.getState().board,
+      "revision-1",
     );
   });
 
@@ -1606,7 +1637,7 @@ describe("createBoardStore", () => {
     const renameMarkdownCard = vi.fn();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       renameMarkdownCard,
     }));
@@ -1627,7 +1658,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const renameMarkdownCard = vi.fn().mockResolvedValue(movedCard);
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       renameMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1661,7 +1692,7 @@ describe("createBoardStore", () => {
     });
     const renameMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       renameMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1711,7 +1742,7 @@ describe("createBoardStore", () => {
     });
     const renameMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       renameMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1730,7 +1761,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const renameMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       renameMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1748,7 +1779,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const saveBoard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       saveBoard,
       renameMarkdownCard: vi.fn().mockRejectedValue(
         new UseCaseError("card.file-already-exists", {
@@ -1777,8 +1808,8 @@ describe("createBoardStore", () => {
     const otherBoard = makeBoard({ name: "Other" });
     const useBoardStore = createBoardStore(makeDeps({
       openBoard: vi.fn()
-        .mockResolvedValueOnce(board)
-        .mockResolvedValueOnce(otherBoard),
+        .mockResolvedValueOnce(loaded(board))
+        .mockResolvedValueOnce(loaded(otherBoard, "other-revision")),
       renameMarkdownCard: async () => {
         // The native menu stays clickable while the modal dialog is open.
         await useBoardStore.getState().openBoard("/board/other.board.yaml");
@@ -1801,7 +1832,7 @@ describe("createBoardStore", () => {
     const board = makeBoard();
     const renameMarkdownCard = vi.fn();
     const useBoardStore = createBoardStore(makeDeps({
-      openBoard: () => Promise.resolve(board),
+      openBoard: () => Promise.resolve(loaded(board)),
       renameMarkdownCard,
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
@@ -1815,5 +1846,210 @@ describe("createBoardStore", () => {
 
     await expect(act).rejects.toMatchObject({ code: "card.board-changed" });
     expect(renameMarkdownCard).not.toHaveBeenCalled();
+  });
+
+  it("uses the revision returned by an in-flight save for the coalesced save", async () => {
+    const firstSave = deferred<string>();
+    const saveBoard = vi.fn()
+      .mockReturnValueOnce(firstSave.promise)
+      .mockResolvedValueOnce("revision-3");
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(makeBoard())),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().renameBoard("First edit");
+    useBoardStore.getState().renameBoard("Latest edit");
+    expect(saveBoard).toHaveBeenCalledTimes(1);
+
+    firstSave.resolve("revision-2");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+
+    expect(saveBoard).toHaveBeenLastCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+      "revision-2",
+    );
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+  });
+
+  it("keeps optimistic edits and stops later writes after a conflict", async () => {
+    const conflict = new UseCaseError("board.conflict", {
+      path: "/board/development.board.yaml",
+    });
+    const saveBoard = vi.fn().mockRejectedValue(conflict);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(makeBoard())),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+    useBoardStore.getState().addColumn("Still local");
+
+    expect(useBoardStore.getState().board?.name).toBe("Local edit");
+    expect(useBoardStore.getState().board?.columns.at(-1)?.name).toBe(
+      "Still local",
+    );
+    expect(useBoardStore.getState().saveError).toBe(
+      toUiError(conflict).message,
+    );
+    expect(saveBoard).toHaveBeenCalledTimes(1);
+  });
+
+  it("reloads a conflicted board only after discard confirmation", async () => {
+    const diskBoard = makeBoard({ name: "From disk" });
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockResolvedValueOnce(loaded(diskBoard, "revision-2"));
+    const confirmDiscardBoard = vi.fn(() => true);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard: vi.fn().mockRejectedValue(new UseCaseError("board.conflict")),
+      confirmDiscardBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    await useBoardStore.getState().reloadBoard();
+
+    expect(confirmDiscardBoard).toHaveBeenCalledWith("reload");
+    expect(useBoardStore.getState()).toMatchObject({
+      board: diskBoard,
+      saveConflict: false,
+      saveError: undefined,
+      conflictResolutionError: undefined,
+    });
+  });
+
+  it("overwrites a conflicted board without an expected revision", async () => {
+    const saveBoard = vi.fn()
+      .mockRejectedValueOnce(new UseCaseError("board.conflict"))
+      .mockResolvedValueOnce("revision-overwritten");
+    const confirmOverwriteBoard = vi.fn(() => true);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(makeBoard())),
+      saveBoard,
+      confirmOverwriteBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    useBoardStore.getState().overwriteBoard();
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+
+    expect(confirmOverwriteBoard).toHaveBeenCalledOnce();
+    expect(saveBoard).toHaveBeenLastCalledWith(
+      "/board/development.board.yaml",
+      useBoardStore.getState().board,
+      undefined,
+    );
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+    expect(useBoardStore.getState().saveConflict).toBe(false);
+  });
+
+  it("keeps the conflict when reload and overwrite confirmation are declined", async () => {
+    const saveBoard = vi.fn().mockRejectedValue(
+      new UseCaseError("board.conflict"),
+    );
+    const openBoard = vi.fn().mockResolvedValue(loaded(makeBoard()));
+    const confirmDiscardBoard = vi.fn(() => false);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard,
+      confirmDiscardBoard,
+      confirmOverwriteBoard: () => false,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    await useBoardStore.getState().openBoard("/board/other.board.yaml");
+    await useBoardStore.getState().reloadBoard();
+    useBoardStore.getState().overwriteBoard();
+
+    expect(confirmDiscardBoard.mock.calls).toEqual([
+      ["replace"],
+      ["reload"],
+    ]);
+    expect(openBoard).toHaveBeenCalledOnce();
+    expect(saveBoard).toHaveBeenCalledOnce();
+    expect(useBoardStore.getState()).toMatchObject({
+      board: expect.objectContaining({ name: "Local edit" }),
+      saveConflict: true,
+    });
+  });
+
+  it("does not apply a previous board's late revision to the current board", async () => {
+    const oldSave = deferred<string>();
+    const firstBoard = makeBoard();
+    const secondBoard = makeBoard({ name: "Second" });
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(firstBoard, "first-revision"))
+      .mockResolvedValueOnce(loaded(secondBoard, "second-revision"));
+    const saveBoard = vi.fn()
+      .mockReturnValueOnce(oldSave.promise)
+      .mockResolvedValueOnce("second-next-revision");
+    const useBoardStore = createBoardStore(makeDeps({ openBoard, saveBoard }));
+    await useBoardStore.getState().openBoard("/board/first.board.yaml");
+    useBoardStore.getState().renameBoard("First edited");
+    await useBoardStore.getState().openBoard("/board/second.board.yaml");
+
+    oldSave.resolve("late-first-revision");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+    useBoardStore.getState().renameBoard("Second edited");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+
+    expect(saveBoard).toHaveBeenLastCalledWith(
+      "/board/second.board.yaml",
+      expect.objectContaining({ name: "Second edited" }),
+      "second-revision",
+    );
+  });
+
+  it("keeps the conflict message when reloading the board fails", async () => {
+    const conflict = new UseCaseError("board.conflict");
+    const reloadError = new UseCaseError("board.open-failed", {
+      path: "/board/development.board.yaml",
+    });
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockRejectedValueOnce(reloadError);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard: vi.fn().mockRejectedValue(conflict),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    await useBoardStore.getState().reloadBoard();
+
+    expect(useBoardStore.getState()).toMatchObject({
+      saveConflict: true,
+      saveError: toUiError(conflict).message,
+      conflictResolutionError: toUiError(reloadError).message,
+      board: expect.objectContaining({ name: "Local edit" }),
+    });
   });
 });

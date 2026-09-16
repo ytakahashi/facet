@@ -26,6 +26,7 @@ import {
   setLabelColor as setLabelColorDomain,
 } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
+import type { FileRevision } from "../../domain/fileSystemPort.ts";
 import type { LabelColor } from "../../domain/label.ts";
 import type { Priority } from "../../domain/priority.ts";
 import {
@@ -41,7 +42,6 @@ import type { CreateMarkdownCardInput } from "../../usecase/createMarkdownCard.t
 import type { RelocateMarkdownCardInput } from "../../usecase/relocateMarkdownCard.ts";
 import type { RecreateMarkdownCardInput } from "../../usecase/recreateMarkdownCard.ts";
 import type { RenameMarkdownCardInput } from "../../usecase/renameMarkdownCard.ts";
-import type { SaveBoard } from "../../usecase/boardSaveQueue.ts";
 import { createBoardSaveQueue } from "../../usecase/boardSaveQueue.ts";
 import {
   cardFileValidationToUseCaseError,
@@ -58,6 +58,8 @@ export interface BoardState {
   error?: string;
   isSaving: boolean;
   saveError?: string;
+  saveConflict: boolean;
+  conflictResolutionError?: string;
   openBoard: (path: string) => Promise<void>;
   createBoard: (input: CreateBoardInput) => Promise<void>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
@@ -90,6 +92,8 @@ export interface BoardState {
   ) => Promise<Card>;
   removeCard: (path: string, options: RemoveCardOptions) => Promise<void>;
   retrySave: () => void;
+  reloadBoard: () => Promise<void>;
+  overwriteBoard: () => void;
 }
 
 export interface NewCardInput {
@@ -108,9 +112,18 @@ export interface RemoveCardOptions {
   deleteFile: boolean;
 }
 
-export type OpenBoard = (path: string) => Promise<Board>;
+export type OpenBoard = (
+  path: string,
+) => Promise<{ board: Board; revision: FileRevision }>;
 export type CreateBoard = (input: CreateBoardInput) => Promise<string>;
-export type { SaveBoard };
+export type SaveBoard = (
+  path: string,
+  board: Board,
+  expectedRevision: FileRevision | undefined,
+) => Promise<FileRevision>;
+export type BoardDiscardReason = "reload" | "replace";
+export type ConfirmDiscardBoard = (reason: BoardDiscardReason) => boolean;
+export type ConfirmOverwriteBoard = () => boolean;
 export type CreateMarkdownCard = (
   input: CreateMarkdownCardInput,
 ) => Promise<Card>;
@@ -141,6 +154,8 @@ export interface BoardStoreDeps {
   renameMarkdownCard: RenameMarkdownCard;
   createBoard: CreateBoard;
   deleteMarkdown: DeleteMarkdown;
+  confirmDiscardBoard: ConfirmDiscardBoard;
+  confirmOverwriteBoard: ConfirmOverwriteBoard;
 }
 
 export function createBoardStore({
@@ -153,14 +168,92 @@ export function createBoardStore({
   renameMarkdownCard,
   createBoard,
   deleteMarkdown,
+  confirmDiscardBoard,
+  confirmOverwriteBoard,
 }: BoardStoreDeps): UseBoundStore<StoreApi<BoardState>> {
   return create<BoardState>((set, get) => {
-    const saveQueue = createBoardSaveQueue(saveBoard, {
-      onSaving: () => set({ isSaving: true, saveError: undefined }),
+    // Revisions are scoped to a path because a save may finish after another
+    // board has been opened. A single current-board token would let that stale
+    // completion corrupt the new board's next conditional write.
+    const revisions = new Map<string, FileRevision>();
+    const conflictedPaths = new Set<string>();
+    let activeSavePath: string | undefined;
+    let loadGeneration = 0;
+
+    const saveQueue = createBoardSaveQueue(async (path, board) => {
+      activeSavePath = path;
+      if (conflictedPaths.has(path)) return;
+      try {
+        const revision = await saveBoard(path, board, revisions.get(path));
+        revisions.set(path, revision);
+      } catch (error) {
+        if (error instanceof UseCaseError && error.code === "board.conflict") {
+          conflictedPaths.add(path);
+        }
+        throw error;
+      }
+    }, {
+      onSaving: () =>
+        set((state) => ({
+          isSaving: true,
+          saveError: state.saveConflict ? state.saveError : undefined,
+          conflictResolutionError: undefined,
+        })),
       onSaved: () => set({ isSaving: false }),
-      onError: (error) =>
-        set({ isSaving: false, saveError: toUiError(error).message }),
+      onError: (error) => {
+        if (get().path !== activeSavePath) {
+          set({ isSaving: false });
+          return;
+        }
+        set({
+          isSaving: false,
+          saveError: toUiError(error).message,
+          saveConflict: error instanceof UseCaseError &&
+            error.code === "board.conflict",
+          conflictResolutionError: undefined,
+        });
+      },
     });
+
+    function queueSave(path: string, board: Board): void {
+      if (conflictedPaths.has(path)) return;
+      saveQueue.save(path, board);
+    }
+
+    async function loadBoard(
+      path: string,
+      mode: "open" | "reload",
+    ): Promise<void> {
+      const request = ++loadGeneration;
+      if (mode === "open") {
+        set({ status: "loading", error: undefined });
+      }
+      try {
+        const { board, revision } = await openBoard(path);
+        if (request !== loadGeneration) return;
+        revisions.set(path, revision);
+        conflictedPaths.delete(path);
+        set({
+          status: "loaded",
+          board,
+          path,
+          saveConflict: false,
+          saveError: undefined,
+          conflictResolutionError: undefined,
+          error: undefined,
+        });
+      } catch (error) {
+        if (request !== loadGeneration) return;
+        if (mode === "open") {
+          set({ status: "error", error: toUiError(error).message });
+        } else {
+          // A failed reload must leave the optimistic board available for a
+          // later retry or overwrite instead of replacing it with an error
+          // screen and losing the only remaining copy of those edits.
+          set({ conflictResolutionError: toUiError(error).message });
+        }
+      }
+    }
 
     function appendCard(
       boardPath: string,
@@ -185,7 +278,7 @@ export function createBoardStore({
         throw cause;
       }
       set({ board: nextBoard });
-      saveQueue.save(current.path, nextBoard);
+      queueSave(current.path, nextBoard);
       return card;
     }
 
@@ -217,38 +310,32 @@ export function createBoardStore({
         throw cause;
       }
       set({ board: nextBoard });
-      saveQueue.save(current.path, nextBoard);
+      queueSave(current.path, nextBoard);
       return card;
     }
 
     return {
       status: "empty",
       isSaving: false,
+      saveConflict: false,
       openBoard: async (path: string) => {
-        set({ status: "loading", error: undefined });
-        try {
-          const board = await openBoard(path);
-          set({ status: "loaded", board, path });
-        } catch (error) {
-          set({
-            status: "error",
-            error: toUiError(error).message,
-          });
-        }
+        if (get().saveConflict && !confirmDiscardBoard("replace")) return;
+        await loadBoard(path, "open");
       },
       createBoard: async (input: CreateBoardInput) => {
+        if (get().saveConflict && !confirmDiscardBoard("replace")) return;
         const path = await createBoard(input);
-        // Opening through the regular openBoard path records the board in
-        // the recent history and reads the just-written file back, so a
-        // file that cannot be loaded again surfaces immediately.
-        await get().openBoard(path);
+        // The injected openBoard still records history and reads the new file
+        // back. Use the internal loader so the discard confirmation already
+        // accepted above is not requested a second time.
+        await loadBoard(path, "open");
       },
       moveCard: (from: CardLocation, to: CardLocation) => {
         const { board, path } = get();
         if (!board || !path) return;
         const nextBoard = moveCardDomain(board, from, to);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       moveColumn: (columnId: string, toIndex: number) => {
         const { board, path } = get();
@@ -264,7 +351,7 @@ export function createBoardStore({
         );
         if (isUnchanged) return;
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       addColumn: (name: string) => {
         const { board, path } = get();
@@ -284,7 +371,7 @@ export function createBoardStore({
           cards: [],
         });
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       renameBoard: (name: string) => {
         const { board, path } = get();
@@ -296,7 +383,7 @@ export function createBoardStore({
         if (board.name === trimmedName) return;
         const nextBoard = renameBoardDomain(board, trimmedName);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       renameColumn: (columnId: string, name: string) => {
         const { board, path } = get();
@@ -309,7 +396,7 @@ export function createBoardStore({
         if (column && column.name === trimmedName) return;
         const nextBoard = renameColumnDomain(board, columnId, trimmedName);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       removeColumn: (columnId: string) => {
         const { board, path } = get();
@@ -320,7 +407,7 @@ export function createBoardStore({
         if (column && column.cards.length > 0) return;
         const nextBoard = removeColumnDomain(board, columnId);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       renameCard: (cardPath: string, title: string) => {
         const { board, path } = get();
@@ -337,7 +424,7 @@ export function createBoardStore({
         if (!card || card.displayTitle === trimmedTitle) return;
         const nextBoard = setCardTitleDomain(board, cardPath, trimmedTitle);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       setCardPriority: (cardPath: string, priority: Priority | undefined) => {
         const { board, path } = get();
@@ -349,7 +436,7 @@ export function createBoardStore({
         if (!card || card.priority === priority) return;
         const nextBoard = setCardPriorityDomain(board, cardPath, priority);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       addCardLabel: (cardPath: string, labelName: string) => {
         const { board, path } = get();
@@ -363,7 +450,7 @@ export function createBoardStore({
         if (!findLabelDefinition(board, labelName)) return;
         const nextBoard = addLabelToCardDomain(board, cardPath, labelName);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       removeCardLabel: (cardPath: string, labelName: string) => {
         const { board, path } = get();
@@ -376,7 +463,7 @@ export function createBoardStore({
           labelName,
         );
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       createLabel: (name: string, color: LabelColor) => {
         const { board, path } = get();
@@ -402,7 +489,7 @@ export function createBoardStore({
           throw cause;
         }
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       renameLabel: (name: string, nextName: string) => {
         const { board, path } = get();
@@ -429,7 +516,7 @@ export function createBoardStore({
           throw cause;
         }
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       setLabelColor: (name: string, color: LabelColor) => {
         const { board, path } = get();
@@ -438,14 +525,14 @@ export function createBoardStore({
         if (!label || label.color === color) return;
         const nextBoard = setLabelColorDomain(board, name, color);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       removeLabel: (name: string) => {
         const { board, path } = get();
         if (!board || !path) return;
         const nextBoard = removeLabelDefinitionDomain(board, name);
         set({ board: nextBoard });
-        saveQueue.save(path, nextBoard);
+        queueSave(path, nextBoard);
       },
       addNewCard: async (input: NewCardInput) => {
         const initial = get();
@@ -680,11 +767,26 @@ export function createBoardStore({
         }
         const nextBoard = removeCardDomain(current.board, cardPath);
         set({ board: nextBoard });
-        saveQueue.save(current.path, nextBoard);
+        queueSave(current.path, nextBoard);
       },
       retrySave: () => {
-        const { board, path } = get();
-        if (board && path) saveQueue.save(path, board);
+        const { board, path, saveConflict } = get();
+        if (board && path && !saveConflict) queueSave(path, board);
+      },
+      reloadBoard: async () => {
+        const { path, saveConflict } = get();
+        if (!path || !saveConflict || !confirmDiscardBoard("reload")) return;
+        await loadBoard(path, "reload");
+      },
+      overwriteBoard: () => {
+        const { board, path, saveConflict } = get();
+        if (!board || !path || !saveConflict || !confirmOverwriteBoard()) {
+          return;
+        }
+        conflictedPaths.delete(path);
+        revisions.delete(path);
+        set({ saveConflict: false, conflictResolutionError: undefined });
+        queueSave(path, board);
       },
     };
   });
