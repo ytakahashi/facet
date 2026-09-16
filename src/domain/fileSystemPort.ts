@@ -3,9 +3,12 @@ export interface DirEntry {
   isDirectory: boolean;
 }
 
+export type FileRevision = string;
+
 export type FileSystemErrorKind =
   | "already-exists"
   | "not-found"
+  | "revision-mismatch"
   | "is-a-directory"
   | "operation-failed";
 export type FileSystemOperation =
@@ -40,7 +43,14 @@ export class FileSystemError extends Error {
 
 export interface FileSystemPort {
   readTextFile(path: string): Promise<string>;
-  writeTextFile(path: string, content: string): Promise<void>;
+  readTextFileWithRevision(
+    path: string,
+  ): Promise<{ content: string; revision: FileRevision }>;
+  writeTextFile(
+    path: string,
+    content: string,
+    expectedRevision?: FileRevision,
+  ): Promise<FileRevision>;
   createTextFile(path: string, content: string): Promise<void>;
   // Removes a single file. Refuses a directory with an "is-a-directory"
   // error: an empty directory is removable at the OS level, and a card path

@@ -1,9 +1,13 @@
-import type { DirEntry } from "../domain/fileSystemPort.ts";
+import type { DirEntry, FileRevision } from "../domain/fileSystemPort.ts";
 import type { MenuItem } from "./denoApplicationMenu.ts";
 
 export type ReadTextFileResult =
-  | { read: true; content: string }
+  | { read: true; content: string; revision: FileRevision }
   | { read: false; reason: "not-found" };
+
+export type WriteTextFileResult =
+  | { written: true; revision: FileRevision }
+  | { written: false; reason: "revision-mismatch" | "not-found" };
 
 export type CreateTextFileResult =
   | { created: true }
@@ -22,7 +26,11 @@ export type RenameFileResult =
 
 export interface Bindings {
   readTextFile(path: string): Promise<ReadTextFileResult>;
-  writeTextFile(path: string, content: string): Promise<void>;
+  writeTextFile(
+    path: string,
+    content: string,
+    expectedRevision?: FileRevision,
+  ): Promise<WriteTextFileResult>;
   createTextFile(path: string, content: string): Promise<CreateTextFileResult>;
   removeFile(path: string): Promise<RemoveFileResult>;
   renameFile(fromPath: string, toPath: string): Promise<RenameFileResult>;

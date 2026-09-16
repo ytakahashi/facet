@@ -14,10 +14,14 @@ class FakeFileSystemPort implements FileSystemPort {
     throw new Error("not needed for this test");
   }
 
-  writeTextFile(path: string, content: string): Promise<void> {
+  readTextFileWithRevision(): Promise<{ content: string; revision: string }> {
+    throw new Error("not needed for this test");
+  }
+
+  writeTextFile(path: string, content: string): Promise<string> {
     if (this.writeError) return Promise.reject(this.writeError);
     this.writes.push({ path, content });
-    return Promise.resolve();
+    return Promise.resolve("revision");
   }
 
   createTextFile(): Promise<void> {

@@ -21,7 +21,11 @@ class FakeFileSystemPort implements FileSystemPort {
     throw new Error("not needed for this test");
   }
 
-  writeTextFile(): Promise<void> {
+  readTextFileWithRevision(): Promise<{ content: string; revision: string }> {
+    throw new Error("not needed for this test");
+  }
+
+  writeTextFile(): Promise<string> {
     throw new Error("not needed for this test");
   }
 

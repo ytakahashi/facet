@@ -14,9 +14,15 @@
 // survive the binding boundary, so every failure a caller has to tell apart is
 // reported as data. Declared here rather than imported from src/ because the
 // two processes are compiled as separate programs.
+export type FileRevision = string;
+
 export type ReadTextFileResult =
-  | { read: true; content: string }
+  | { read: true; content: string; revision: FileRevision }
   | { read: false; reason: "not-found" };
+
+export type WriteTextFileResult =
+  | { written: true; revision: FileRevision }
+  | { written: false; reason: "revision-mismatch" | "not-found" };
 
 export type CreateTextFileResult =
   | { created: true }
@@ -31,12 +37,27 @@ export interface DirEntry {
   isDirectory: boolean;
 }
 
+async function revisionOf(
+  bytes: Uint8Array<ArrayBuffer>,
+): Promise<FileRevision> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(
+    new Uint8Array(digest),
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
 // A missing file is classified here and reported as data, the same way
 // createTextFile reports already-exists. Callers that repair a card's path
 // need "nothing is there" told apart from "there but unreadable".
 export async function readTextFile(path: string): Promise<ReadTextFileResult> {
   try {
-    return { read: true, content: await Deno.readTextFile(path) };
+    const bytes = await Deno.readFile(path);
+    return {
+      read: true,
+      content: new TextDecoder().decode(bytes),
+      revision: await revisionOf(bytes),
+    };
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
       return { read: false, reason: "not-found" };
@@ -48,8 +69,33 @@ export async function readTextFile(path: string): Promise<ReadTextFileResult> {
 export async function writeTextFile(
   path: string,
   content: string,
-): Promise<void> {
-  await Deno.writeTextFile(path, content);
+  expectedRevision?: FileRevision | null,
+): Promise<WriteTextFileResult> {
+  // An explicitly undefined optional argument can cross the binding boundary
+  // as null. Only a string opts into conditional writing; other values retain
+  // the unconditional behavior promised to callers that omit the revision.
+  if (typeof expectedRevision === "string") {
+    let currentBytes: Uint8Array<ArrayBuffer>;
+    try {
+      currentBytes = await Deno.readFile(path);
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) {
+        return { written: false, reason: "not-found" };
+      }
+      throw error;
+    }
+
+    if (await revisionOf(currentBytes) !== expectedRevision) {
+      return { written: false, reason: "revision-mismatch" };
+    }
+  }
+
+  // Deno exposes no atomic compare-and-write primitive. Keeping the check and
+  // write in this host call minimizes, but cannot eliminate, the race between
+  // observing the current revision and replacing the file.
+  const bytes = new TextEncoder().encode(content);
+  await Deno.writeFile(path, bytes);
+  return { written: true, revision: await revisionOf(bytes) };
 }
 
 // Exclusive through createNew rather than an exists() check followed by a
