@@ -30,6 +30,8 @@ export type UseCaseErrorCode =
   | "directory.name-required"
   | "label.already-exists"
   | "markdown.delete-failed"
+  | "markdown.conflict"
+  | "markdown.file-gone"
   | "markdown.load-failed"
   | "markdown.save-failed"
   | "recent-boards.load-failed";

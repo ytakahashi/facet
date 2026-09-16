@@ -1,4 +1,4 @@
-import type { FileSystemPort } from "../domain/fileSystemPort.ts";
+import type { FileRevision, FileSystemPort } from "../domain/fileSystemPort.ts";
 import { UseCaseError } from "./useCaseError.ts";
 
 export interface ViewMarkdownDeps {
@@ -8,9 +8,9 @@ export interface ViewMarkdownDeps {
 export async function viewMarkdown(
   path: string,
   { fileSystem }: ViewMarkdownDeps,
-): Promise<string> {
+): Promise<{ content: string; revision: FileRevision }> {
   try {
-    return await fileSystem.readTextFile(path);
+    return await fileSystem.readTextFileWithRevision(path);
   } catch (cause) {
     throw new UseCaseError("markdown.load-failed", { path }, { cause });
   }

@@ -3,6 +3,9 @@ export interface DirEntry {
   isDirectory: boolean;
 }
 
+// An opaque snapshot token. It must remain valid when the same file is renamed
+// without changing its bytes, because viewer retargeting carries the token to
+// the new path rather than rereading unchanged content.
 export type FileRevision = string;
 
 export type FileSystemErrorKind =

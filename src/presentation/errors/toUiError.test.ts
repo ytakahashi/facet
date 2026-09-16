@@ -144,6 +144,30 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps an external Markdown change without exposing its cause", () => {
+    const error = new UseCaseError(
+      "markdown.conflict",
+      { path: "/board/improve-search.md" },
+      { cause: new Error("revision-mismatch") },
+    );
+
+    expect(toUiError(error)).toEqual({
+      message: "This file changed outside Facet.",
+    });
+  });
+
+  it("maps a removed Markdown file to a message naming the path", () => {
+    const error = new UseCaseError(
+      "markdown.file-gone",
+      { path: "/board/improve-search.md" },
+      { cause: new Error("not-found") },
+    );
+
+    expect(toUiError(error)).toEqual({
+      message: "This file no longer exists at /board/improve-search.md.",
+    });
+  });
+
   it("maps a mid-operation board change to an operation-independent message", () => {
     const error = new UseCaseError("card.board-changed");
 

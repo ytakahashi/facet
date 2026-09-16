@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
-import type { DirEntry, FileSystemPort } from "../domain/fileSystemPort.ts";
+import {
+  type DirEntry,
+  FileSystemError,
+  type FileSystemPort,
+} from "../domain/fileSystemPort.ts";
 import { saveMarkdown } from "./saveMarkdown.ts";
 
 class FakeFileSystemPort implements FileSystemPort {
-  readonly writes: Array<{ path: string; content: string }> = [];
+  readonly writes: Array<{
+    path: string;
+    content: string;
+    expectedRevision?: string;
+  }> = [];
   private readonly writeError?: Error;
 
   constructor(writeError?: Error) {
@@ -18,10 +26,14 @@ class FakeFileSystemPort implements FileSystemPort {
     throw new Error("not needed for this test");
   }
 
-  writeTextFile(path: string, content: string): Promise<string> {
+  writeTextFile(
+    path: string,
+    content: string,
+    expectedRevision?: string,
+  ): Promise<string> {
     if (this.writeError) return Promise.reject(this.writeError);
-    this.writes.push({ path, content });
-    return Promise.resolve("revision");
+    this.writes.push({ path, content, expectedRevision });
+    return Promise.resolve("revision-2");
   }
 
   createTextFile(): Promise<void> {
@@ -57,22 +69,61 @@ describe("saveMarkdown", () => {
   it("writes the content to the given path through the file system", async () => {
     const fileSystem = new FakeFileSystemPort();
 
-    await saveMarkdown("/board/improve-search.md", "# Improve search", {
-      fileSystem,
-    });
+    const result = await saveMarkdown(
+      "/board/improve-search.md",
+      "# Improve search",
+      "revision-1",
+      { fileSystem },
+    );
 
     expect(fileSystem.writes).toEqual([
-      { path: "/board/improve-search.md", content: "# Improve search" },
+      {
+        path: "/board/improve-search.md",
+        content: "# Improve search",
+        expectedRevision: "revision-1",
+      },
     ]);
+    expect(result).toBe("revision-2");
   });
 
-  it("maps write failures to a Markdown save error", async () => {
+  it.each(
+    [
+      ["revision-mismatch", "markdown.conflict"],
+      ["not-found", "markdown.file-gone"],
+    ] as const,
+  )("maps %s to %s", async (kind, code) => {
+    const cause = new FileSystemError(
+      kind,
+      "write-file",
+      "/board/improve-search.md",
+    );
+    const fileSystem = new FakeFileSystemPort(cause);
+
+    const act = () =>
+      saveMarkdown(
+        "/board/improve-search.md",
+        "# Improve search",
+        "revision-1",
+        { fileSystem },
+      );
+
+    await expect(act).rejects.toMatchObject({
+      code,
+      details: { path: "/board/improve-search.md" },
+      cause,
+    });
+  });
+
+  it("maps other write failures to a Markdown save error", async () => {
     const fileSystem = new FakeFileSystemPort(new Error("disk full"));
 
     const act = () =>
-      saveMarkdown("/board/improve-search.md", "# Improve search", {
-        fileSystem,
-      });
+      saveMarkdown(
+        "/board/improve-search.md",
+        "# Improve search",
+        "revision-1",
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "markdown.save-failed",

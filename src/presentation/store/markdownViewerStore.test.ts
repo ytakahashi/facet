@@ -3,9 +3,39 @@ import type { Card } from "../../domain/card.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import {
-  createMarkdownViewerStore,
+  createMarkdownViewerStore as createMarkdownViewerStoreImplementation,
   isCardSaving,
 } from "./markdownViewerStore.ts";
+
+function createMarkdownViewerStore(
+  viewMarkdown: (
+    path: string,
+  ) => Promise<string | { content: string; revision: string }>,
+  saveMarkdown: (
+    path: string,
+    content: string,
+    expectedRevision?: string,
+  ) => Promise<string | void>,
+  confirmDiscard: Parameters<
+    typeof createMarkdownViewerStoreImplementation
+  >[2],
+  confirmOverwrite: Parameters<
+    typeof createMarkdownViewerStoreImplementation
+  >[3] = alwaysOverwrite,
+) {
+  return createMarkdownViewerStoreImplementation(
+    async (path) => {
+      const result = await viewMarkdown(path);
+      return typeof result === "string"
+        ? { content: result, revision: "revision-1" }
+        : result;
+    },
+    async (path, content, expectedRevision) =>
+      (await saveMarkdown(path, content, expectedRevision)) ?? "revision-2",
+    confirmDiscard,
+    confirmOverwrite,
+  );
+}
 
 function makeCard(overrides: Partial<Card> = {}): Card {
   return {
@@ -26,6 +56,10 @@ function neverDiscard() {
   return false;
 }
 
+function alwaysOverwrite() {
+  return true;
+}
+
 describe("createMarkdownViewerStore", () => {
   it("moves to loaded with the file's content once viewMarkdown resolves", async () => {
     const card = makeCard();
@@ -41,6 +75,7 @@ describe("createMarkdownViewerStore", () => {
     expect(useMarkdownViewer.getState().selectedPath).toBe(card.path);
     expect(useMarkdownViewer.getState().content).toBe("# Improve search");
     expect(useMarkdownViewer.getState().draft).toBe("# Improve search");
+    expect(useMarkdownViewer.getState().revision).toBe("revision-1");
   });
 
   it("moves to error with the toUiError message when viewMarkdown rejects", async () => {
@@ -127,11 +162,45 @@ describe("createMarkdownViewerStore", () => {
     expect(saveMarkdown).toHaveBeenCalledWith(
       "/board/improve-search.md",
       "# Improve search (edited)",
+      "revision-1",
     );
     expect(useMarkdownViewer.getState().content).toBe(
       "# Improve search (edited)",
     );
+    expect(useMarkdownViewer.getState().revision).toBe("revision-2");
     expect(isCardSaving(useMarkdownViewer.getState(), card.path)).toBe(false);
+  });
+
+  it("uses the revision returned by one save for the next save", async () => {
+    const card = makeCard();
+    const saveMarkdown = vi.fn()
+      .mockResolvedValueOnce("revision-2")
+      .mockResolvedValueOnce("revision-3");
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      saveMarkdown,
+      alwaysDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+
+    useMarkdownViewer.getState().updateDraft("# First edit");
+    await useMarkdownViewer.getState().save();
+    useMarkdownViewer.getState().updateDraft("# Second edit");
+    await useMarkdownViewer.getState().save();
+
+    expect(saveMarkdown).toHaveBeenNthCalledWith(
+      1,
+      "/board/improve-search.md",
+      "# First edit",
+      "revision-1",
+    );
+    expect(saveMarkdown).toHaveBeenNthCalledWith(
+      2,
+      "/board/improve-search.md",
+      "# Second edit",
+      "revision-2",
+    );
+    expect(useMarkdownViewer.getState().revision).toBe("revision-3");
   });
 
   it("keeps the draft and reports an error when saving fails", async () => {
@@ -157,6 +226,261 @@ describe("createMarkdownViewerStore", () => {
     expect(useMarkdownViewer.getState().draft).toBe(
       "# Improve search (edited)",
     );
+  });
+
+  it("keeps its baseline and draft when the file changed outside Facet", async () => {
+    const card = makeCard();
+    const conflictError = new UseCaseError("markdown.conflict", {
+      path: "/board/improve-search.md",
+    });
+    const saveMarkdown = vi.fn().mockRejectedValue(conflictError);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      saveMarkdown,
+      alwaysDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+
+    await useMarkdownViewer.getState().save();
+
+    expect(useMarkdownViewer.getState()).toMatchObject({
+      conflict: "changed",
+      content: "# Improve search",
+      draft: "# Facet edit",
+      revision: "revision-1",
+      saveError: toUiError(conflictError).message,
+    });
+
+    await useMarkdownViewer.getState().save();
+    expect(saveMarkdown).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a missing file separately and does not try to reload it", async () => {
+    const card = makeCard();
+    const fileGoneError = new UseCaseError("markdown.file-gone", {
+      path: "/board/improve-search.md",
+    });
+    const viewMarkdown = vi.fn().mockResolvedValue("# Improve search");
+    const useMarkdownViewer = createMarkdownViewerStore(
+      viewMarkdown,
+      vi.fn().mockRejectedValue(fileGoneError),
+      alwaysDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    await useMarkdownViewer.getState().reloadFromDisk();
+
+    expect(useMarkdownViewer.getState().conflict).toBe("gone");
+    expect(useMarkdownViewer.getState().draft).toBe("# Facet edit");
+    expect(viewMarkdown).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the draft when conflict reload confirmation is declined", async () => {
+    const card = makeCard();
+    const viewMarkdown = vi.fn().mockResolvedValue("# Improve search");
+    const confirmDiscard = vi.fn(neverDiscard);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      viewMarkdown,
+      vi.fn().mockRejectedValue(
+        new UseCaseError("markdown.conflict", {
+          path: "/board/improve-search.md",
+        }),
+      ),
+      confirmDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    await useMarkdownViewer.getState().reloadFromDisk();
+
+    expect(confirmDiscard).toHaveBeenCalledTimes(1);
+    expect(viewMarkdown).toHaveBeenCalledTimes(1);
+    expect(useMarkdownViewer.getState()).toMatchObject({
+      content: "# Improve search",
+      draft: "# Facet edit",
+      revision: "revision-1",
+      conflict: "changed",
+    });
+  });
+
+  it("reloads an externally changed file and replaces the draft and revision", async () => {
+    const card = makeCard();
+    const viewMarkdown = vi.fn()
+      .mockResolvedValueOnce({
+        content: "# Improve search",
+        revision: "revision-1",
+      })
+      .mockResolvedValueOnce({
+        content: "# External edit",
+        revision: "revision-external",
+      });
+    const useMarkdownViewer = createMarkdownViewerStore(
+      viewMarkdown,
+      vi.fn().mockRejectedValue(
+        new UseCaseError("markdown.conflict", {
+          path: "/board/improve-search.md",
+        }),
+      ),
+      alwaysDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    await useMarkdownViewer.getState().reloadFromDisk();
+
+    expect(useMarkdownViewer.getState()).toMatchObject({
+      content: "# External edit",
+      draft: "# External edit",
+      revision: "revision-external",
+    });
+    expect(useMarkdownViewer.getState().conflict).toBeUndefined();
+    expect(useMarkdownViewer.getState().saveError).toBeUndefined();
+  });
+
+  it("keeps the draft and conflict when reloading from disk fails", async () => {
+    const card = makeCard();
+    const loadError = new UseCaseError("markdown.load-failed", {
+      path: "/board/improve-search.md",
+    });
+    const viewMarkdown = vi.fn()
+      .mockResolvedValueOnce("# Improve search")
+      .mockRejectedValueOnce(loadError);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      viewMarkdown,
+      vi.fn().mockRejectedValue(
+        new UseCaseError("markdown.conflict", {
+          path: "/board/improve-search.md",
+        }),
+      ),
+      alwaysDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    await useMarkdownViewer.getState().reloadFromDisk();
+
+    expect(useMarkdownViewer.getState()).toMatchObject({
+      status: "loaded",
+      content: "# Improve search",
+      draft: "# Facet edit",
+      revision: "revision-1",
+      conflict: "changed",
+      saveError: toUiError(loadError).message,
+    });
+  });
+
+  it("stays closed when a conflict reload resolves after the viewer closes", async () => {
+    const card = makeCard();
+    let finishReload!: (
+      value: { content: string; revision: string },
+    ) => void;
+    const reloading = new Promise<{ content: string; revision: string }>(
+      (resolve) => {
+        finishReload = resolve;
+      },
+    );
+    const viewMarkdown = vi.fn()
+      .mockResolvedValueOnce("# Improve search")
+      .mockReturnValueOnce(reloading);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      viewMarkdown,
+      vi.fn().mockRejectedValue(
+        new UseCaseError("markdown.conflict", {
+          path: "/board/improve-search.md",
+        }),
+      ),
+      alwaysDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    const reload = useMarkdownViewer.getState().reloadFromDisk();
+    useMarkdownViewer.getState().close();
+    finishReload({ content: "# External edit", revision: "revision-2" });
+    await reload;
+
+    expect(useMarkdownViewer.getState().status).toBe("idle");
+    expect(useMarkdownViewer.getState().selectedPath).toBeUndefined();
+    expect(useMarkdownViewer.getState().draft).toBeUndefined();
+    expect(useMarkdownViewer.getState().revision).toBeUndefined();
+  });
+
+  it("overwrites without a revision after confirmation and resumes guarded saves", async () => {
+    const card = makeCard();
+    const conflictError = new UseCaseError("markdown.conflict", {
+      path: "/board/improve-search.md",
+    });
+    const saveMarkdown = vi.fn()
+      .mockRejectedValueOnce(conflictError)
+      .mockResolvedValueOnce("revision-2")
+      .mockResolvedValueOnce("revision-3");
+    const confirmOverwrite = vi.fn(() => true);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      saveMarkdown,
+      alwaysDiscard,
+      confirmOverwrite,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    await useMarkdownViewer.getState().overwrite();
+
+    expect(confirmOverwrite).toHaveBeenCalledWith("changed");
+    expect(saveMarkdown).toHaveBeenNthCalledWith(
+      2,
+      "/board/improve-search.md",
+      "# Facet edit",
+      undefined,
+    );
+    expect(useMarkdownViewer.getState()).toMatchObject({
+      content: "# Facet edit",
+      revision: "revision-2",
+    });
+    expect(useMarkdownViewer.getState().conflict).toBeUndefined();
+
+    useMarkdownViewer.getState().updateDraft("# Next edit");
+    await useMarkdownViewer.getState().save();
+    expect(saveMarkdown).toHaveBeenNthCalledWith(
+      3,
+      "/board/improve-search.md",
+      "# Next edit",
+      "revision-2",
+    );
+  });
+
+  it("does not overwrite when confirmation is declined", async () => {
+    const card = makeCard();
+    const saveMarkdown = vi.fn().mockRejectedValue(
+      new UseCaseError("markdown.file-gone", {
+        path: "/board/improve-search.md",
+      }),
+    );
+    const confirmOverwrite = vi.fn(() => false);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      saveMarkdown,
+      alwaysDiscard,
+      confirmOverwrite,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    await useMarkdownViewer.getState().overwrite();
+
+    expect(confirmOverwrite).toHaveBeenCalledWith("gone");
+    expect(saveMarkdown).toHaveBeenCalledTimes(1);
+    expect(useMarkdownViewer.getState().conflict).toBe("gone");
+    expect(useMarkdownViewer.getState().draft).toBe("# Facet edit");
   });
 
   it("asks for confirmation before discarding an unsaved edit on selectCard, and keeps the edit when declined", async () => {
@@ -225,6 +549,7 @@ describe("createMarkdownViewerStore", () => {
     expect(useMarkdownViewer.getState().draft).toBe(
       "# Improve search (edited)",
     );
+    expect(useMarkdownViewer.getState().revision).toBe("revision-1");
   });
 
   it("asks for confirmation before discarding an unsaved edit on close, and keeps the edit when declined", async () => {
@@ -525,6 +850,7 @@ describe("createMarkdownViewerStore", () => {
     expect(useMarkdownViewer.getState().draft).toBe(
       "# Improve search (edited)",
     );
+    expect(useMarkdownViewer.getState().revision).toBe("revision-1");
   });
 
   it("saves to the new path after following a moved card", async () => {
@@ -552,6 +878,7 @@ describe("createMarkdownViewerStore", () => {
     expect(saveMarkdown).toHaveBeenCalledWith(
       "/board/ideas/search.md",
       "# Improve search (edited)",
+      "revision-1",
     );
     expect(useMarkdownViewer.getState().content).toBe(
       "# Improve search (edited)",

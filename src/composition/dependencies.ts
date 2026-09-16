@@ -70,8 +70,15 @@ export const appDependencies: AppDependencies = {
   filterStore: createFilterStore(),
   markdownViewer: createMarkdownViewerStore(
     (path) => viewMarkdown(path, { fileSystem }),
-    (path, content) => saveMarkdown(path, content, { fileSystem }),
+    (path, content, expectedRevision) =>
+      saveMarkdown(path, content, expectedRevision, { fileSystem }),
     () => confirm("Discard unsaved changes to this Markdown file?"),
+    (conflict) =>
+      confirm(
+        conflict === "gone"
+          ? "Recreate this Markdown file at its previous path? The draft shown in Facet will be written there."
+          : "Overwrite changes made outside Facet? The draft shown in Facet will replace them.",
+      ),
   ),
   newBoardDialog: createNewBoardDialogStore(),
   paneLayout: createPaneLayoutStore(),

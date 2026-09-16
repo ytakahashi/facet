@@ -36,8 +36,11 @@ export function MarkdownViewer() {
     isCardSaving(state, state.selectedPath)
   );
   const saveError = useMarkdownViewer((state) => state.saveError);
+  const conflict = useMarkdownViewer((state) => state.conflict);
   const updateDraft = useMarkdownViewer((state) => state.updateDraft);
   const save = useMarkdownViewer((state) => state.save);
+  const reloadFromDisk = useMarkdownViewer((state) => state.reloadFromDisk);
+  const overwrite = useMarkdownViewer((state) => state.overwrite);
   const close = useMarkdownViewer((state) => state.close);
 
   const width = usePaneLayout((state) => state.viewerWidth);
@@ -94,7 +97,7 @@ export function MarkdownViewer() {
             <button
               type="button"
               onClick={save}
-              disabled={!isDirty || isSaving}
+              disabled={!isDirty || isSaving || conflict !== undefined}
             >
               {isSaving ? "Saving…" : "Save"}
             </button>
@@ -195,7 +198,36 @@ export function MarkdownViewer() {
           />
         )}
 
-        {saveError && <p role="alert">{saveError}</p>}
+        {saveError && conflict
+          ? (
+            <div className="markdown-viewer__save-conflict" role="alert">
+              <p>{saveError}</p>
+              <p>
+                {conflict === "changed"
+                  ? "Reload discards your edits. Overwrite discards changes made outside Facet."
+                  : "Overwrite recreates the file at this path from the Markdown shown here."}
+              </p>
+              <div className="markdown-viewer__save-conflict-actions">
+                {conflict === "changed" && (
+                  <button
+                    type="button"
+                    onClick={reloadFromDisk}
+                    disabled={isSaving}
+                  >
+                    Reload
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={overwrite}
+                  disabled={isSaving}
+                >
+                  Overwrite
+                </button>
+              </div>
+            </div>
+          )
+          : saveError && <p role="alert">{saveError}</p>}
         {status === "loading" && (
           <p className="markdown-viewer__placeholder">Loading…</p>
         )}
