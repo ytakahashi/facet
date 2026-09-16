@@ -3,6 +3,7 @@ import type { CardFileValidationError } from "../domain/cardFile.ts";
 
 export type UseCaseErrorCode =
   | "board.create-failed"
+  | "board.conflict"
   | "board.file-already-exists"
   | "board.file-name-required"
   | "board.invalid-file-name"

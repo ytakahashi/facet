@@ -11,7 +11,11 @@ import { YamlBoardRepository } from "./yamlBoardRepository.ts";
 class FakeFileSystemPort implements FileSystemPort {
   private readonly files: Map<string, string>;
   private readonly readErrors: Map<string, Error>;
-  readonly writes: Array<{ path: string; content: string }> = [];
+  readonly writes: Array<{
+    path: string;
+    content: string;
+    expectedRevision?: string;
+  }> = [];
   // Recorded separately from writes so tests can assert which API was used:
   // create must go through the exclusive createTextFile, never writeTextFile.
   readonly creates: Array<{ path: string; content: string }> = [];
@@ -52,13 +56,19 @@ class FakeFileSystemPort implements FileSystemPort {
     return Promise.resolve(content);
   }
 
-  readTextFileWithRevision(): Promise<{ content: string; revision: string }> {
-    throw new Error("not needed for this test");
+  async readTextFileWithRevision(
+    path: string,
+  ): Promise<{ content: string; revision: string }> {
+    return { content: await this.readTextFile(path), revision: "revision-1" };
   }
 
-  writeTextFile(path: string, content: string): Promise<string> {
-    this.writes.push({ path, content });
-    return Promise.resolve("revision");
+  writeTextFile(
+    path: string,
+    content: string,
+    expectedRevision?: string,
+  ): Promise<string> {
+    this.writes.push({ path, content, expectedRevision });
+    return Promise.resolve("revision-2");
   }
 
   createTextFile(path: string, content: string): Promise<void> {
@@ -77,6 +87,21 @@ class FakeFileSystemPort implements FileSystemPort {
 }
 
 describe("YamlBoardRepository", () => {
+  it("returns the revision read with the board YAML", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+columns: []
+`,
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const loaded = await repository.load("/board/development.board.yaml");
+
+    expect(loaded.revision).toBe("revision-1");
+  });
+
   it("loads columns and cards with titles resolved from the first H1", async () => {
     const fileSystem = new FakeFileSystemPort({
       "/board/development.board.yaml": `
@@ -94,7 +119,7 @@ columns:
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
 
     expect(board).toEqual({
       version: 1,
@@ -132,7 +157,7 @@ columns: []
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
 
     expect(board.labels).toEqual([{ name: "ui", color: "ruby" }]);
   });
@@ -147,7 +172,7 @@ columns: []
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
 
     expect(board.labels).toEqual([]);
   });
@@ -167,7 +192,7 @@ columns:
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
     const card = board.columns[0].cards[0];
 
     expect(card.displayTitle).toBe("missing-card");
@@ -193,7 +218,7 @@ columns:
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
 
     expect(board.columns[0].cards.map((card) => card.fileState)).toEqual([
       "missing",
@@ -224,7 +249,7 @@ columns:
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
     const card = board.columns[0].cards[0];
 
     expect(card.fileState).toBe("unreadable");
@@ -248,7 +273,7 @@ columns:
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
 
     expect(board.columns[0].cards[0].fileState).toBe("available");
   });
@@ -270,7 +295,7 @@ columns:
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
 
     for (const card of board.columns[0].cards) {
       expect(card.fileState).toBe("unresolvable");
@@ -295,7 +320,7 @@ columns:
     });
     const repository = new YamlBoardRepository(fileSystem);
 
-    const board = await repository.load("/board/development.board.yaml");
+    const { board } = await repository.load("/board/development.board.yaml");
 
     expect(board.columns[0].cards[0].displayTitle).toBe("Custom title");
   });
@@ -330,11 +355,17 @@ describe("YamlBoardRepository.save", () => {
       ],
     };
 
-    await repository.save("/board/development.board.yaml", board);
+    const revision = await repository.save(
+      "/board/development.board.yaml",
+      board,
+      "revision-1",
+    );
 
     expect(fileSystem.writes).toHaveLength(1);
     const written = fileSystem.writes[0];
     expect(written.path).toBe("/board/development.board.yaml");
+    expect(written.expectedRevision).toBe("revision-1");
+    expect(revision).toBe("revision-2");
     expect(parse(written.content)).toEqual({
       version: 1,
       name: "Development",
@@ -395,7 +426,7 @@ describe("YamlBoardRepository.create", () => {
     await repository.create("/board/facet.board.yaml", board);
     const result = await repository.load("/board/facet.board.yaml");
 
-    expect(result).toEqual(board);
+    expect(result).toEqual({ board, revision: "revision-1" });
   });
 
   it("round-trips a board with a populated label registry", async () => {
@@ -414,6 +445,6 @@ describe("YamlBoardRepository.create", () => {
     await repository.create("/board/facet.board.yaml", board);
     const result = await repository.load("/board/facet.board.yaml");
 
-    expect(result).toEqual(board);
+    expect(result).toEqual({ board, revision: "revision-1" });
   });
 });

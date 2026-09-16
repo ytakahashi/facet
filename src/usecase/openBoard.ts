@@ -1,6 +1,8 @@
 import { addRecentBoard } from "../domain/appConfig.ts";
-import type { Board } from "../domain/board.ts";
-import type { BoardRepository } from "../domain/boardRepository.ts";
+import type {
+  BoardRepository,
+  LoadedBoard,
+} from "../domain/boardRepository.ts";
 import type { ConfigRepository } from "../domain/configRepository.ts";
 import { UseCaseError } from "./useCaseError.ts";
 
@@ -12,10 +14,10 @@ export interface OpenBoardDeps {
 export async function openBoard(
   path: string,
   { boardRepository, configRepository }: OpenBoardDeps,
-): Promise<Board> {
-  let board: Board;
+): Promise<LoadedBoard> {
+  let loadedBoard: LoadedBoard;
   try {
-    board = await boardRepository.load(path);
+    loadedBoard = await boardRepository.load(path);
   } catch (cause) {
     throw new UseCaseError("board.open-failed", { path }, { cause });
   }
@@ -30,5 +32,5 @@ export async function openBoard(
     console.warn("Failed to record board history:", error);
   }
 
-  return board;
+  return loadedBoard;
 }

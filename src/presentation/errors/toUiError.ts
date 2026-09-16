@@ -22,6 +22,8 @@ export function toUiError(error: unknown): UiError {
   switch (error.code) {
     case "board.create-failed":
       return { message: `Failed to create the board${atPath(path)}.` };
+    case "board.conflict":
+      return { message: "The board file changed outside Facet." };
     case "board.file-already-exists":
       return {
         message: `A file already exists${atPath(path)}.`,

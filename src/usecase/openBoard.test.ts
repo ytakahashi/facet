@@ -14,15 +14,15 @@ class FakeBoardRepository implements BoardRepository {
     this.board = board;
   }
 
-  load(path: string): Promise<Board> {
+  load(path: string) {
     this.loadedPath = path;
     if (!this.board) {
       return Promise.reject(new Error(`board not found: ${path}`));
     }
-    return Promise.resolve(this.board);
+    return Promise.resolve({ board: this.board, revision: "revision-1" });
   }
 
-  save(): Promise<void> {
+  save(): Promise<string> {
     throw new Error("not needed for this test");
   }
 
@@ -80,7 +80,7 @@ describe("openBoard", () => {
       configRepository,
     });
 
-    expect(result).toEqual(board);
+    expect(result).toEqual({ board, revision: "revision-1" });
     expect(boardRepository.requestedPath).toBe(
       "/board/development.board.yaml",
     );
@@ -140,7 +140,7 @@ describe("openBoard", () => {
       configRepository,
     });
 
-    expect(result).toEqual(board);
+    expect(result).toEqual({ board, revision: "revision-1" });
     expect(consoleWarn).toHaveBeenCalledWith(
       "Failed to record board history:",
       expect.any(Error),

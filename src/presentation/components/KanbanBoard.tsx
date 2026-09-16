@@ -28,7 +28,13 @@ export function KanbanBoard({ board }: { board: Board }) {
   const renameColumn = useBoardStore((state) => state.renameColumn);
   const removeColumn = useBoardStore((state) => state.removeColumn);
   const saveError = useBoardStore((state) => state.saveError);
+  const saveConflict = useBoardStore((state) => state.saveConflict);
+  const conflictResolutionError = useBoardStore(
+    (state) => state.conflictResolutionError,
+  );
   const retrySave = useBoardStore((state) => state.retrySave);
+  const reloadBoard = useBoardStore((state) => state.reloadBoard);
+  const overwriteBoard = useBoardStore((state) => state.overwriteBoard);
   const boardPath = useBoardStore((state) => state.path);
   const criteria = useFilterStore((state) => state.criteria);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
@@ -137,8 +143,26 @@ export function KanbanBoard({ board }: { board: Board }) {
       <BoardName key={boardPath} name={board.name} onRename={renameBoard} />
       {saveError && (
         <div className="kanban-board__save-error" role="alert">
-          <span>Failed to save board: {saveError}</span>
-          <button type="button" onClick={retrySave}>Retry</button>
+          <span>{saveError}</span>
+          {saveConflict
+            ? (
+              <>
+                <span>
+                  Reload discards changes made in Facet. Overwrite discards
+                  changes made outside Facet.
+                </span>
+                {conflictResolutionError && (
+                  <span>{conflictResolutionError}</span>
+                )}
+                <button type="button" onClick={() => void reloadBoard()}>
+                  Reload
+                </button>
+                <button type="button" onClick={overwriteBoard}>
+                  Overwrite
+                </button>
+              </>
+            )
+            : <button type="button" onClick={retrySave}>Retry</button>}
         </div>
       )}
       <div ref={columnsRef} className="kanban-board__columns">

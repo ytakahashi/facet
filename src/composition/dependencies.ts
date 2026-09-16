@@ -41,15 +41,16 @@ async function refreshRecentMenu(): Promise<void> {
 export const appDependencies: AppDependencies = {
   boardStore: createBoardStore({
     openBoard: async (path) => {
-      const board = await openBoardUseCase(path, {
+      const loadedBoard = await openBoardUseCase(path, {
         boardRepository,
         configRepository,
       });
       // Best-effort: the menu rebuild must never block opening the board.
       void refreshRecentMenu();
-      return board;
+      return loadedBoard;
     },
-    saveBoard: (path, board) => saveBoard(path, board, { boardRepository }),
+    saveBoard: (path, board, expectedRevision) =>
+      saveBoard(path, board, expectedRevision, { boardRepository }),
     createMarkdownCard: (input) => createMarkdownCard(input, { fileSystem }),
     addExistingMarkdownCard: (input) =>
       addExistingMarkdownCard(input, { fileSystem }),
@@ -60,6 +61,16 @@ export const appDependencies: AppDependencies = {
     renameMarkdownCard: (input) => renameMarkdownCard(input, { fileSystem }),
     createBoard: (input) => createBoard(input, { fileSystem, boardRepository }),
     deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
+    confirmDiscardBoard: (reason) =>
+      confirm(
+        reason === "reload"
+          ? "Discard changes made in Facet and reload the board from disk?"
+          : "Discard unsaved changes to the current board?",
+      ),
+    confirmOverwriteBoard: () =>
+      confirm(
+        "Overwrite changes made outside Facet? The board shown in Facet will replace them.",
+      ),
   }),
   directoryBrowsing: {
     listDirectory: (path) => listDirectory(path, { fileSystem }),
