@@ -15,6 +15,7 @@ import { createMarkdownCard } from "../usecase/createMarkdownCard.ts";
 import { addExistingMarkdownCard } from "../usecase/addExistingMarkdownCard.ts";
 import { relocateMarkdownCard } from "../usecase/relocateMarkdownCard.ts";
 import { recreateMarkdownCard } from "../usecase/recreateMarkdownCard.ts";
+import { readCardContents } from "../usecase/readCardContents.ts";
 import { renameMarkdownCard } from "../usecase/renameMarkdownCard.ts";
 import type { AppDependencies } from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
@@ -72,6 +73,9 @@ export const appDependencies: AppDependencies = {
         "Overwrite changes made outside Facet? The board shown in Facet will replace them.",
       ),
   }),
+  cardContentReading: {
+    read: (cards) => readCardContents(cards, { fileSystem }),
+  },
   directoryBrowsing: {
     listDirectory: (path) => listDirectory(path, { fileSystem }),
     homeDirectory: () => getHomeDirectory({ fileSystem }),
