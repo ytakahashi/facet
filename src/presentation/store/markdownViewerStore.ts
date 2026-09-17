@@ -27,6 +27,8 @@ export interface MarkdownViewerState {
   savingPaths: ReadonlySet<string>;
   saveError?: string;
   conflict?: MarkdownConflict;
+  conflictResolutionError?: string;
+  conflictResolution?: "reloading" | "overwriting";
   selectCard: (card: Card) => Promise<void>;
   updateDraft: (content: string) => void;
   save: () => Promise<void>;
@@ -95,6 +97,8 @@ const CLOSED_STATE = {
   error: undefined,
   saveError: undefined,
   conflict: undefined,
+  conflictResolutionError: undefined,
+  conflictResolution: undefined,
 } as const satisfies Partial<MarkdownViewerState>;
 
 export function createMarkdownViewerStore(
@@ -128,6 +132,13 @@ export function createMarkdownViewerStore(
           error: undefined,
           saveError: undefined,
           conflict: undefined,
+          conflictResolutionError: undefined,
+          conflictResolution: undefined,
+        });
+      } else {
+        set({
+          conflictResolution: "reloading",
+          conflictResolutionError: undefined,
         });
       }
 
@@ -142,6 +153,8 @@ export function createMarkdownViewerStore(
           error: undefined,
           saveError: undefined,
           conflict: undefined,
+          conflictResolutionError: undefined,
+          conflictResolution: undefined,
         });
       } catch (error) {
         if (request !== generation) return;
@@ -153,12 +166,18 @@ export function createMarkdownViewerStore(
         } else {
           // A failed conflict reload must not compound the problem by losing
           // the draft the user was trying to protect.
-          set({ saveError: toUiError(error).message });
+          set({
+            conflictResolutionError: toUiError(error).message,
+            conflictResolution: undefined,
+          });
         }
       }
     }
 
-    async function persist(expectedRevision: FileRevision | undefined) {
+    async function persist(
+      expectedRevision: FileRevision | undefined,
+      resolution?: "overwriting",
+    ) {
       const { selectedPath, absolutePath, draft, savingPaths } = get();
       if (!selectedPath || !absolutePath || draft === undefined) {
         return;
@@ -172,7 +191,12 @@ export function createMarkdownViewerStore(
       const request = ++generation;
       set({
         savingPaths: new Set(savingPaths).add(selectedPath),
-        saveError: undefined,
+        ...(resolution
+          ? {
+            conflictResolution: resolution,
+            conflictResolutionError: undefined,
+          }
+          : { saveError: undefined }),
       });
       try {
         const revision = await saveMarkdown(
@@ -186,22 +210,42 @@ export function createMarkdownViewerStore(
           revision,
           saveError: undefined,
           conflict: undefined,
+          conflictResolutionError: undefined,
+          conflictResolution: undefined,
         });
       } catch (error) {
         if (request !== generation) return;
-        if (
+        if (resolution) {
+          // A failed overwrite has not resolved the original conflict. Keep
+          // that context visible and report this attempt separately.
+          set({
+            conflictResolutionError: toUiError(error).message,
+            conflictResolution: undefined,
+          });
+        } else if (
           error instanceof UseCaseError && error.code === "markdown.conflict"
         ) {
           set({
             saveError: toUiError(error).message,
             conflict: "changed",
+            conflictResolutionError: undefined,
+            conflictResolution: undefined,
           });
         } else if (
           error instanceof UseCaseError && error.code === "markdown.file-gone"
         ) {
-          set({ saveError: toUiError(error).message, conflict: "gone" });
+          set({
+            saveError: toUiError(error).message,
+            conflict: "gone",
+            conflictResolutionError: undefined,
+            conflictResolution: undefined,
+          });
         } else {
-          set({ saveError: toUiError(error).message });
+          set({
+            saveError: toUiError(error).message,
+            conflictResolutionError: undefined,
+            conflictResolution: undefined,
+          });
         }
       } finally {
         // Cleared even when the viewer has moved past this result: the write
@@ -250,15 +294,25 @@ export function createMarkdownViewerStore(
       },
       reloadFromDisk: async () => {
         const state = get();
-        const { selectedPath, absolutePath, conflict } = state;
-        if (conflict !== "changed" || !selectedPath || !absolutePath) return;
+        const {
+          selectedPath,
+          absolutePath,
+          conflict,
+          conflictResolution,
+        } = state;
+        if (
+          conflict !== "changed" || conflictResolution || !selectedPath ||
+          !absolutePath
+        ) return;
         if (isMarkdownDirty(state) && !confirmDiscard()) return;
         await loadMarkdown(selectedPath, absolutePath, "reload");
       },
       overwrite: async () => {
-        const { conflict } = get();
-        if (!conflict || !confirmOverwrite(conflict)) return;
-        await persist(undefined);
+        const { conflict, conflictResolution } = get();
+        if (
+          !conflict || conflictResolution || !confirmOverwrite(conflict)
+        ) return;
+        await persist(undefined, "overwriting");
       },
       close: () => {
         const state = get();

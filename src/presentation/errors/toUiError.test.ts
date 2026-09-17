@@ -152,7 +152,7 @@ describe("toUiError", () => {
     );
 
     expect(toUiError(error)).toEqual({
-      message: "This file changed outside Facet.",
+      message: "This Markdown file changed outside Facet.",
     });
   });
 
@@ -176,7 +176,8 @@ describe("toUiError", () => {
     );
 
     expect(toUiError(error)).toEqual({
-      message: "This file no longer exists at /board/improve-search.md.",
+      message:
+        "This Markdown file no longer exists at /board/improve-search.md.",
     });
   });
 

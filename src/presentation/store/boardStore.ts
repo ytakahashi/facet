@@ -60,6 +60,7 @@ export interface BoardState {
   saveError?: string;
   saveConflict: boolean;
   conflictResolutionError?: string;
+  conflictResolution?: "reloading" | "overwriting";
   openBoard: (path: string) => Promise<void>;
   createBoard: (input: CreateBoardInput) => Promise<void>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
@@ -177,19 +178,39 @@ export function createBoardStore({
     // completion corrupt the new board's next conditional write.
     const revisions = new Map<string, FileRevision>();
     const conflictedPaths = new Set<string>();
+    const overwritingPaths = new Set<string>();
     let activeSavePath: string | undefined;
+    let activeSaveIsOverwrite = false;
     let loadGeneration = 0;
 
     const saveQueue = createBoardSaveQueue(async (path, board) => {
       activeSavePath = path;
+      activeSaveIsOverwrite = overwritingPaths.has(path);
       if (conflictedPaths.has(path)) return;
       try {
         const revision = await saveBoard(path, board, revisions.get(path));
         revisions.set(path, revision);
+        if (activeSaveIsOverwrite) {
+          overwritingPaths.delete(path);
+          if (get().path === path) {
+            set({
+              saveConflict: false,
+              saveError: undefined,
+              conflictResolutionError: undefined,
+              conflictResolution: undefined,
+            });
+          }
+        }
       } catch (error) {
-        if (error instanceof UseCaseError && error.code === "board.conflict") {
+        // A failed unconditional overwrite has not resolved the conflict, so
+        // later optimistic edits must remain blocked from automatic saving.
+        if (
+          activeSaveIsOverwrite ||
+          (error instanceof UseCaseError && error.code === "board.conflict")
+        ) {
           conflictedPaths.add(path);
         }
+        if (activeSaveIsOverwrite) overwritingPaths.delete(path);
         throw error;
       }
     }, {
@@ -197,12 +218,23 @@ export function createBoardStore({
         set((state) => ({
           isSaving: true,
           saveError: state.saveConflict ? state.saveError : undefined,
-          conflictResolutionError: undefined,
+          conflictResolutionError: state.saveConflict
+            ? state.conflictResolutionError
+            : undefined,
         })),
       onSaved: () => set({ isSaving: false }),
       onError: (error) => {
         if (get().path !== activeSavePath) {
           set({ isSaving: false });
+          return;
+        }
+        if (activeSaveIsOverwrite) {
+          set({
+            isSaving: false,
+            saveConflict: true,
+            conflictResolutionError: toUiError(error).message,
+            conflictResolution: undefined,
+          });
           return;
         }
         set({
@@ -211,6 +243,7 @@ export function createBoardStore({
           saveConflict: error instanceof UseCaseError &&
             error.code === "board.conflict",
           conflictResolutionError: undefined,
+          conflictResolution: undefined,
         });
       },
     });
@@ -226,7 +259,17 @@ export function createBoardStore({
     ): Promise<void> {
       const request = ++loadGeneration;
       if (mode === "open") {
-        set({ status: "loading", error: undefined });
+        set({
+          status: "loading",
+          error: undefined,
+          conflictResolution: undefined,
+          conflictResolutionError: undefined,
+        });
+      } else {
+        set({
+          conflictResolution: "reloading",
+          conflictResolutionError: undefined,
+        });
       }
       try {
         const { board, revision } = await openBoard(path);
@@ -240,6 +283,7 @@ export function createBoardStore({
           saveConflict: false,
           saveError: undefined,
           conflictResolutionError: undefined,
+          conflictResolution: undefined,
           error: undefined,
         });
       } catch (error) {
@@ -250,7 +294,10 @@ export function createBoardStore({
           // A failed reload must leave the optimistic board available for a
           // later retry or overwrite instead of replacing it with an error
           // screen and losing the only remaining copy of those edits.
-          set({ conflictResolutionError: toUiError(error).message });
+          set({
+            conflictResolutionError: toUiError(error).message,
+            conflictResolution: undefined,
+          });
         }
       }
     }
@@ -774,18 +821,29 @@ export function createBoardStore({
         if (board && path && !saveConflict) queueSave(path, board);
       },
       reloadBoard: async () => {
-        const { path, saveConflict } = get();
-        if (!path || !saveConflict || !confirmDiscardBoard("reload")) return;
+        const { path, saveConflict, isSaving, conflictResolution } = get();
+        if (
+          !path || !saveConflict || isSaving || conflictResolution ||
+          !confirmDiscardBoard("reload")
+        ) return;
         await loadBoard(path, "reload");
       },
       overwriteBoard: () => {
-        const { board, path, saveConflict } = get();
-        if (!board || !path || !saveConflict || !confirmOverwriteBoard()) {
+        const { board, path, saveConflict, isSaving, conflictResolution } =
+          get();
+        if (
+          !board || !path || !saveConflict || isSaving || conflictResolution ||
+          !confirmOverwriteBoard()
+        ) {
           return;
         }
         conflictedPaths.delete(path);
         revisions.delete(path);
-        set({ saveConflict: false, conflictResolutionError: undefined });
+        overwritingPaths.add(path);
+        set({
+          conflictResolution: "overwriting",
+          conflictResolutionError: undefined,
+        });
         queueSave(path, board);
       },
     };

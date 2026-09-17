@@ -347,16 +347,15 @@ describe("createMarkdownViewerStore", () => {
     const loadError = new UseCaseError("markdown.load-failed", {
       path: "/board/improve-search.md",
     });
+    const conflictError = new UseCaseError("markdown.conflict", {
+      path: "/board/improve-search.md",
+    });
     const viewMarkdown = vi.fn()
       .mockResolvedValueOnce("# Improve search")
       .mockRejectedValueOnce(loadError);
     const useMarkdownViewer = createMarkdownViewerStore(
       viewMarkdown,
-      vi.fn().mockRejectedValue(
-        new UseCaseError("markdown.conflict", {
-          path: "/board/improve-search.md",
-        }),
-      ),
+      vi.fn().mockRejectedValue(conflictError),
       alwaysDiscard,
     );
     await useMarkdownViewer.getState().selectCard(card);
@@ -371,7 +370,9 @@ describe("createMarkdownViewerStore", () => {
       draft: "# Facet edit",
       revision: "revision-1",
       conflict: "changed",
-      saveError: toUiError(loadError).message,
+      saveError: toUiError(conflictError).message,
+      conflictResolutionError: toUiError(loadError).message,
+      conflictResolution: undefined,
     });
   });
 
@@ -455,6 +456,69 @@ describe("createMarkdownViewerStore", () => {
       "# Next edit",
       "revision-2",
     );
+  });
+
+  it("keeps the conflict when overwrite fails", async () => {
+    const conflictError = new UseCaseError("markdown.conflict");
+    const overwriteError = new UseCaseError("markdown.save-failed", {
+      path: "/board/improve-search.md",
+    });
+    const saveMarkdown = vi.fn()
+      .mockRejectedValueOnce(conflictError)
+      .mockRejectedValueOnce(overwriteError);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      saveMarkdown,
+      alwaysDiscard,
+      alwaysOverwrite,
+    );
+    await useMarkdownViewer.getState().selectCard(makeCard());
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    await useMarkdownViewer.getState().overwrite();
+
+    expect(useMarkdownViewer.getState()).toMatchObject({
+      conflict: "changed",
+      saveError: toUiError(conflictError).message,
+      conflictResolutionError: toUiError(overwriteError).message,
+      conflictResolution: undefined,
+      draft: "# Facet edit",
+    });
+  });
+
+  it("does not start another reload while conflict resolution is in progress", async () => {
+    let finishReload!: (
+      value: { content: string; revision: string },
+    ) => void;
+    const reloading = new Promise<{ content: string; revision: string }>(
+      (resolve) => {
+        finishReload = resolve;
+      },
+    );
+    const viewMarkdown = vi.fn()
+      .mockResolvedValueOnce("# Improve search")
+      .mockReturnValueOnce(reloading);
+    const confirmDiscard = vi.fn(() => true);
+    const useMarkdownViewer = createMarkdownViewerStore(
+      viewMarkdown,
+      vi.fn().mockRejectedValue(new UseCaseError("markdown.conflict")),
+      confirmDiscard,
+    );
+    await useMarkdownViewer.getState().selectCard(makeCard());
+    useMarkdownViewer.getState().updateDraft("# Facet edit");
+    await useMarkdownViewer.getState().save();
+
+    const firstReload = useMarkdownViewer.getState().reloadFromDisk();
+    const secondReload = useMarkdownViewer.getState().reloadFromDisk();
+
+    expect(useMarkdownViewer.getState().conflictResolution).toBe("reloading");
+    expect(confirmDiscard).toHaveBeenCalledOnce();
+    expect(viewMarkdown).toHaveBeenCalledTimes(2);
+
+    finishReload({ content: "# External", revision: "revision-2" });
+    await Promise.all([firstReload, secondReload]);
+    expect(useMarkdownViewer.getState().conflictResolution).toBeUndefined();
   });
 
   it("does not overwrite when confirmation is declined", async () => {

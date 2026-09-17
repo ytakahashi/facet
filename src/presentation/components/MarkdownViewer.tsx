@@ -13,6 +13,10 @@ import { MarkdownEditor } from "./MarkdownEditor.tsx";
 import { PaneResizer } from "./PaneResizer.tsx";
 import { RenameCardFileDialog } from "./RenameCardFileDialog.tsx";
 import { PriorityPicker } from "./PriorityPicker.tsx";
+import {
+  EXTERNAL_CHANGE_CONFLICT_DETAIL,
+  SaveErrorBanner,
+} from "./SaveErrorBanner.tsx";
 import { clampViewerWidth, VIEWER_WIDTH_STEP } from "./viewerWidth.ts";
 
 // The Markdown parser is large enough to dominate the initial bundle, while
@@ -37,6 +41,12 @@ export function MarkdownViewer() {
   );
   const saveError = useMarkdownViewer((state) => state.saveError);
   const conflict = useMarkdownViewer((state) => state.conflict);
+  const conflictResolutionError = useMarkdownViewer(
+    (state) => state.conflictResolutionError,
+  );
+  const conflictResolution = useMarkdownViewer(
+    (state) => state.conflictResolution,
+  );
   const updateDraft = useMarkdownViewer((state) => state.updateDraft);
   const save = useMarkdownViewer((state) => state.save);
   const reloadFromDisk = useMarkdownViewer((state) => state.reloadFromDisk);
@@ -200,34 +210,34 @@ export function MarkdownViewer() {
 
         {saveError && conflict
           ? (
-            <div className="markdown-viewer__save-conflict" role="alert">
-              <p>{saveError}</p>
-              <p>
-                {conflict === "changed"
-                  ? "Reload discards your edits. Overwrite discards changes made outside Facet."
-                  : "Overwrite recreates the file at this path from the Markdown shown here."}
-              </p>
-              <div className="markdown-viewer__save-conflict-actions">
-                {conflict === "changed" && (
-                  <button
-                    type="button"
-                    onClick={reloadFromDisk}
-                    disabled={isSaving}
-                  >
-                    Reload
-                  </button>
-                )}
+            <SaveErrorBanner
+              message={saveError}
+              detail={conflict === "changed"
+                ? EXTERNAL_CHANGE_CONFLICT_DETAIL
+                : "Recreate writes the Markdown shown in Facet back to this path."}
+              resolutionError={conflictResolutionError}
+            >
+              {conflict === "changed" && (
                 <button
                   type="button"
-                  onClick={overwrite}
-                  disabled={isSaving}
+                  onClick={reloadFromDisk}
+                  disabled={isSaving || conflictResolution !== undefined}
                 >
-                  Overwrite
+                  {conflictResolution === "reloading" ? "Reloading…" : "Reload"}
                 </button>
-              </div>
-            </div>
+              )}
+              <button
+                type="button"
+                onClick={overwrite}
+                disabled={isSaving || conflictResolution !== undefined}
+              >
+                {conflictResolution === "overwriting"
+                  ? (conflict === "gone" ? "Recreating…" : "Overwriting…")
+                  : (conflict === "gone" ? "Recreate" : "Overwrite")}
+              </button>
+            </SaveErrorBanner>
           )
-          : saveError && <p role="alert">{saveError}</p>}
+          : saveError && <SaveErrorBanner message={saveError} />}
         {status === "loading" && (
           <p className="markdown-viewer__placeholder">Loading…</p>
         )}
