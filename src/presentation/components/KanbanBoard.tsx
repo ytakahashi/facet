@@ -19,6 +19,10 @@ import { BoardName } from "./BoardName.tsx";
 import { CardSearchDialog } from "./CardSearchDialog.tsx";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { MissingCardDialog } from "./MissingCardDialog.tsx";
+import {
+  EXTERNAL_CHANGE_CONFLICT_DETAIL,
+  SaveErrorBanner,
+} from "./SaveErrorBanner.tsx";
 
 export function KanbanBoard({ board }: { board: Board }) {
   const columnsRef = useRef<HTMLDivElement>(null);
@@ -32,6 +36,10 @@ export function KanbanBoard({ board }: { board: Board }) {
   const conflictResolutionError = useBoardStore(
     (state) => state.conflictResolutionError,
   );
+  const conflictResolution = useBoardStore(
+    (state) => state.conflictResolution,
+  );
+  const isSaving = useBoardStore((state) => state.isSaving);
   const retrySave = useBoardStore((state) => state.retrySave);
   const reloadBoard = useBoardStore((state) => state.reloadBoard);
   const overwriteBoard = useBoardStore((state) => state.overwriteBoard);
@@ -142,28 +150,34 @@ export function KanbanBoard({ board }: { board: Board }) {
       }
       <BoardName key={boardPath} name={board.name} onRename={renameBoard} />
       {saveError && (
-        <div className="kanban-board__save-error" role="alert">
-          <span>{saveError}</span>
+        <SaveErrorBanner
+          message={saveError}
+          detail={saveConflict ? EXTERNAL_CHANGE_CONFLICT_DETAIL : undefined}
+          resolutionError={conflictResolutionError}
+        >
           {saveConflict
             ? (
               <>
-                <span>
-                  Reload discards changes made in Facet. Overwrite discards
-                  changes made outside Facet.
-                </span>
-                {conflictResolutionError && (
-                  <span>{conflictResolutionError}</span>
-                )}
-                <button type="button" onClick={() => void reloadBoard()}>
-                  Reload
+                <button
+                  type="button"
+                  onClick={() => void reloadBoard()}
+                  disabled={isSaving || conflictResolution !== undefined}
+                >
+                  {conflictResolution === "reloading" ? "Reloading…" : "Reload"}
                 </button>
-                <button type="button" onClick={overwriteBoard}>
-                  Overwrite
+                <button
+                  type="button"
+                  onClick={overwriteBoard}
+                  disabled={isSaving || conflictResolution !== undefined}
+                >
+                  {conflictResolution === "overwriting"
+                    ? "Overwriting…"
+                    : "Overwrite"}
                 </button>
               </>
             )
             : <button type="button" onClick={retrySave}>Retry</button>}
-        </div>
+        </SaveErrorBanner>
       )}
       <div ref={columnsRef} className="kanban-board__columns">
         {board.columns.map((column, index) => (

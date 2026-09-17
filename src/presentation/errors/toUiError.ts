@@ -105,10 +105,10 @@ export function toUiError(error: unknown): UiError {
       return { message: `Failed to delete the Markdown file${atPath(path)}.` };
     case "markdown.conflict":
       return {
-        message: "This file changed outside Facet.",
+        message: "This Markdown file changed outside Facet.",
       };
     case "markdown.file-gone":
-      return { message: `This file no longer exists${atPath(path)}.` };
+      return { message: `This Markdown file no longer exists${atPath(path)}.` };
     case "markdown.load-failed":
       return { message: `Failed to load the Markdown file${atPath(path)}.` };
     case "markdown.save-failed":

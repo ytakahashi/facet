@@ -54,10 +54,12 @@ function loaded(board: Board, revision = "revision-1") {
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((resolvePromise) => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise;
+    reject = rejectPromise;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 }
 
 describe("createBoardStore", () => {
@@ -1931,6 +1933,35 @@ describe("createBoardStore", () => {
     });
   });
 
+  it("does not start another reload while conflict resolution is in progress", async () => {
+    const reloading = deferred<ReturnType<typeof loaded>>();
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockReturnValueOnce(reloading.promise);
+    const confirmDiscardBoard = vi.fn(() => true);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard: vi.fn().mockRejectedValue(new UseCaseError("board.conflict")),
+      confirmDiscardBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    const firstReload = useBoardStore.getState().reloadBoard();
+    const secondReload = useBoardStore.getState().reloadBoard();
+
+    expect(useBoardStore.getState().conflictResolution).toBe("reloading");
+    expect(confirmDiscardBoard).toHaveBeenCalledOnce();
+    expect(openBoard).toHaveBeenCalledTimes(2);
+
+    reloading.resolve(loaded(makeBoard({ name: "From disk" }), "revision-2"));
+    await Promise.all([firstReload, secondReload]);
+    expect(useBoardStore.getState().conflictResolution).toBeUndefined();
+  });
+
   it("overwrites a conflicted board without an expected revision", async () => {
     const saveBoard = vi.fn()
       .mockRejectedValueOnce(new UseCaseError("board.conflict"))
@@ -1960,6 +1991,155 @@ describe("createBoardStore", () => {
       expect(useBoardStore.getState().isSaving).toBe(false)
     );
     expect(useBoardStore.getState().saveConflict).toBe(false);
+  });
+
+  it("keeps the conflict when overwrite fails", async () => {
+    const conflictError = new UseCaseError("board.conflict");
+    const overwriteError = new UseCaseError("board.save-failed", {
+      path: "/board/development.board.yaml",
+    });
+    const saveBoard = vi.fn()
+      .mockRejectedValueOnce(conflictError)
+      .mockRejectedValueOnce(overwriteError)
+      .mockResolvedValueOnce("revision-overwritten");
+    const confirmOverwriteBoard = vi.fn(() => true);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(makeBoard())),
+      saveBoard,
+      confirmOverwriteBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    useBoardStore.getState().overwriteBoard();
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().conflictResolutionError).toBe(
+        toUiError(overwriteError).message,
+      )
+    );
+
+    expect(useBoardStore.getState()).toMatchObject({
+      saveConflict: true,
+      saveError: toUiError(conflictError).message,
+      conflictResolution: undefined,
+      board: expect.objectContaining({ name: "Local edit" }),
+    });
+
+    useBoardStore.getState().overwriteBoard();
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(false)
+    );
+    expect(confirmOverwriteBoard).toHaveBeenCalledTimes(2);
+    expect(saveBoard).toHaveBeenNthCalledWith(
+      3,
+      "/board/development.board.yaml",
+      expect.objectContaining({ name: "Local edit" }),
+      undefined,
+    );
+  });
+
+  it("keeps the overwrite error when an edit was queued during the failed overwrite", async () => {
+    const overwrite = deferred<string>();
+    const overwriteError = new UseCaseError("board.save-failed", {
+      path: "/board/development.board.yaml",
+    });
+    const saveBoard = vi.fn()
+      .mockRejectedValueOnce(new UseCaseError("board.conflict"))
+      .mockReturnValueOnce(overwrite.promise);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(makeBoard())),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    useBoardStore.getState().overwriteBoard();
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+    useBoardStore.getState().renameBoard("Edited during overwrite");
+    overwrite.reject(overwriteError);
+
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState()).toMatchObject({
+        isSaving: false,
+        saveConflict: true,
+        conflictResolutionError: toUiError(overwriteError).message,
+        board: expect.objectContaining({ name: "Edited during overwrite" }),
+      })
+    );
+    expect(saveBoard).toHaveBeenCalledTimes(2);
+  });
+
+  it("saves an edit queued during overwrite with the overwrite revision", async () => {
+    const overwrite = deferred<string>();
+    const saveBoard = vi.fn()
+      .mockRejectedValueOnce(new UseCaseError("board.conflict"))
+      .mockReturnValueOnce(overwrite.promise)
+      .mockResolvedValueOnce("revision-latest");
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(makeBoard())),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    useBoardStore.getState().overwriteBoard();
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+    useBoardStore.getState().renameBoard("Edited during overwrite");
+    overwrite.resolve("revision-overwritten");
+
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(3));
+    expect(saveBoard).toHaveBeenNthCalledWith(
+      3,
+      "/board/development.board.yaml",
+      expect.objectContaining({ name: "Edited during overwrite" }),
+      "revision-overwritten",
+    );
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState()).toMatchObject({
+        isSaving: false,
+        saveConflict: false,
+      })
+    );
+  });
+
+  it("does not start another overwrite while conflict resolution is in progress", async () => {
+    const overwriting = deferred<string>();
+    const confirmOverwriteBoard = vi.fn(() => true);
+    const saveBoard = vi.fn()
+      .mockRejectedValueOnce(new UseCaseError("board.conflict"))
+      .mockReturnValueOnce(overwriting.promise);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(makeBoard())),
+      saveBoard,
+      confirmOverwriteBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    useBoardStore.getState().overwriteBoard();
+    useBoardStore.getState().overwriteBoard();
+
+    expect(useBoardStore.getState().conflictResolution).toBe("overwriting");
+    expect(confirmOverwriteBoard).toHaveBeenCalledOnce();
+    expect(saveBoard).toHaveBeenCalledTimes(2);
+
+    overwriting.resolve("revision-overwritten");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(false)
+    );
+    expect(useBoardStore.getState().conflictResolution).toBeUndefined();
   });
 
   it("keeps the conflict when reload and overwrite confirmation are declined", async () => {
