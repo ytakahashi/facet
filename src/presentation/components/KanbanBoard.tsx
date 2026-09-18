@@ -16,9 +16,11 @@ import { Column } from "./Column.tsx";
 import { AddCardDialog } from "./AddCardDialog.tsx";
 import { AddColumn } from "./AddColumn.tsx";
 import { BoardName } from "./BoardName.tsx";
+import { CardContentSearchDialog } from "./CardContentSearchDialog.tsx";
 import { CardSearchDialog } from "./CardSearchDialog.tsx";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { MissingCardDialog } from "./MissingCardDialog.tsx";
+import { resolveBoardSearchShortcut } from "./boardSearchShortcut.ts";
 import {
   EXTERNAL_CHANGE_CONFLICT_DETAIL,
   SaveErrorBanner,
@@ -46,7 +48,8 @@ export function KanbanBoard({ board }: { board: Board }) {
   const boardPath = useBoardStore((state) => state.path);
   const criteria = useFilterStore((state) => state.criteria);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isTitleSearchOpen, setIsTitleSearchOpen] = useState(false);
+  const [isContentSearchOpen, setIsContentSearchOpen] = useState(false);
   // Keep the last-targeted column around after closing so the dialog stays
   // mounted and its `open` prop can toggle through a real dialog.close() —
   // unmounting on every close bypasses the browser's native focus restore.
@@ -79,35 +82,31 @@ export function KanbanBoard({ board }: { board: Board }) {
     setDeleteTarget(undefined);
     setIsMissingCardOpen(false);
     setRepairTarget(undefined);
-    setIsSearchOpen(false);
+    setIsTitleSearchOpen(false);
+    setIsContentSearchOpen(false);
   }, [boardPath]);
 
-  // Cmd+P opens the card search. The native menu carries no accelerators
-  // (see denoApplicationMenu.ts), so a key pressed anywhere in the window can
-  // only be caught here - which is also why nothing else in the app claims
-  // this combination. preventDefault keeps the WebView from taking it as the
-  // system print gesture.
+  // The native menu carries no accelerators (see denoApplicationMenu.ts), so
+  // search keys pressed anywhere in the window can only be caught here. The
+  // pure resolver owns the modifier split between title and content search.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (
-        !event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
-      ) {
-        return;
-      }
-      // Both cases of the letter: Caps Lock produces the upper one without
-      // Shift being held, and Shift itself is already ruled out above.
-      if (event.key !== "p" && event.key !== "P") return;
+      const shortcut = resolveBoardSearchShortcut(event);
+      if (!shortcut) return;
       // Claimed as soon as the combination is recognised, before deciding
-      // whether to act on it: the app owns this key either way, and leaving
-      // the default in place for the cases it declines would let the press
-      // fall through to the WebView's print gesture.
+      // whether to act on it: the app owns both search keys, so neither falls
+      // through to a default action when an existing modal makes it decline.
       event.preventDefault();
       // Two dialogs must never be showModal() at once, and which ones are
       // open is spread across this component, the new-board store and the
       // Markdown viewer. Asking the DOM keeps this correct as dialogs are
       // added, without a store to hold "something is modal" in.
       if (document.querySelector("dialog[open]")) return;
-      setIsSearchOpen(true);
+      if (shortcut === "title") {
+        setIsTitleSearchOpen(true);
+      } else {
+        setIsContentSearchOpen(true);
+      }
     }
 
     document.addEventListener("keydown", handleKeyDown);
@@ -141,6 +140,23 @@ export function KanbanBoard({ board }: { board: Board }) {
       },
     });
   }, [moveCard, moveColumn]);
+
+  function handleSearchSelect(card: CardModel) {
+    // Each search dialog has already closed itself by now. Clear both drivers
+    // so this handoff cannot leave one shortcut swallowed by stale open state.
+    setIsTitleSearchOpen(false);
+    setIsContentSearchOpen(false);
+    // The same split the card tile makes on click: a broken card has nothing
+    // to show in the viewer, so it goes to the repair dialog.
+    if (isCardFileBroken(card)) {
+      setRepairTarget(card);
+      setIsMissingCardOpen(true);
+      return;
+    }
+    // selectCard owns the unsaved-draft confirmation; declining it leaves the
+    // board exactly as it was.
+    void selectCard(card);
+  }
 
   return (
     <div className="kanban-board">
@@ -221,24 +237,17 @@ export function KanbanBoard({ board }: { board: Board }) {
       <CardSearchDialog
         board={board}
         criteria={criteria}
-        open={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        onSelect={(card) => {
-          // The dialog has already closed itself by now; this keeps the state
-          // that drives it from depending on the close event to catch up,
-          // since a stuck `true` here would swallow the next Cmd+P.
-          setIsSearchOpen(false);
-          // The same split the card tile makes on click: a broken card has
-          // nothing to show in the viewer, so it goes to the repair dialog.
-          if (isCardFileBroken(card)) {
-            setRepairTarget(card);
-            setIsMissingCardOpen(true);
-            return;
-          }
-          // selectCard owns the unsaved-draft confirmation; declining it
-          // leaves the board exactly as it was.
-          void selectCard(card);
-        }}
+        open={isTitleSearchOpen}
+        onClose={() => setIsTitleSearchOpen(false)}
+        onSelect={handleSearchSelect}
+      />
+      <CardContentSearchDialog
+        key={`content-search-${boardPath}`}
+        board={board}
+        criteria={criteria}
+        open={isContentSearchOpen}
+        onClose={() => setIsContentSearchOpen(false)}
+        onSelect={handleSearchSelect}
       />
       {
         /* Mounted before DeleteCardDialog so that when one hands over to the
