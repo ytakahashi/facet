@@ -5,10 +5,12 @@ import App from "./presentation/App.tsx";
 import {
   appDependencies,
   startApplicationMenu,
+  startCardHistoryReset,
 } from "./composition/dependencies.ts";
 import { AppProvider } from "./presentation/context/appContext.ts";
 
 startApplicationMenu();
+startCardHistoryReset();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

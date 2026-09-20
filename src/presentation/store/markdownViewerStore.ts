@@ -1,5 +1,15 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
+import { type Board, findCardByEquivalentPath } from "../../domain/board.ts";
+import {
+  type CardHistory,
+  emptyCardHistory,
+  findPreviousCard,
+  recordCardVisit,
+  removeFromCardHistory,
+  retargetCardHistory,
+} from "../../domain/cardHistory.ts";
+import { isSameCardPath } from "../../domain/boardPath.ts";
 import type { Card } from "../../domain/card.ts";
 import type { FileRevision } from "../../domain/fileSystemPort.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
@@ -9,6 +19,7 @@ export type MarkdownStatus = "idle" | "loading" | "loaded" | "error";
 export type MarkdownConflict = "changed" | "gone";
 
 export interface MarkdownViewerState {
+  history: CardHistory;
   selectedPath?: string;
   absolutePath?: string;
   status: MarkdownStatus;
@@ -30,6 +41,8 @@ export interface MarkdownViewerState {
   conflictResolutionError?: string;
   conflictResolution?: "reloading" | "overwriting";
   selectCard: (card: Card) => Promise<void>;
+  goBack: (board: Board) => Promise<void>;
+  resetHistory: () => void;
   updateDraft: (content: string) => void;
   save: () => Promise<void>;
   reloadFromDisk: () => Promise<void>;
@@ -49,6 +62,10 @@ export interface MarkdownViewerState {
   // absolutePath has to move with it or the next save would write back to the
   // path the file just left and recreate it there.
   retargetCard: (previousPath: string, card: Card) => void;
+  // A repaired card may still be selected even though its latest board value
+  // says the old file was unavailable. Refresh it without treating repair as a
+  // deletion: earlier visits must follow the repaired path rather than vanish.
+  reopenRepairedCard: (previousPath: string, card: Card) => Promise<void>;
 }
 
 export type ViewMarkdown = (
@@ -119,12 +136,16 @@ export function createMarkdownViewerStore(
       selectedPath: string,
       absolutePath: string,
       mode: "select" | "reload",
+      // Only a new selection supplies history. Reloading the current file must
+      // not turn that refresh into another navigation visit.
+      history?: CardHistory,
     ): Promise<void> {
       const request = ++generation;
       if (mode === "select") {
         set({
           selectedPath,
           absolutePath,
+          ...(history ? { history } : {}),
           status: "loading",
           content: undefined,
           revision: undefined,
@@ -259,30 +280,84 @@ export function createMarkdownViewerStore(
       }
     }
 
+    async function openCard(
+      card: Card,
+      history: CardHistory,
+      options: { force?: boolean; skipDiscardPrompt?: boolean } = {},
+    ): Promise<boolean> {
+      const state = get();
+      if (
+        !options.force && card.path === state.selectedPath
+      ) {
+        return false;
+      }
+      if (
+        !options.skipDiscardPrompt && isMarkdownDirty(state) &&
+        !confirmDiscard()
+      ) {
+        return false;
+      }
+
+      if (!card.absolutePath) {
+        generation++;
+        set({
+          ...CLOSED_STATE,
+          history,
+          selectedPath: card.path,
+          status: "error",
+          error: "Could not resolve this card's file path.",
+        });
+        return true;
+      }
+
+      await loadMarkdown(card.path, card.absolutePath, "select", history);
+      return true;
+    }
+
     return {
       status: "idle",
+      history: emptyCardHistory(),
       savingPaths: new Set<string>(),
       selectCard: async (card: Card) => {
         const state = get();
-        if (card.path === state.selectedPath) {
+        await openCard(card, recordCardVisit(state.history, card.path));
+      },
+      goBack: async (board: Board) => {
+        const previous = findPreviousCard(
+          get().history,
+          (path) => findCardByEquivalentPath(board, path) !== undefined,
+        );
+        if (!previous) return;
+        const card = findCardByEquivalentPath(board, previous.path);
+        // The same board and predicate produced this path immediately above.
+        // A missing card here would mean the board changed during synchronous
+        // execution, which cannot happen.
+        if (!card) {
+          throw new Error(
+            `History points to an unknown card: ${previous.path}`,
+          );
+        }
+        await openCard(card, previous.history);
+      },
+      resetHistory: () => set({ history: emptyCardHistory() }),
+      reopenRepairedCard: async (previousPath: string, card: Card) => {
+        const state = get();
+        const history = retargetCardHistory(
+          state.history,
+          previousPath,
+          card.path,
+        );
+        if (
+          state.selectedPath === undefined ||
+          !isSameCardPath(state.selectedPath, previousPath)
+        ) {
+          set({ history });
           return;
         }
-        if (isMarkdownDirty(state) && !confirmDiscard()) {
-          return;
-        }
-
-        if (!card.absolutePath) {
-          generation++;
-          set({
-            ...CLOSED_STATE,
-            selectedPath: card.path,
-            status: "error",
-            error: "Could not resolve this card's file path.",
-          });
-          return;
-        }
-
-        await loadMarkdown(card.path, card.absolutePath, "select");
+        await openCard(card, history, {
+          force: true,
+          skipDiscardPrompt: true,
+        });
       },
       updateDraft: (content: string) => {
         set({ draft: content });
@@ -325,21 +400,44 @@ export function createMarkdownViewerStore(
         return true;
       },
       discardCard: (path: string) => {
-        if (get().selectedPath !== path) return;
+        const state = get();
+        const history = removeFromCardHistory(state.history, path);
+        if (
+          state.selectedPath === undefined ||
+          !isSameCardPath(state.selectedPath, path)
+        ) {
+          set({ history });
+          return;
+        }
         generation++;
-        set(CLOSED_STATE);
+        set({ ...CLOSED_STATE, history });
       },
       retargetCard: (previousPath: string, card: Card) => {
-        // The rename flow only ever moves the card the viewer has open, but the
-        // check is kept as the same defense line the other path-scoped actions
-        // draw.
-        if (get().selectedPath !== previousPath) return;
+        const state = get();
+        const history = retargetCardHistory(
+          state.history,
+          previousPath,
+          card.path,
+        );
+        // History is path-scoped independently of the current selection, so it
+        // follows the moved card even when the viewer itself does not.
+        if (
+          state.selectedPath === undefined ||
+          !isSameCardPath(state.selectedPath, previousPath)
+        ) {
+          set({ history });
+          return;
+        }
         // Content and its revision survive the move together: FileRevision's
         // contract keeps a token valid across a rename that leaves bytes
         // unchanged. The generation counter is left alone too: nothing is in
         // flight (the rename UI waits for a pending save), and bumping it would
         // throw away a result that belongs to this very file.
-        set({ selectedPath: card.path, absolutePath: card.absolutePath });
+        set({
+          history,
+          selectedPath: card.path,
+          absolutePath: card.absolutePath,
+        });
       },
     };
   });

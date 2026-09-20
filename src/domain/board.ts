@@ -73,6 +73,22 @@ export function findCardByPath(board: Board, path: string): Card | undefined {
   return undefined;
 }
 
+// Looks up by card identity rather than the exact spelling stored in the board.
+// History can outlive a board reload, and the reloaded path may differ only in
+// case or Unicode composition while still naming the same file on macOS.
+export function findCardByEquivalentPath(
+  board: Board,
+  path: string,
+): Card | undefined {
+  for (const column of board.columns) {
+    const card = column.cards.find((candidate) =>
+      isSameCardPath(candidate.path, path)
+    );
+    if (card) return card;
+  }
+  return undefined;
+}
+
 export function findLabelDefinition(
   board: Board,
   name: string,

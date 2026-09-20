@@ -120,3 +120,14 @@ export function startApplicationMenu(): void {
     },
   });
 }
+
+// Called once at startup. Opening or creating a board enters loading, while a
+// conflict reload deliberately does not, so navigation survives an in-place
+// refresh but never crosses an explicit board-open boundary.
+export function startCardHistoryReset(): void {
+  appDependencies.boardStore.subscribe((state, previous) => {
+    if (state.status === "loading" && previous.status !== "loading") {
+      appDependencies.markdownViewer.getState().resetHistory();
+    }
+  });
+}
