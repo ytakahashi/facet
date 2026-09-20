@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { Card } from "../../domain/card.ts";
 import { MarkdownPreview } from "./MarkdownPreview.tsx";
 
 function render(markdown: string): string {
@@ -37,6 +38,63 @@ https://example.org
     expect(output).toContain('title="./other.md"');
     expect(output).toContain('title="https://example.com"');
     expect(output).toContain('title="https://example.org"');
+  });
+
+  it("renders a resolved card link as a button without an anchor", () => {
+    const card: Card = {
+      path: "notes/target.md",
+      fileState: "available",
+      labels: [],
+      displayTitle: "Target",
+    };
+    const output = renderToStaticMarkup(
+      <MarkdownPreview
+        markdown="[Target](./target.md)"
+        resolveLink={() => card}
+        onOpenCard={() => {}}
+      />,
+    );
+
+    expect(output).not.toContain("<a");
+    expect(output).toContain('<button type="button"');
+    expect(output).toContain(
+      'class="markdown-preview__link markdown-preview__link--card"',
+    );
+    expect(output).toContain('title="notes/target.md"');
+  });
+
+  it("passes the encoded href to the resolver", () => {
+    const resolveLink = vi.fn(() => undefined);
+
+    renderToStaticMarkup(
+      <MarkdownPreview
+        markdown="[日本語](<./日本語 note.md>)"
+        resolveLink={resolveLink}
+        onOpenCard={() => {}}
+      />,
+    );
+
+    expect(resolveLink).toHaveBeenCalledWith(
+      "./%E6%97%A5%E6%9C%AC%E8%AA%9E%20note.md",
+    );
+  });
+
+  it("keeps a resolved link inert when no open callback is provided", () => {
+    const card: Card = {
+      path: "target.md",
+      fileState: "available",
+      labels: [],
+      displayTitle: "Target",
+    };
+    const output = renderToStaticMarkup(
+      <MarkdownPreview
+        markdown="[Target](target.md)"
+        resolveLink={() => card}
+      />,
+    );
+
+    expect(output).not.toContain("<button");
+    expect(output).toContain('<span class="markdown-preview__link"');
   });
 
   it("renders image alt text without loading an image", () => {
