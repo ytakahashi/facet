@@ -8,6 +8,7 @@ import {
   CardAlreadyExistsError,
   containsCardPath,
   createEmptyBoard,
+  findCardByEquivalentPath,
   findCardByPath,
   findLabelDefinition,
   LabelAlreadyExistsError,
@@ -64,6 +65,23 @@ function makeBoard(overrides: Partial<Board> = {}): Board {
     ...overrides,
   };
 }
+
+describe("findCardByEquivalentPath", () => {
+  it("finds a card across normalized, case, and Unicode composition differences", () => {
+    const card = makeCard({ path: "Notes/caf\u00e9.md" });
+    const board = makeBoard({ columns: [makeColumn({ cards: [card] })] });
+
+    expect(findCardByEquivalentPath(board, "notes/./cafe\u0301.md")).toBe(card);
+  });
+
+  it("returns undefined when the board has no equivalent card path", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "a.md" })] })],
+    });
+
+    expect(findCardByEquivalentPath(board, "b.md")).toBeUndefined();
+  });
+});
 
 describe("moveCard", () => {
   it("moves a card later in the same column, inserting before the card originally at the target index", () => {

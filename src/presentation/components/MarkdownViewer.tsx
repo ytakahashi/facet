@@ -1,5 +1,9 @@
-import { lazy, Suspense, useState } from "react";
-import { findCardByPath } from "../../domain/board.ts";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  findCardByEquivalentPath,
+  findCardByPath,
+} from "../../domain/board.ts";
+import { findPreviousCard } from "../../domain/cardHistory.ts";
 import type { Card } from "../../domain/card.ts";
 import {
   useBoardStore,
@@ -18,6 +22,7 @@ import {
   SaveErrorBanner,
 } from "./SaveErrorBanner.tsx";
 import { clampViewerWidth, VIEWER_WIDTH_STEP } from "./viewerWidth.ts";
+import { resolveViewerShortcut } from "./viewerShortcut.ts";
 
 // The Markdown parser is large enough to dominate the initial bundle, while
 // edit mode does not need it. Load that dependency only when preview is shown.
@@ -52,6 +57,8 @@ export function MarkdownViewer() {
   const reloadFromDisk = useMarkdownViewer((state) => state.reloadFromDisk);
   const overwrite = useMarkdownViewer((state) => state.overwrite);
   const close = useMarkdownViewer((state) => state.close);
+  const history = useMarkdownViewer((state) => state.history);
+  const goBack = useMarkdownViewer((state) => state.goBack);
 
   const width = usePaneLayout((state) => state.viewerWidth);
   const setWidth = usePaneLayout((state) => state.setViewerWidth);
@@ -72,6 +79,16 @@ export function MarkdownViewer() {
   const card = status === "loaded" && board && selectedPath
     ? findCardByPath(board, selectedPath)
     : undefined;
+  const backDestination = useMemo(() => {
+    if (!board) return undefined;
+    const previous = findPreviousCard(
+      history,
+      (path) => findCardByEquivalentPath(board, path) !== undefined,
+    );
+    if (!previous) return undefined;
+    const destination = findCardByEquivalentPath(board, previous.path);
+    return destination ? { board, card: destination } : undefined;
+  }, [board, history]);
 
   const [isLabelPickerOpen, setIsLabelPickerOpen] = useState(false);
   // The card is taken into state when the dialog opens rather than read from
@@ -80,6 +97,20 @@ export function MarkdownViewer() {
   // would be torn out of the document mid-submit - with its modal still open.
   const [renameFileTarget, setRenameFileTarget] = useState<Card>();
   const [isRenameFileOpen, setIsRenameFileOpen] = useState(false);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!resolveViewerShortcut(event)) return;
+      // The viewer owns this shortcut while open, even when there is no back
+      // destination or a modal prevents acting on it.
+      event.preventDefault();
+      if (document.querySelector("dialog[open]") || !board) return;
+      void goBack(board);
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [board, goBack]);
 
   return (
     // A fragment so the handle is a flex sibling of the pane rather than a
@@ -96,13 +127,29 @@ export function MarkdownViewer() {
       />
       <div className="markdown-viewer" style={{ width }}>
         <div className="markdown-viewer__header">
-          {card && (
-            <CardTitle
-              key={card.path}
-              card={card}
-              onRename={renameCard}
-            />
-          )}
+          <div className="markdown-viewer__header-main">
+            <button
+              type="button"
+              className="markdown-viewer__back"
+              aria-label="Back"
+              title={backDestination
+                ? `Back to ${backDestination.card.displayTitle} (⌘[)`
+                : "Back (⌘[)"}
+              disabled={!backDestination}
+              onClick={() => {
+                if (backDestination) void goBack(backDestination.board);
+              }}
+            >
+              ←
+            </button>
+            {card && (
+              <CardTitle
+                key={card.path}
+                card={card}
+                onRename={renameCard}
+              />
+            )}
+          </div>
           <div className="markdown-viewer__header-actions">
             <button
               type="button"

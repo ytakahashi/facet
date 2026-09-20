@@ -41,13 +41,8 @@ export function MissingCardDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const relocateCard = useBoardStore((state) => state.relocateCard);
   const recreateCard = useBoardStore((state) => state.recreateCard);
-  const discardCard = useMarkdownViewer((state) => state.discardCard);
-  const selectCard = useMarkdownViewer((state) => state.selectCard);
-  // The viewer normally holds no broken card (a broken tile opens this dialog
-  // instead of the viewer), so this only matters for a card that was opened
-  // while it was still readable.
-  const isOpenInViewer = useMarkdownViewer((state) =>
-    state.selectedPath === card.path
+  const reopenRepairedCard = useMarkdownViewer(
+    (state) => state.reopenRepairedCard,
   );
   const boardDirectory = directoryOf(boardPath);
   const [mode, setMode] = useState<RepairMode>(initialModeFor(card));
@@ -84,12 +79,10 @@ export function MissingCardDialog({
       const repaired = await run();
       setIsSubmitting(false);
       onClose();
-      // Only the card the viewer is actually showing: a repair is not a reason
-      // to interrupt an edit in progress on some other card.
-      if (isOpenInViewer) {
-        discardCard(previousPath);
-        void selectCard(repaired);
-      }
+      // Every earlier visit follows the repaired identity. The store reloads
+      // only when this is also the card currently shown, so repairing another
+      // card never interrupts the viewer.
+      void reopenRepairedCard(previousPath, repaired);
     } catch (submitError) {
       setError(toUiError(submitError));
       setIsSubmitting(false);
