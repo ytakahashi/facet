@@ -128,6 +128,13 @@ export function MarkdownViewer() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [board, goBack]);
 
+  // App only mounts this component for an open board, and every non-idle
+  // viewer state identifies a selected card. A partial viewer would hide a
+  // broken store/composition invariant behind an incomplete UI.
+  if (!board || !selectedPath) {
+    throw new Error("Markdown viewer requires an open board and selected card");
+  }
+
   return (
     // A fragment so the handle is a flex sibling of the pane rather than a
     // child of it: this pane scrolls, and a handle inside would scroll with
@@ -328,7 +335,14 @@ export function MarkdownViewer() {
               </button>
             </div>
             {viewerMode === "edit"
-              ? <MarkdownEditor value={draft} onChange={updateDraft} />
+              ? (
+                <MarkdownEditor
+                  value={draft}
+                  onChange={updateDraft}
+                  board={board}
+                  fromPath={selectedPath}
+                />
+              )
               : (
                 <Suspense
                   fallback={
