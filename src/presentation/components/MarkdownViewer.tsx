@@ -1,8 +1,16 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   findCardByEquivalentPath,
   findCardByPath,
 } from "../../domain/board.ts";
+import { resolveCardLink } from "../../domain/cardLink.ts";
 import { findPreviousCard } from "../../domain/cardHistory.ts";
 import type { Card } from "../../domain/card.ts";
 import {
@@ -59,6 +67,7 @@ export function MarkdownViewer() {
   const close = useMarkdownViewer((state) => state.close);
   const history = useMarkdownViewer((state) => state.history);
   const goBack = useMarkdownViewer((state) => state.goBack);
+  const selectCard = useMarkdownViewer((state) => state.selectCard);
 
   const width = usePaneLayout((state) => state.viewerWidth);
   const setWidth = usePaneLayout((state) => state.setViewerWidth);
@@ -76,6 +85,13 @@ export function MarkdownViewer() {
   const renameLabel = useBoardStore((state) => state.renameLabel);
   const setLabelColor = useBoardStore((state) => state.setLabelColor);
   const removeLabel = useBoardStore((state) => state.removeLabel);
+  const resolveLink = useCallback((href: string) => {
+    if (!board || !selectedPath) return undefined;
+    return resolveCardLink(board, selectedPath, href);
+  }, [board, selectedPath]);
+  const openCard = useCallback((card: Card) => {
+    void selectCard(card);
+  }, [selectCard]);
   const card = status === "loaded" && board && selectedPath
     ? findCardByPath(board, selectedPath)
     : undefined;
@@ -321,7 +337,11 @@ export function MarkdownViewer() {
                     </p>
                   }
                 >
-                  <MarkdownPreview markdown={draft} />
+                  <MarkdownPreview
+                    markdown={draft}
+                    resolveLink={resolveLink}
+                    onOpenCard={openCard}
+                  />
                 </Suspense>
               )}
           </>
