@@ -15,6 +15,10 @@ report what actually happened rather than describing the change as complete.
 - `deno task build` type-checks `src/` only.
 - When `desktop/**` change, run `deno task desktop`. The regular build does not
   check `desktop/`, and `deno check` cannot see Deno Desktop's types.
+- When a change affects Facet's externally observable behavior, board file
+  format, Markdown card handling, path or link semantics, or concurrent-edit
+  behavior, review `.agents/skills/manage-facet-board/` for consistency and
+  update it when the documented behavior changed.
 
 ## Verifying in the app
 

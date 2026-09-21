@@ -14,11 +14,14 @@
     "@std/http/file-server": "jsr:@std/http@^1/file-server"
   },
   "test": {
-    "include": ["desktop/"]
+    "include": [
+      "desktop/",
+      ".agents/skills/manage-facet-board/scripts/"
+    ]
   },
   "tasks": {
     "desktop": "deno task build && deno desktop --allow-read --allow-write --allow-env --allow-net --exclude node_modules --include dist desktop/main.ts",
     "desktop:hmr": "deno task build && deno desktop --hmr --allow-read --allow-write --allow-env --allow-net --exclude node_modules --include dist desktop/main.ts",
-    "test": "vitest run && deno test --allow-read --allow-write"
+    "test": "vitest run && deno test --allow-read --allow-write --allow-run"
   }
 }
