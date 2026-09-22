@@ -17,6 +17,7 @@ A local-first Markdown kanban desktop app for macOS.
 - Add, rename, reorder and remove columns
 - Give a card a priority and any number of labels
 - Filter by label and priority, or hide whole columns from view
+- Search card titles or Markdown contents
 - Create and open boards from the menu bar, including recently opened ones
 
 ## In the editor
@@ -27,8 +28,6 @@ Click a card to read and edit its Markdown beside the board.
 - Edit and GFM Preview modes, including tables, task lists and strikethrough
 - The file's path is shown above the text, and the file can be renamed or moved
   into a subdirectory from there
-- Preview shows link text and image alt text without navigating or loading
-  external resources
 
 ## Files
 
@@ -53,9 +52,16 @@ can be named by you.
   - Deleting a Markdown file is permanent; Facet does not move it to Trash.
 - If a file is moved, renamed or deleted outside the app, its card stays put and
   offers a way to point it back
-- Facet does not watch files or detect concurrent edits. Saving an open Markdown
-  file may overwrite changes made by another editor after Facet loaded it.
+- Facet does not watch files for external changes. If a board or open Markdown
+  file changed after Facet loaded it, the next save reports a conflict and lets
+  you reload or explicitly overwrite it.
 - One board is open at a time — opening another replaces it in the same window.
+
+## File format and automation
+
+For the board file format, Markdown card behavior, path rules and guidance for
+tools that modify Facet files directly, see the
+[manage-facet-board skill](./.agents/skills/manage-facet-board/SKILL.md).
 
 ## Status
 
