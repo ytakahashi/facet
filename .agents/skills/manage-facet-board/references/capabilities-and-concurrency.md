@@ -13,6 +13,7 @@ files as Facet. It is not a complete UI manual.
   bounded viewing history. Command-[ returns to the previous Card.
 - Command-K in the editor inserts a relative link to another Card on the current
   Board.
+- Command-S saves a changed Markdown draft while the Card is open.
 
 ## External changes
 

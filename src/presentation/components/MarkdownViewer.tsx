@@ -60,6 +60,7 @@ export function MarkdownViewer() {
   const conflictResolution = useMarkdownViewer(
     (state) => state.conflictResolution,
   );
+  const canSave = isDirty && !isSaving && conflict === undefined;
   const updateDraft = useMarkdownViewer((state) => state.updateDraft);
   const save = useMarkdownViewer((state) => state.save);
   const reloadFromDisk = useMarkdownViewer((state) => state.reloadFromDisk);
@@ -116,17 +117,23 @@ export function MarkdownViewer() {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (!resolveViewerShortcut(event)) return;
+      const shortcut = resolveViewerShortcut(event);
+      if (!shortcut) return;
       // The viewer owns this shortcut while open, even when there is no back
-      // destination or a modal prevents acting on it.
+      // destination, saving is unavailable, or a modal prevents acting on it.
       event.preventDefault();
-      if (document.querySelector("dialog[open]") || !board) return;
-      void goBack(board);
+      if (document.querySelector("dialog[open]")) return;
+      if (shortcut === "back") {
+        if (board) void goBack(board);
+        return;
+      }
+      if (!canSave) return;
+      void save();
     }
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [board, goBack]);
+  }, [board, canSave, goBack, save]);
 
   // App only mounts this component for an open board, and every non-idle
   // viewer state identifies a selected card. A partial viewer would hide a
@@ -176,8 +183,9 @@ export function MarkdownViewer() {
           <div className="markdown-viewer__header-actions">
             <button
               type="button"
+              title="Save (⌘S)"
               onClick={save}
-              disabled={!isDirty || isSaving || conflict !== undefined}
+              disabled={!canSave}
             >
               {isSaving ? "Saving…" : "Save"}
             </button>

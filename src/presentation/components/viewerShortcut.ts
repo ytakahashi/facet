@@ -1,4 +1,4 @@
-export type ViewerShortcut = "back";
+export type ViewerShortcut = "back" | "save";
 
 type ShortcutEvent = Pick<
   KeyboardEvent,
@@ -19,5 +19,7 @@ export function resolveViewerShortcut(
   ) {
     return undefined;
   }
-  return event.key === "[" ? "back" : undefined;
+  if (event.key === "[") return "back";
+  // Caps Lock can change the reported case without adding Shift.
+  return event.key === "s" || event.key === "S" ? "save" : undefined;
 }
