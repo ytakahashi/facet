@@ -26,6 +26,7 @@ import { createFilterStore } from "../presentation/store/filterStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
 import { createPaneLayoutStore } from "../presentation/store/paneLayoutStore.ts";
+import { createWorkspaceStore } from "../presentation/store/workspaceStore.ts";
 
 const fileSystem = new DenoFileSystemAdapter();
 const boardRepository = new YamlBoardRepository(fileSystem);
@@ -67,11 +68,9 @@ function createBoardSession(): BoardSession {
       createBoard: (input) =>
         createBoard(input, { fileSystem, boardRepository }),
       deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
-      confirmDiscardBoard: (reason) =>
+      confirmDiscardBoard: () =>
         confirm(
-          reason === "reload"
-            ? "Discard changes made in Facet and reload the board from disk?"
-            : "Discard unsaved changes to the current board?",
+          "Discard changes made in Facet and reload the board from disk?",
         ),
       confirmOverwriteBoard: () =>
         confirm(
@@ -94,8 +93,6 @@ function createBoardSession(): BoardSession {
   };
 }
 
-export const boardSession = createBoardSession();
-
 export const appDependencies: AppDependencies = {
   cardContentReading: {
     read: (cards) => readCardContents(cards, { fileSystem }),
@@ -111,6 +108,11 @@ export const appDependencies: AppDependencies = {
   recentBoards: {
     list: () => listRecentBoards({ configRepository }),
   },
+  workspace: createWorkspaceStore({
+    createSession: createBoardSession,
+    confirmCloseBoard: () =>
+      confirm("Discard unsaved changes to this board and close it?"),
+  }),
 };
 
 // Called once at startup (outside React) to set the initial menu and wire
@@ -122,23 +124,6 @@ export function startApplicationMenu(): void {
     // submit time (in NewBoardDialog), so cancelling the dialog never
     // discards a draft as a side effect.
     newBoard: () => appDependencies.newBoardDialog.getState().open(),
-    openRecent: (path) => {
-      // Abort the switch if the user declines to discard an unsaved draft.
-      if (!boardSession.markdownViewer.getState().close()) {
-        return;
-      }
-      void boardSession.boardStore.getState().openBoard(path);
-    },
-  });
-}
-
-// Called once at startup. Opening or creating a board enters loading, while a
-// conflict reload deliberately does not, so navigation survives an in-place
-// refresh but never crosses an explicit board-open boundary.
-export function startCardHistoryReset(): void {
-  boardSession.boardStore.subscribe((state, previous) => {
-    if (state.status === "loading" && previous.status !== "loading") {
-      boardSession.markdownViewer.getState().resetHistory();
-    }
+    openRecent: (path) => appDependencies.workspace.getState().openBoard(path),
   });
 }

@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import type { Ref } from "react";
 
 interface DragOrigin {
   pointerX: number;
   paneWidth: number;
-  workspaceWidth: number;
+  availableWidth: number;
 }
 
 interface PaneResizerProps {
   // Width of the pane to the right of this handle.
   width: number;
-  clamp: (width: number, workspaceWidth: number) => number;
+  handleRef: Ref<HTMLDivElement>;
+  availableWidth: number;
+  clamp: (width: number, availableWidth: number) => number;
   step: number;
   label: string;
   onResize: (width: number) => void;
@@ -22,11 +25,10 @@ const RESIZING_CLASS = "is-pane-resizing";
 // right, so dragging left grows that pane. Nothing here knows what the pane
 // contains: the bounds arrive as clamp().
 export function PaneResizer(
-  { width, clamp, step, label, onResize, onReset }: PaneResizerProps,
+  { width, handleRef, availableWidth, clamp, step, label, onResize, onReset }:
+    PaneResizerProps,
 ) {
-  const handleRef = useRef<HTMLDivElement>(null);
   const drag = useRef<DragOrigin | undefined>(undefined);
-  const [workspaceWidth, setWorkspaceWidth] = useState(globalThis.innerWidth);
 
   // The resize cursor and the selection lock have to hold while the pointer
   // is outside this element, which is most of a drag, so they go on <body>.
@@ -36,35 +38,17 @@ export function PaneResizer(
     document.body.classList.remove(RESIZING_CLASS);
   }, []);
 
-  // CSS may temporarily cap the pane after the window shrinks without
-  // changing its stored width. Track only the workspace measurement here so
-  // the separator's range remains truthful while the stored width survives
-  // for restoration when the window grows again.
-  useEffect(() => {
-    const workspace = handleRef.current?.parentElement;
-    if (!workspace) return;
-
-    const updateWorkspaceWidth = () => {
-      setWorkspaceWidth(workspace.getBoundingClientRect().width);
-    };
-    updateWorkspaceWidth();
-
-    const observer = new ResizeObserver(updateWorkspaceWidth);
-    observer.observe(workspace);
-    return () => observer.disconnect();
-  }, []);
-
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
     // Keeps the drag from starting a text selection or moving focus.
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    // Taken once: the workspace does not change width during a drag, and
+    // Taken once: the available space does not change during a drag, and
     // re-reading it per move would follow a pane width this drag is changing.
     drag.current = {
       pointerX: event.clientX,
       paneWidth: width,
-      workspaceWidth,
+      availableWidth,
     };
     document.body.classList.add(RESIZING_CLASS);
   }
@@ -73,7 +57,7 @@ export function PaneResizer(
     const origin = drag.current;
     if (!origin) return;
     const moved = origin.pointerX - event.clientX;
-    onResize(clamp(origin.paneWidth + moved, origin.workspaceWidth));
+    onResize(clamp(origin.paneWidth + moved, origin.availableWidth));
   }
 
   // Fires on pointerup and pointercancel alike, since both release the
@@ -91,14 +75,14 @@ export function PaneResizer(
       : 0;
     if (direction === 0) return;
     event.preventDefault();
-    onResize(clamp(width + direction * step, workspaceWidth));
+    onResize(clamp(width + direction * step, availableWidth));
   }
 
   // clamp() answers with the bound itself for a width that cannot be reached,
   // which is where the separator's advertised range comes from.
-  const minimumWidth = clamp(Number.NEGATIVE_INFINITY, workspaceWidth);
-  const maximumWidth = clamp(Number.POSITIVE_INFINITY, workspaceWidth);
-  const currentWidth = clamp(width, workspaceWidth);
+  const minimumWidth = clamp(Number.NEGATIVE_INFINITY, availableWidth);
+  const maximumWidth = clamp(Number.POSITIVE_INFINITY, availableWidth);
+  const currentWidth = clamp(width, availableWidth);
 
   return (
     <div

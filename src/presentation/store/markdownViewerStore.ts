@@ -30,7 +30,8 @@ export interface MarkdownViewerState {
   // Card paths whose writes are currently in flight. Tracked apart from
   // selectedPath because the viewer can move to another card - or close
   // entirely - while a write is still on its way, and anything about to delete
-  // that file has to be able to see the write coming.
+  // that file has to be able to see the write coming. This set only covers
+  // cards being saved by this BoardSession, not other open tabs.
   // A set rather than a single path: the user can save one card, move to
   // another and save that one too while the first write is still running, and
   // forgetting the first would let its file be deleted out from under a write
@@ -47,9 +48,8 @@ export interface MarkdownViewerState {
   save: () => Promise<void>;
   reloadFromDisk: () => Promise<void>;
   overwrite: () => Promise<void>;
-  // Returns whether the viewer was actually closed, so a caller that's about
-  // to replace the whole board (e.g. switching boards from the menu) can
-  // abort the switch when the user declines to discard unsaved changes.
+  // Returns whether the viewer was actually closed, so closing its tab can
+  // abort when the user declines to discard unsaved changes.
   close: () => boolean;
   // Resets the viewer without the discard prompt, for a card that no longer
   // exists. The caller has already confirmed a destructive action on it, and

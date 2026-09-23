@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useBoardStore, useRecentBoards } from "../context/appContext.ts";
+import { useRecentBoards, useWorkspace } from "../context/appContext.ts";
 import type { UiError } from "../errors/toUiError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 
@@ -10,7 +10,7 @@ function basenameOf(path: string): string {
 
 export function RecentBoardList() {
   const { list } = useRecentBoards();
-  const openBoard = useBoardStore((state) => state.openBoard);
+  const openBoard = useWorkspace((state) => state.openBoard);
   const [recentBoards, setRecentBoards] = useState<string[]>([]);
   const [error, setError] = useState<UiError>();
 
@@ -45,7 +45,7 @@ export function RecentBoardList() {
             <button
               type="button"
               className="recent-board-list__entry"
-              onClick={() => void openBoard(path)}
+              onClick={() => openBoard(path)}
             >
               <span className="recent-board-list__entry-name">
                 {basenameOf(path)}

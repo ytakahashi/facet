@@ -62,7 +62,7 @@ export interface BoardState {
   conflictResolutionError?: string;
   conflictResolution?: "reloading" | "overwriting";
   openBoard: (path: string) => Promise<void>;
-  createBoard: (input: CreateBoardInput) => Promise<void>;
+  createBoard: (input: CreateBoardInput) => Promise<string>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
   moveColumn: (columnId: string, toIndex: number) => void;
   addColumn: (name: string) => void;
@@ -122,7 +122,7 @@ export type SaveBoard = (
   board: Board,
   expectedRevision: FileRevision | undefined,
 ) => Promise<FileRevision>;
-export type BoardDiscardReason = "reload" | "replace";
+export type BoardDiscardReason = "reload";
 export type ConfirmDiscardBoard = (reason: BoardDiscardReason) => boolean;
 export type ConfirmOverwriteBoard = () => boolean;
 export type CreateMarkdownCard = (
@@ -173,9 +173,9 @@ export function createBoardStore({
   confirmOverwriteBoard,
 }: BoardStoreDeps): UseBoundStore<StoreApi<BoardState>> {
   return create<BoardState>((set, get) => {
-    // Revisions are scoped to a path because a save may finish after another
-    // board has been opened. A single current-board token would let that stale
-    // completion corrupt the new board's next conditional write.
+    // The workspace uses one store per board, but this store's public openBoard
+    // operation can still change its path. Keep revisions per path so a late
+    // save cannot supply another path's next conditional write.
     const revisions = new Map<string, FileRevision>();
     const conflictedPaths = new Set<string>();
     const overwritingPaths = new Set<string>();
@@ -339,8 +339,8 @@ export function createBoardStore({
     ): Card {
       const current = get();
       if (!current.board || current.path !== boardPath) {
-        // The native menu stays clickable while a modal dialog is open, so
-        // Open Recent can swap the board mid-repair.
+        // The workspace keeps a session on one path. This guard also covers
+        // direct store use that changes the path during the file operation.
         throw new UseCaseError("card.board-changed");
       }
       let nextBoard: Board;
@@ -366,16 +366,15 @@ export function createBoardStore({
       isSaving: false,
       saveConflict: false,
       openBoard: async (path: string) => {
-        if (get().saveConflict && !confirmDiscardBoard("replace")) return;
         await loadBoard(path, "open");
       },
       createBoard: async (input: CreateBoardInput) => {
-        if (get().saveConflict && !confirmDiscardBoard("replace")) return;
         const path = await createBoard(input);
-        // The injected openBoard still records history and reads the new file
-        // back. Use the internal loader so the discard confirmation already
-        // accepted above is not requested a second time.
+        // Opening the created file also records it in recent boards. Return
+        // its path even if that read fails so the workspace can show an error
+        // tab for a file that now exists on disk.
         await loadBoard(path, "open");
+        return path;
       },
       moveCard: (from: CardLocation, to: CardLocation) => {
         const { board, path } = get();
@@ -808,8 +807,8 @@ export function createBoardStore({
 
         const current = get();
         if (!current.board || current.path !== initial.path) {
-          // The native menu stays clickable while a modal dialog is open, so
-          // Open Recent can swap the board mid-delete.
+          // The workspace keeps a session on one path. This guard also covers
+          // direct store use that changes the path during file I/O.
           throw new UseCaseError("card.board-changed");
         }
         const nextBoard = removeCardDomain(current.board, cardPath);

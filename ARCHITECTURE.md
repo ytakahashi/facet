@@ -89,9 +89,10 @@ Enforced by `.oxlintrc.json`, which also covers the `src/` ↔ `desktop/` split.
 Stores live in `src/presentation/store/` as `create*` factories rather than
 module-level singletons. Importing a store module does not construct a store,
 and a test can stand one up against fakes. `composition/dependencies.ts` calls
-the factories and currently creates one session for the whole app. The board
-store, Markdown viewer, and filter store form a `BoardSession`; app-wide stores
-and services live separately.
+the factories. Each open board has a tab with its own `BoardSession` containing
+the board store, Markdown viewer, and filter store. The workspace and window
+layout are app-wide. Only the active tab's board components are mounted; the
+other sessions retain their store state while their components are unmounted.
 
 Board changes are applied optimistically and written back through
 `BoardSaveQueue`, which coalesces overlapping changes and surfaces a failure as
@@ -118,9 +119,11 @@ delete. Two consequences:
 - Uniqueness is checked **before** the file I/O, even though the domain would
   reject the collision afterwards anyway — otherwise the file has already moved
   to a path no card refers to.
-- A card whose Markdown has a write in flight can be neither deleted nor moved.
-  That write holds the path it started with, and would otherwise land after the
-  move and recreate the file where it used to be.
+- Within one board session, a card whose Markdown has a write in flight can be
+  neither deleted nor moved. That write holds the path it started with, and
+  would otherwise land after the move and recreate the file where it used to be.
+  This guard does not cross tabs: two boards can reference the same file, and a
+  write from one tab may race a move or deletion from another.
 
 ### Recent boards
 
