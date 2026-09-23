@@ -23,25 +23,28 @@ export interface CardContentReading {
   read(cards: readonly Card[]): Promise<CardContentReadResult[]>;
 }
 
-// One context for every service a component might need, instead of one
-// context per service. Components still only see a narrow, purpose-specific
-// hook (useBoardStore/useDirectoryBrowsing below) - this is just where those
-// hooks get their value from - so adding a new service later is one field
-// here plus one small hook, not another provider wrapped around <App />.
+// App-wide services share one context: adding one requires a field and a hook,
+// not another provider. Board-specific stores have their own context so a
+// BoardSession can be supplied as a unit. Components use purpose-specific hooks.
 export interface AppDependencies {
-  boardStore: UseBoundStore<StoreApi<BoardState>>;
   cardContentReading: CardContentReading;
   directoryBrowsing: DirectoryBrowsing;
-  filterStore: UseBoundStore<StoreApi<FilterState>>;
-  markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
   newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
   paneLayout: UseBoundStore<StoreApi<PaneLayoutState>>;
   recentBoards: RecentBoards;
 }
 
+export interface BoardSession {
+  boardStore: UseBoundStore<StoreApi<BoardState>>;
+  markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
+  filterStore: UseBoundStore<StoreApi<FilterState>>;
+}
+
 const AppContext = createContext<AppDependencies | null>(null);
+const BoardSessionContext = createContext<BoardSession | null>(null);
 
 export const AppProvider = AppContext.Provider;
+export const BoardSessionProvider = BoardSessionContext.Provider;
 
 function useAppDependencies(): AppDependencies {
   const value = useContext(AppContext);
@@ -51,8 +54,18 @@ function useAppDependencies(): AppDependencies {
   return value;
 }
 
+function useBoardSession(): BoardSession {
+  const value = useContext(BoardSessionContext);
+  if (!value) {
+    throw new Error(
+      "useBoardSession must be used within a BoardSessionProvider",
+    );
+  }
+  return value;
+}
+
 export function useBoardStore<T>(selector: (state: BoardState) => T): T {
-  return useAppDependencies().boardStore(selector);
+  return useBoardSession().boardStore(selector);
 }
 
 export function useCardContentReading(): CardContentReading {
@@ -64,13 +77,13 @@ export function useDirectoryBrowsing(): DirectoryBrowsing {
 }
 
 export function useFilterStore<T>(selector: (state: FilterState) => T): T {
-  return useAppDependencies().filterStore(selector);
+  return useBoardSession().filterStore(selector);
 }
 
 export function useMarkdownViewer<T>(
   selector: (state: MarkdownViewerState) => T,
 ): T {
-  return useAppDependencies().markdownViewer(selector);
+  return useBoardSession().markdownViewer(selector);
 }
 
 export function useNewBoardDialog<T>(

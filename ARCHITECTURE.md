@@ -63,8 +63,9 @@ Enforced by `.oxlintrc.json`, which also covers the `src/` ↔ `desktop/` split.
   that use them, rather than in a directory of their own.
 - `usecase/` is one file per application operation, and `composition/` is the
   only place that builds a concrete implementation.
-- `presentation` never imports `infrastructure`. It receives what it needs as a
-  React context whose shape is declared in `presentation/context/appContext.ts`.
+- `presentation` never imports `infrastructure`. It receives app-wide services
+  and board-specific stores through separate React contexts declared in
+  `presentation/context/appContext.ts`.
 - `presentation` may instantiate application services whose lifecycle belongs to
   a store, such as `BoardSaveQueue`.
 - Infrastructure-backed use cases are assembled in `composition/` and injected.
@@ -85,9 +86,12 @@ Enforced by `.oxlintrc.json`, which also covers the `src/` ↔ `desktop/` split.
 
 ## State
 
-Stores are `create*` factories called once in `composition/dependencies.ts`
-rather than module-level singletons, so nothing is built at import time and a
-test can stand one up against fakes. They live in `src/presentation/store/`.
+Stores live in `src/presentation/store/` as `create*` factories rather than
+module-level singletons. Importing a store module does not construct a store,
+and a test can stand one up against fakes. `composition/dependencies.ts` calls
+the factories and currently creates one session for the whole app. The board
+store, Markdown viewer, and filter store form a `BoardSession`; app-wide stores
+and services live separately.
 
 Board changes are applied optimistically and written back through
 `BoardSaveQueue`, which coalesces overlapping changes and surfaces a failure as

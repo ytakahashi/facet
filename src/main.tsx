@@ -4,10 +4,14 @@ import "./index.css";
 import App from "./presentation/App.tsx";
 import {
   appDependencies,
+  boardSession,
   startApplicationMenu,
   startCardHistoryReset,
 } from "./composition/dependencies.ts";
-import { AppProvider } from "./presentation/context/appContext.ts";
+import {
+  AppProvider,
+  BoardSessionProvider,
+} from "./presentation/context/appContext.ts";
 
 startApplicationMenu();
 startCardHistoryReset();
@@ -15,7 +19,9 @@ startCardHistoryReset();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppProvider value={appDependencies}>
-      <App />
+      <BoardSessionProvider value={boardSession}>
+        <App />
+      </BoardSessionProvider>
     </AppProvider>
   </StrictMode>,
 );
