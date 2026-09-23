@@ -17,7 +17,10 @@ import { relocateMarkdownCard } from "../usecase/relocateMarkdownCard.ts";
 import { recreateMarkdownCard } from "../usecase/recreateMarkdownCard.ts";
 import { readCardContents } from "../usecase/readCardContents.ts";
 import { renameMarkdownCard } from "../usecase/renameMarkdownCard.ts";
-import type { AppDependencies } from "../presentation/context/appContext.ts";
+import type {
+  AppDependencies,
+  BoardSession,
+} from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
 import { createFilterStore } from "../presentation/store/filterStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
@@ -39,40 +42,61 @@ async function refreshRecentMenu(): Promise<void> {
   }
 }
 
+function createBoardSession(): BoardSession {
+  return {
+    boardStore: createBoardStore({
+      openBoard: async (path) => {
+        const loadedBoard = await openBoardUseCase(path, {
+          boardRepository,
+          configRepository,
+        });
+        // Best-effort: the menu rebuild must never block opening the board.
+        void refreshRecentMenu();
+        return loadedBoard;
+      },
+      saveBoard: (path, board, expectedRevision) =>
+        saveBoard(path, board, expectedRevision, { boardRepository }),
+      createMarkdownCard: (input) => createMarkdownCard(input, { fileSystem }),
+      addExistingMarkdownCard: (input) =>
+        addExistingMarkdownCard(input, { fileSystem }),
+      relocateMarkdownCard: (input) =>
+        relocateMarkdownCard(input, { fileSystem }),
+      recreateMarkdownCard: (input) =>
+        recreateMarkdownCard(input, { fileSystem }),
+      renameMarkdownCard: (input) => renameMarkdownCard(input, { fileSystem }),
+      createBoard: (input) =>
+        createBoard(input, { fileSystem, boardRepository }),
+      deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
+      confirmDiscardBoard: (reason) =>
+        confirm(
+          reason === "reload"
+            ? "Discard changes made in Facet and reload the board from disk?"
+            : "Discard unsaved changes to the current board?",
+        ),
+      confirmOverwriteBoard: () =>
+        confirm(
+          "Overwrite changes made outside Facet? The board shown in Facet will replace them.",
+        ),
+    }),
+    filterStore: createFilterStore(),
+    markdownViewer: createMarkdownViewerStore(
+      (path) => viewMarkdown(path, { fileSystem }),
+      (path, content, expectedRevision) =>
+        saveMarkdown(path, content, expectedRevision, { fileSystem }),
+      () => confirm("Discard unsaved changes to this Markdown file?"),
+      (conflict) =>
+        confirm(
+          conflict === "gone"
+            ? "Recreate this Markdown file at its previous path? The draft shown in Facet will be written there."
+            : "Overwrite changes made outside Facet? The draft shown in Facet will replace them.",
+        ),
+    ),
+  };
+}
+
+export const boardSession = createBoardSession();
+
 export const appDependencies: AppDependencies = {
-  boardStore: createBoardStore({
-    openBoard: async (path) => {
-      const loadedBoard = await openBoardUseCase(path, {
-        boardRepository,
-        configRepository,
-      });
-      // Best-effort: the menu rebuild must never block opening the board.
-      void refreshRecentMenu();
-      return loadedBoard;
-    },
-    saveBoard: (path, board, expectedRevision) =>
-      saveBoard(path, board, expectedRevision, { boardRepository }),
-    createMarkdownCard: (input) => createMarkdownCard(input, { fileSystem }),
-    addExistingMarkdownCard: (input) =>
-      addExistingMarkdownCard(input, { fileSystem }),
-    relocateMarkdownCard: (input) =>
-      relocateMarkdownCard(input, { fileSystem }),
-    recreateMarkdownCard: (input) =>
-      recreateMarkdownCard(input, { fileSystem }),
-    renameMarkdownCard: (input) => renameMarkdownCard(input, { fileSystem }),
-    createBoard: (input) => createBoard(input, { fileSystem, boardRepository }),
-    deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
-    confirmDiscardBoard: (reason) =>
-      confirm(
-        reason === "reload"
-          ? "Discard changes made in Facet and reload the board from disk?"
-          : "Discard unsaved changes to the current board?",
-      ),
-    confirmOverwriteBoard: () =>
-      confirm(
-        "Overwrite changes made outside Facet? The board shown in Facet will replace them.",
-      ),
-  }),
   cardContentReading: {
     read: (cards) => readCardContents(cards, { fileSystem }),
   },
@@ -82,19 +106,6 @@ export const appDependencies: AppDependencies = {
     createDirectory: (parentDirectory, name) =>
       createBoardDirectory(parentDirectory, name, { fileSystem }),
   },
-  filterStore: createFilterStore(),
-  markdownViewer: createMarkdownViewerStore(
-    (path) => viewMarkdown(path, { fileSystem }),
-    (path, content, expectedRevision) =>
-      saveMarkdown(path, content, expectedRevision, { fileSystem }),
-    () => confirm("Discard unsaved changes to this Markdown file?"),
-    (conflict) =>
-      confirm(
-        conflict === "gone"
-          ? "Recreate this Markdown file at its previous path? The draft shown in Facet will be written there."
-          : "Overwrite changes made outside Facet? The draft shown in Facet will replace them.",
-      ),
-  ),
   newBoardDialog: createNewBoardDialogStore(),
   paneLayout: createPaneLayoutStore(),
   recentBoards: {
@@ -113,10 +124,10 @@ export function startApplicationMenu(): void {
     newBoard: () => appDependencies.newBoardDialog.getState().open(),
     openRecent: (path) => {
       // Abort the switch if the user declines to discard an unsaved draft.
-      if (!appDependencies.markdownViewer.getState().close()) {
+      if (!boardSession.markdownViewer.getState().close()) {
         return;
       }
-      void appDependencies.boardStore.getState().openBoard(path);
+      void boardSession.boardStore.getState().openBoard(path);
     },
   });
 }
@@ -125,9 +136,9 @@ export function startApplicationMenu(): void {
 // conflict reload deliberately does not, so navigation survives an in-place
 // refresh but never crosses an explicit board-open boundary.
 export function startCardHistoryReset(): void {
-  appDependencies.boardStore.subscribe((state, previous) => {
+  boardSession.boardStore.subscribe((state, previous) => {
     if (state.status === "loading" && previous.status !== "loading") {
-      appDependencies.markdownViewer.getState().resetHistory();
+      boardSession.markdownViewer.getState().resetHistory();
     }
   });
 }
