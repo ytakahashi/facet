@@ -5,7 +5,6 @@ import type { Column as ColumnModel } from "../../domain/board.ts";
 interface ColumnHeaderProps {
   column: ColumnModel;
   dragHandleRef: RefObject<HTMLSpanElement | null>;
-  onAddCard: (columnId: string) => void;
   onRename: (columnId: string, name: string) => void;
   onRemove: (columnId: string) => void;
 }
@@ -13,7 +12,6 @@ interface ColumnHeaderProps {
 export function ColumnHeader({
   column,
   dragHandleRef,
-  onAddCard,
   onRename,
   onRemove,
 }: ColumnHeaderProps) {
@@ -85,13 +83,6 @@ export function ColumnHeader({
           </h2>
         )}
       <div className="column__actions">
-        <button
-          type="button"
-          className="column__add-card"
-          onClick={() => onAddCard(column.id)}
-        >
-          + Add card
-        </button>
         <button
           type="button"
           aria-label="Delete column"

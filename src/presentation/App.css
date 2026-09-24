@@ -664,8 +664,17 @@
   cursor: default;
 }
 
-.column__actions .column__add-card {
+.column__add-card {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
   color: var(--color-accent);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
 }
 
 .column__add-card:hover {

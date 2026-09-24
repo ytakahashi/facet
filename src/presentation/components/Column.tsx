@@ -134,7 +134,6 @@ export function Column(
       <ColumnHeader
         column={column}
         dragHandleRef={dragHandleRef}
-        onAddCard={onAddCard}
         onRename={onRename}
         onRemove={onRemove}
       />
@@ -168,6 +167,17 @@ export function Column(
             </p>
           )}
       </div>
+      {
+        /* Below the cards rather than in the header: new cards are appended to
+          the end of the column, and the header needs its width for the name. */
+      }
+      <button
+        type="button"
+        className="column__add-card"
+        onClick={() => onAddCard(column.id)}
+      >
+        + Add card
+      </button>
     </div>
   );
 }
