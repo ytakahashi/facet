@@ -33,3 +33,13 @@ export interface LabelDefinition {
   name: Label;
   color: LabelColor;
 }
+
+// Unknown names can survive a hand-edited board; keep them visible after all
+// registered labels, preserving their order on the card.
+export function orderCardLabels(
+  cardLabels: readonly Label[],
+  positions: ReadonlyMap<string, number>,
+): Label[] {
+  const rank = (name: Label) => positions.get(name) ?? positions.size;
+  return [...cardLabels].sort((a, b) => rank(a) - rank(b));
+}

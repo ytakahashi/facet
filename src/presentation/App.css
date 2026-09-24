@@ -312,6 +312,21 @@
   letter-spacing: 0.04em;
 }
 
+.filter-sidebar__section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filter-sidebar__section-heading button {
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
 .filter-sidebar .priority-picker {
   flex-wrap: wrap;
 }
@@ -335,8 +350,13 @@
 
 .label-filter-list__empty {
   margin: 0;
-  color: var(--color-text);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  cursor: pointer;
   font-size: 12px;
+  text-align: left;
 }
 
 .column-filter-list {
@@ -1841,7 +1861,8 @@ body.is-pane-resizing * {
   font-size: 13px;
 }
 
-.label-picker-dialog {
+.label-picker-dialog,
+.manage-labels-dialog {
   width: min(420px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   padding: 24px;
@@ -1858,22 +1879,30 @@ body.is-pane-resizing * {
    showModal()/close() - overrides that default because author styles always
    beat UA styles regardless of specificity. Setting flex only for the
    [open] state keeps the dialog's own open/close (driven by the ref effect
-   in LabelPickerDialog.tsx) as the single source of visibility. */
-.label-picker-dialog[open] {
+   in each dialog component) as the single source of visibility. */
+.label-picker-dialog[open],
+.manage-labels-dialog[open] {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.label-picker-dialog::backdrop {
+.manage-labels-dialog:focus {
+  outline: none;
+}
+
+.label-picker-dialog::backdrop,
+.manage-labels-dialog::backdrop {
   background: var(--color-accent-bg);
 }
 
-.label-picker-dialog h2 {
+.label-picker-dialog h2,
+.manage-labels-dialog h2 {
   margin: 0;
 }
 
-.label-picker-dialog__list {
+.label-picker-dialog__list,
+.manage-labels-dialog__list {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1897,6 +1926,71 @@ body.is-pane-resizing * {
   gap: 6px;
 }
 
+.manage-labels-dialog__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+}
+
+.manage-labels-dialog__item--drop-before {
+  border-top-color: var(--color-accent);
+}
+
+.manage-labels-dialog__item--drop-after {
+  border-bottom-color: var(--color-accent);
+}
+
+.manage-labels-dialog__handle {
+  flex-shrink: 0;
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.35;
+  cursor: grab;
+}
+
+.manage-labels-dialog__item:hover .manage-labels-dialog__handle {
+  opacity: 1;
+}
+
+.manage-labels-dialog__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manage-labels-dialog__count {
+  color: var(--color-text);
+  font-size: 12px;
+}
+
+.manage-labels-dialog__edit,
+.manage-labels-dialog__confirm {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.manage-labels-dialog__edit-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.manage-labels-dialog__error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-priority-high);
+  font-size: 13px;
+}
+
 .label-picker-dialog__name {
   flex: 1 1 auto;
   min-width: 0;
@@ -1906,7 +2000,7 @@ body.is-pane-resizing * {
   color: var(--color-text-strong);
 }
 
-.label-picker-dialog__name-input {
+.manage-labels-dialog__name-input {
   flex: 1 1 auto;
   min-width: 0;
   padding: 3px 6px;
@@ -1918,8 +2012,7 @@ body.is-pane-resizing * {
   font: inherit;
 }
 
-.label-picker-dialog__edit,
-.label-picker-dialog__edit-actions > button {
+.manage-labels-dialog__button {
   padding: 3px 8px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -1929,19 +2022,7 @@ body.is-pane-resizing * {
   flex-shrink: 0;
 }
 
-.label-picker-dialog__edit-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.label-picker-dialog__error {
-  flex-basis: 100%;
-  color: var(--color-priority-high);
-  font-size: 13px;
-}
-
-.label-picker-dialog__create {
+.label-create-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1950,7 +2031,7 @@ body.is-pane-resizing * {
   border-top: 1px solid var(--color-border);
 }
 
-.label-picker-dialog__create input {
+.label-create-form input {
   flex: 1 1 120px;
   min-width: 0;
   padding: 6px 8px;
@@ -1962,7 +2043,7 @@ body.is-pane-resizing * {
   font: inherit;
 }
 
-.label-picker-dialog__create > button {
+.label-create-form > button {
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -1971,17 +2052,27 @@ body.is-pane-resizing * {
   cursor: pointer;
 }
 
-.label-picker-dialog__create > button:disabled {
+.label-create-form > button:disabled {
   cursor: default;
   opacity: 0.5;
 }
 
-.label-picker-dialog__actions {
-  display: flex;
-  justify-content: flex-end;
+.label-create-form__error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-priority-high);
+  font-size: 13px;
 }
 
-.label-picker-dialog__actions button {
+.label-picker-dialog__actions,
+.manage-labels-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.label-picker-dialog__actions button,
+.manage-labels-dialog__actions button {
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -1990,7 +2081,7 @@ body.is-pane-resizing * {
   cursor: pointer;
 }
 
-.label-picker-dialog__dot {
+.label-dot {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -2021,62 +2112,62 @@ body.is-pane-resizing * {
   border-color: var(--color-text-strong);
 }
 
-.label-picker-dialog__dot--ruby,
+.label-dot--ruby,
 .label-color-swatch--ruby {
   background: var(--color-label-ruby);
 }
 
-.label-picker-dialog__dot--amber,
+.label-dot--amber,
 .label-color-swatch--amber {
   background: var(--color-label-amber);
 }
 
-.label-picker-dialog__dot--emerald,
+.label-dot--emerald,
 .label-color-swatch--emerald {
   background: var(--color-label-emerald);
 }
 
-.label-picker-dialog__dot--sapphire,
+.label-dot--sapphire,
 .label-color-swatch--sapphire {
   background: var(--color-label-sapphire);
 }
 
-.label-picker-dialog__dot--lapis,
+.label-dot--lapis,
 .label-color-swatch--lapis {
   background: var(--color-label-lapis);
 }
 
-.label-picker-dialog__dot--morion,
+.label-dot--morion,
 .label-color-swatch--morion {
   background: var(--color-label-morion);
 }
 
-.label-picker-dialog__dot--citrine,
+.label-dot--citrine,
 .label-color-swatch--citrine {
   background: var(--color-label-citrine);
 }
 
-.label-picker-dialog__dot--sphene,
+.label-dot--sphene,
 .label-color-swatch--sphene {
   background: var(--color-label-sphene);
 }
 
-.label-picker-dialog__dot--aquamarine,
+.label-dot--aquamarine,
 .label-color-swatch--aquamarine {
   background: var(--color-label-aquamarine);
 }
 
-.label-picker-dialog__dot--amethyst,
+.label-dot--amethyst,
 .label-color-swatch--amethyst {
   background: var(--color-label-amethyst);
 }
 
-.label-picker-dialog__dot--morganite,
+.label-dot--morganite,
 .label-color-swatch--morganite {
   background: var(--color-label-morganite);
 }
 
-.label-picker-dialog__dot--selenite,
+.label-dot--selenite,
 .label-color-swatch--selenite {
   background: var(--color-label-selenite);
 }

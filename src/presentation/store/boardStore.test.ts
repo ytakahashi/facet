@@ -812,6 +812,30 @@ describe("createBoardStore", () => {
     );
   });
 
+  it("queues label reordering but skips unchanged and stale moves", async () => {
+    const board = makeBoard({
+      labels: [
+        { name: "first", color: "ruby" },
+        { name: "last", color: "amber" },
+      ],
+    });
+    const saveBoard = vi.fn().mockResolvedValue("revision-next");
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(board)),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/labels.board.yaml");
+
+    useBoardStore.getState().moveLabel("missing", 0);
+    useBoardStore.getState().moveLabel("first", 0);
+    expect(saveBoard).not.toHaveBeenCalled();
+
+    useBoardStore.getState().moveLabel("first", 2);
+    expect(useBoardStore.getState().board?.labels.map((label) => label.name))
+      .toEqual(["last", "first"]);
+    expect(saveBoard).toHaveBeenCalledTimes(1);
+  });
+
   it("adds a label to a card and saves the board", async () => {
     const board = makeBoard({ labels: [{ name: "ui", color: "ruby" }] });
     const saveBoard = vi.fn().mockResolvedValue("revision-2");

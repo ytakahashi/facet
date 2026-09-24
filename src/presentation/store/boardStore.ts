@@ -13,6 +13,7 @@ import {
   LabelAlreadyExistsError,
   moveCard as moveCardDomain,
   moveColumn as moveColumnDomain,
+  moveLabelDefinition,
   removeCard as removeCardDomain,
   removeColumn as removeColumnDomain,
   removeLabelDefinition as removeLabelDefinitionDomain,
@@ -77,6 +78,7 @@ export interface BoardState {
   renameLabel: (name: string, nextName: string) => void;
   setLabelColor: (name: string, color: LabelColor) => void;
   removeLabel: (name: string) => void;
+  moveLabel: (name: string, toIndex: number) => void;
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
   relocateCard: (cardPath: string, absolutePath: string) => Promise<Card>;
@@ -577,6 +579,19 @@ export function createBoardStore({
         const { board, path } = get();
         if (!board || !path) return;
         const nextBoard = removeLabelDefinitionDomain(board, name);
+        set({ board: nextBoard });
+        queueSave(path, nextBoard);
+      },
+      moveLabel: (name: string, toIndex: number) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        if (!board.labels.some((label) => label.name === name)) return;
+        const nextBoard = moveLabelDefinition(board, name, toIndex);
+        if (
+          nextBoard.labels.every((label, index) =>
+            label === board.labels[index]
+          )
+        ) return;
         set({ board: nextBoard });
         queueSave(path, nextBoard);
       },

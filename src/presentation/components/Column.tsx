@@ -16,7 +16,7 @@ import {
   filterColumnCards,
 } from "../../domain/cardFilter.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
-import type { LabelColor } from "../../domain/label.ts";
+import type { LabelDisplay } from "./labelDisplay.ts";
 import type { CardListDropData, ColumnDragData } from "./dragData.ts";
 import { Card } from "./Card.tsx";
 import { ColumnHeader } from "./ColumnHeader.tsx";
@@ -25,7 +25,7 @@ interface ColumnProps {
   column: ColumnModel;
   criteria: CardFilterCriteria;
   index: number;
-  labelColors: Map<string, LabelColor>;
+  labelDisplay: LabelDisplay;
   onAddCard: (columnId: string) => void;
   onDeleteCard: (card: CardModel) => void;
   onRepairCard: (card: CardModel) => void;
@@ -38,7 +38,7 @@ export function Column(
     column,
     criteria,
     index,
-    labelColors,
+    labelDisplay,
     onAddCard,
     onDeleteCard,
     onRepairCard,
@@ -145,7 +145,7 @@ export function Column(
             columnId={column.id}
             index={index}
             key={card.path}
-            labelColors={labelColors}
+            labelDisplay={labelDisplay}
             onDelete={onDeleteCard}
             onRepair={onRepairCard}
           />

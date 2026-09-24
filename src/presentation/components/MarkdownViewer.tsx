@@ -15,6 +15,7 @@ import {
 import { resolveCardLink } from "../../domain/cardLink.ts";
 import { findPreviousCard } from "../../domain/cardHistory.ts";
 import type { Card } from "../../domain/card.ts";
+import { orderCardLabels } from "../../domain/label.ts";
 import {
   useBoardStore,
   useMarkdownViewer,
@@ -22,7 +23,9 @@ import {
 } from "../context/appContext.ts";
 import { isCardSaving, isMarkdownDirty } from "../store/markdownViewerStore.ts";
 import { CardTitle } from "./CardTitle.tsx";
+import { buildLabelDisplay } from "./labelDisplay.ts";
 import { LabelPickerDialog } from "./LabelPickerDialog.tsx";
+import { ManageLabelsDialog } from "./ManageLabelsDialog.tsx";
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
 import { PaneResizer } from "./PaneResizer.tsx";
 import { RenameCardFileDialog } from "./RenameCardFileDialog.tsx";
@@ -118,6 +121,7 @@ export function MarkdownViewer() {
   const renameLabel = useBoardStore((state) => state.renameLabel);
   const setLabelColor = useBoardStore((state) => state.setLabelColor);
   const removeLabel = useBoardStore((state) => state.removeLabel);
+  const moveLabel = useBoardStore((state) => state.moveLabel);
   const resolveLink = useCallback((href: string) => {
     if (!board || !selectedPath) return undefined;
     return resolveCardLink(board, selectedPath, href);
@@ -128,6 +132,10 @@ export function MarkdownViewer() {
   const card = status === "loaded" && board && selectedPath
     ? findCardByPath(board, selectedPath)
     : undefined;
+  const labelDisplay = useMemo(
+    () => buildLabelDisplay(board?.labels ?? []),
+    [board?.labels],
+  );
   const backDestination = useMemo(() => {
     if (!board) return undefined;
     const previous = findPreviousCard(
@@ -140,6 +148,7 @@ export function MarkdownViewer() {
   }, [board, history]);
 
   const [isLabelPickerOpen, setIsLabelPickerOpen] = useState(false);
+  const [isManageLabelsOpen, setIsManageLabelsOpen] = useState(false);
   // The card is taken into state when the dialog opens rather than read from
   // the board on every render: a successful move takes the old path off the
   // board before the viewer follows it, and a dialog mounted on the lookup
@@ -234,11 +243,12 @@ export function MarkdownViewer() {
               onChange={(priority) => setCardPriority(card.path, priority)}
             />
             <div className="markdown-viewer__labels">
-              {card.labels.map((label) => (
+              {orderCardLabels(card.labels, labelDisplay.positions).map((
+                label,
+              ) => (
                 <span
                   className={`card__label card__label--${
-                    board?.labels.find((l) => l.name === label)?.color ??
-                      "neutral"
+                    labelDisplay.colors.get(label) ?? "neutral"
                   }`}
                   key={label}
                 >
@@ -314,11 +324,27 @@ export function MarkdownViewer() {
             onAddCardLabel={addCardLabel}
             onRemoveCardLabel={removeCardLabel}
             onCreateLabel={createLabel}
-            onRenameLabel={renameLabel}
-            onSetLabelColor={setLabelColor}
-            onRemoveLabel={removeLabel}
+            onManageLabels={() => setIsManageLabelsOpen(true)}
           />
         )}
+
+        {
+          /* The one place two modals are stacked: Manage Labels opens over
+          the picker, so closing it lands back on a picker showing the
+          updated registry. Escape reaches only the topmost dialog, and the
+          picker is modal-blocked meanwhile. Keyed for the reason above. */
+        }
+        <ManageLabelsDialog
+          key="manage-labels"
+          board={board}
+          open={isManageLabelsOpen}
+          onClose={() => setIsManageLabelsOpen(false)}
+          onCreateLabel={createLabel}
+          onRenameLabel={renameLabel}
+          onSetLabelColor={setLabelColor}
+          onRemoveLabel={removeLabel}
+          onMoveLabel={moveLabel}
+        />
 
         {saveError && conflict
           ? (

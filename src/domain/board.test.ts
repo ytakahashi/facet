@@ -7,6 +7,7 @@ import {
   addLabelToCard,
   CardAlreadyExistsError,
   containsCardPath,
+  countCardsByLabel,
   createEmptyBoard,
   findCardByEquivalentPath,
   findCardByPath,
@@ -14,6 +15,7 @@ import {
   LabelAlreadyExistsError,
   moveCard,
   moveColumn,
+  moveLabelDefinition,
   removeCard,
   removeColumn,
   removeLabelDefinition,
@@ -927,6 +929,67 @@ describe("moveColumn", () => {
     const act = () => moveColumn(board, "missing", 0);
 
     expect(act).toThrow("Unknown column: missing");
+  });
+});
+
+describe("moveLabelDefinition", () => {
+  const labels = [
+    { name: "first", color: "ruby" as const },
+    { name: "middle", color: "amber" as const },
+    { name: "last", color: "emerald" as const },
+  ];
+  const board = makeBoard({
+    labels,
+    columns: [makeColumn({ cards: [makeCard({ labels: ["last", "first"] })] })],
+  });
+
+  it("moves forward and backward using rendered positions", () => {
+    expect(moveLabelDefinition(board, "first", 3).labels.map((l) => l.name))
+      .toEqual(["middle", "last", "first"]);
+    expect(moveLabelDefinition(board, "last", 0).labels.map((l) => l.name))
+      .toEqual(["last", "first", "middle"]);
+  });
+
+  it("clamps a position past the end and leaves cards untouched", () => {
+    const result = moveLabelDefinition(board, "first", 99);
+    expect(result.labels.map((l) => l.name)).toEqual([
+      "middle",
+      "last",
+      "first",
+    ]);
+    expect(result.columns).toBe(board.columns);
+    expect(result.columns[0].cards[0].labels).toEqual(["last", "first"]);
+  });
+
+  it("rejects an unknown name", () => {
+    expect(() => moveLabelDefinition(board, "missing", 0)).toThrow(
+      "Unknown label: missing",
+    );
+  });
+});
+
+describe("countCardsByLabel", () => {
+  it("counts cards across columns and includes unused labels", () => {
+    const board = makeBoard({
+      labels: [
+        { name: "used", color: "ruby" },
+        { name: "unused", color: "amber" },
+      ],
+      columns: [
+        makeColumn({ cards: [makeCard({ labels: ["used", "used"] })] }),
+        makeColumn({
+          id: "other",
+          cards: [makeCard({ path: "b.md", labels: ["used"] })],
+        }),
+      ],
+    });
+
+    expect(countCardsByLabel(board)).toEqual(
+      new Map([
+        ["used", 2],
+        ["unused", 0],
+      ]),
+    );
   });
 });
 

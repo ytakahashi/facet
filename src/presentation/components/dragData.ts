@@ -8,6 +8,8 @@
 // keyed on `type`. That keeps the drop targets a card drag sees unchanged now
 // that columns are targets too, which is what lets resolveMove keep reading
 // the (innermost-first) target list by position.
+// Label rows share the element adapter but have their own monitor. All
+// resolvers and drop targets ignore other source types.
 
 export interface CardDragData {
   [key: string]: unknown;
@@ -29,5 +31,13 @@ export interface ColumnDragData {
   [key: symbol]: unknown;
   type: "column";
   columnId: string;
+  index: number;
+}
+
+export interface LabelDragData {
+  [key: string]: unknown;
+  [key: symbol]: unknown;
+  type: "label";
+  name: string;
   index: number;
 }
