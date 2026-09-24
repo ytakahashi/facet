@@ -4,26 +4,28 @@
 export const DEFAULT_VIEWER_WIDTH = 380;
 export const MIN_VIEWER_WIDTH = 280;
 
-// How much of the workspace the pane may take. The board scrolls
-// horizontally on its own, so what is left of it only has to stay wide
-// enough to be worth looking at. Kept in step with the max-width backstop
-// on .markdown-viewer, which covers a window shrinking under a width that
-// was already set.
+// How much of the board and editor row, minus the handle, the pane may take.
+// The board scrolls horizontally on its own, so its remaining share only has
+// to stay wide enough to be worth looking at.
 const MAX_VIEWER_WIDTH_RATIO = 0.85;
 
 // Keyboard nudge per arrow key press on the handle.
 export const VIEWER_WIDTH_STEP = 16;
 
+export function getAvailableViewerWidth(
+  boardMainWidth: number,
+  handleWidth: number,
+): number {
+  return Math.max(0, boardMainWidth - handleWidth);
+}
+
 export function clampViewerWidth(
   width: number,
-  workspaceWidth: number,
+  availableWidth: number,
 ): number {
-  // In a window narrow enough that the upper bound falls below the lower
-  // one, the lower bound wins - a pane below MIN_VIEWER_WIDTH cannot show
-  // its header, while a squeezed board still scrolls.
-  const max = Math.max(
-    MIN_VIEWER_WIDTH,
-    workspaceWidth * MAX_VIEWER_WIDTH_RATIO,
-  );
-  return Math.round(Math.min(Math.max(width, MIN_VIEWER_WIDTH), max));
+  // At very small widths the available space wins over the preferred minimum;
+  // the handle must report the width the pane can actually display.
+  const max = Math.max(0, availableWidth * MAX_VIEWER_WIDTH_RATIO);
+  const min = Math.min(MIN_VIEWER_WIDTH, max);
+  return Math.round(Math.min(Math.max(width, min), max));
 }

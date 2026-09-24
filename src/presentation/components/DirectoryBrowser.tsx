@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
-import { useBoardStore, useDirectoryBrowsing } from "../context/appContext.ts";
+import { useDirectoryBrowsing, useWorkspace } from "../context/appContext.ts";
 import type { UiError } from "../errors/toUiError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import {
@@ -15,9 +15,7 @@ function isBoardFile(name: string): boolean {
 
 export function DirectoryBrowser() {
   const { listDirectory, homeDirectory } = useDirectoryBrowsing();
-  const openBoard = useBoardStore((state) => state.openBoard);
-  const status = useBoardStore((state) => state.status);
-  const boardError = useBoardStore((state) => state.error);
+  const openBoard = useWorkspace((state) => state.openBoard);
 
   const [path, setPath] = useState<string | null>(null);
   const [entries, setEntries] = useState<DirEntry[]>([]);
@@ -63,7 +61,7 @@ export function DirectoryBrowser() {
     if (entry.isDirectory) {
       void navigate(entryPath);
     } else if (isBoardFile(entry.name)) {
-      void openBoard(entryPath);
+      openBoard(entryPath);
     }
   }
 
@@ -83,9 +81,6 @@ export function DirectoryBrowser() {
       </div>
 
       {browseError && <p role="alert">{browseError.message}</p>}
-      {status === "loading" && <p>Opening board…</p>}
-      {status === "error" && boardError && <p role="alert">{boardError}</p>}
-
       <ul className="directory-browser__entries">
         {sortedEntries.map((entry) => (
           <li key={entry.name}>

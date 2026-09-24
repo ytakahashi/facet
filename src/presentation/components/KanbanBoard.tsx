@@ -73,19 +73,6 @@ export function KanbanBoard({ board }: { board: Board }) {
     [board.labels],
   );
 
-  useEffect(() => {
-    // A board can change in-place through Open Recent. Never carry a dialog
-    // target from the previous board into the newly loaded board.
-    setIsAddCardOpen(false);
-    setAddToColumnId(undefined);
-    setIsDeleteCardOpen(false);
-    setDeleteTarget(undefined);
-    setIsMissingCardOpen(false);
-    setRepairTarget(undefined);
-    setIsTitleSearchOpen(false);
-    setIsContentSearchOpen(false);
-  }, [boardPath]);
-
   // The native menu carries no accelerators (see denoApplicationMenu.ts), so
   // search keys pressed anywhere in the window can only be caught here. The
   // pure resolver owns the modifier split between title and content search.
@@ -160,11 +147,7 @@ export function KanbanBoard({ board }: { board: Board }) {
 
   return (
     <div className="kanban-board">
-      {
-        /* Keyed by path so switching boards (e.g. Open Recent) discards any
-          in-progress name edit instead of committing it to the new board. */
-      }
-      <BoardName key={boardPath} name={board.name} onRename={renameBoard} />
+      <BoardName name={board.name} onRename={renameBoard} />
       {saveError && (
         <SaveErrorBanner
           message={saveError}

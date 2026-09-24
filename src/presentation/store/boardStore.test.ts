@@ -102,7 +102,7 @@ describe("createBoardStore", () => {
       createBoard,
     }));
 
-    await useBoardStore.getState().createBoard({
+    const path = await useBoardStore.getState().createBoard({
       directory: "/boards",
       fileName: "facet.board.yaml",
       name: "My Board",
@@ -114,6 +114,7 @@ describe("createBoardStore", () => {
       name: "My Board",
     });
     expect(openBoard).toHaveBeenCalledWith("/boards/facet.board.yaml");
+    expect(path).toBe("/boards/facet.board.yaml");
     expect(useBoardStore.getState().status).toBe("loaded");
     expect(useBoardStore.getState().path).toBe("/boards/facet.board.yaml");
   });
@@ -142,6 +143,22 @@ describe("createBoardStore", () => {
     });
     expect(openBoard).not.toHaveBeenCalled();
     expect(useBoardStore.getState().status).toBe("empty");
+  });
+
+  it("returns the created path when reading the new board fails", async () => {
+    const useBoardStore = createBoardStore(makeDeps({
+      createBoard: () => Promise.resolve("/boards/facet.board.yaml"),
+      openBoard: () => Promise.reject(new UseCaseError("board.open-failed")),
+    }));
+
+    const path = await useBoardStore.getState().createBoard({
+      directory: "/boards",
+      fileName: "facet.board.yaml",
+      name: "My Board",
+    });
+
+    expect(path).toBe("/boards/facet.board.yaml");
+    expect(useBoardStore.getState().status).toBe("error");
   });
 
   it("updates the board immediately, before the save resolves", async () => {
@@ -2160,14 +2177,10 @@ describe("createBoardStore", () => {
       expect(useBoardStore.getState().saveConflict).toBe(true)
     );
 
-    await useBoardStore.getState().openBoard("/board/other.board.yaml");
     await useBoardStore.getState().reloadBoard();
     useBoardStore.getState().overwriteBoard();
 
-    expect(confirmDiscardBoard.mock.calls).toEqual([
-      ["replace"],
-      ["reload"],
-    ]);
+    expect(confirmDiscardBoard.mock.calls).toEqual([["reload"]]);
     expect(openBoard).toHaveBeenCalledOnce();
     expect(saveBoard).toHaveBeenCalledOnce();
     expect(useBoardStore.getState()).toMatchObject({

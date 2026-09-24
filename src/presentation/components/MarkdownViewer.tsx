@@ -3,7 +3,9 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -29,7 +31,11 @@ import {
   EXTERNAL_CHANGE_CONFLICT_DETAIL,
   SaveErrorBanner,
 } from "./SaveErrorBanner.tsx";
-import { clampViewerWidth, VIEWER_WIDTH_STEP } from "./viewerWidth.ts";
+import {
+  clampViewerWidth,
+  getAvailableViewerWidth,
+  VIEWER_WIDTH_STEP,
+} from "./viewerWidth.ts";
 import { resolveViewerShortcut } from "./viewerShortcut.ts";
 
 // The Markdown parser is large enough to dominate the initial bundle, while
@@ -75,6 +81,32 @@ export function MarkdownViewer() {
   const resetWidth = usePaneLayout((state) => state.resetViewerWidth);
   const viewerMode = usePaneLayout((state) => state.viewerMode);
   const setViewerMode = usePaneLayout((state) => state.setViewerMode);
+  const handleRef = useRef<HTMLDivElement>(null);
+  const [availableWidth, setAvailableWidth] = useState(globalThis.innerWidth);
+
+  // The sidebar sits outside this flex row, so its width changes resize the
+  // row itself. The handle ref keeps this measurement independent of CSS names.
+  useLayoutEffect(() => {
+    const handle = handleRef.current;
+    const boardMain = handle?.parentElement;
+    if (!handle || !boardMain) {
+      throw new Error("The editor resize handle requires a board layout");
+    }
+
+    const updateAvailableWidth = () => {
+      setAvailableWidth(getAvailableViewerWidth(
+        boardMain.getBoundingClientRect().width,
+        handle.getBoundingClientRect().width,
+      ));
+    };
+    updateAvailableWidth();
+
+    const observer = new ResizeObserver(updateAvailableWidth);
+    observer.observe(boardMain);
+    observer.observe(handle);
+    return () => observer.disconnect();
+  }, []);
+  const displayedWidth = clampViewerWidth(width, availableWidth);
 
   const board = useBoardStore((state) => state.board);
   const boardPath = useBoardStore((state) => state.path);
@@ -148,14 +180,16 @@ export function MarkdownViewer() {
     // the content it is supposed to sit beside.
     <>
       <PaneResizer
-        width={width}
+        width={displayedWidth}
+        handleRef={handleRef}
+        availableWidth={availableWidth}
         clamp={clampViewerWidth}
         step={VIEWER_WIDTH_STEP}
         label="Resize the editor pane"
         onResize={setWidth}
         onReset={resetWidth}
       />
-      <div className="markdown-viewer" style={{ width }}>
+      <div className="markdown-viewer" style={{ width: displayedWidth }}>
         <div className="markdown-viewer__header">
           <div className="markdown-viewer__header-main">
             <button

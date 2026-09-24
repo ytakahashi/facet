@@ -5,12 +5,14 @@ files as Facet. It is not a complete UI manual.
 
 ## Board and Card navigation
 
-- One Board is open in a window at a time. Opening another replaces it.
+- Multiple Boards can be open in tabs in one window. Opening a Board already
+  open by the same path activates its existing tab.
 - Title search opens with Command-P.
 - Markdown content search opens with Command-Shift-F. It reads a fresh snapshot
   of the files referenced by the current Board and shows matching lines.
-- A followed Card link, Board selection, or search selection is recorded in a
-  bounded viewing history. Command-[ returns to the previous Card.
+- A followed Card link, Card selection on a Board, or search selection is
+  recorded in that Board tab's bounded viewing history. Command-[ returns to the
+  previous Card in the active tab.
 - Command-K in the editor inserts a relative link to another Card on the current
   Board.
 - Command-S saves a changed Markdown draft while the Card is open.
@@ -34,6 +36,11 @@ If a Markdown file disappeared, the editor similarly requires an explicit
 recreate action. The underlying compare and write are performed in one host call
 but are not an atomic file-system transaction, so tools should still avoid
 simultaneous writes when practical.
+
+Editing the same Markdown file from two open Boards in Facet can also produce a
+revision conflict. In-flight write protection for move and delete applies only
+within one Board tab, so a write in another tab may recreate a moved or deleted
+file.
 
 When a tool edits files while Facet is open, tell the user which files changed
 and that Facet may need to reload them.
