@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import {
   draggable,
@@ -36,6 +37,7 @@ const NO_COUNTS: ReadonlyMap<string, number> = new Map();
 export function ManageLabelsDialog(props: Props) {
   const { board, open, onClose, onMoveLabel } = props;
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   // Held here rather than per row so that only one row is ever being edited
   // or confirming a deletion.
   const [active, setActive] = useState<{ name: string; mode: RowMode }>();
@@ -70,6 +72,18 @@ export function ManageLabelsDialog(props: Props) {
     });
   }, [open, onMoveLabel]);
 
+  // The list is the dialog's scrolling region (its height is capped in
+  // App.css), so dragging near its edge scrolls it and a label can be carried
+  // to a position that is off-screen when the drag starts.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!open || !list) return;
+    return autoScrollForElements({
+      element: list,
+      canScroll: ({ source }) => source.data.type === "label",
+    });
+  }, [open]);
+
   return (
     <dialog
       ref={dialogRef}
@@ -82,7 +96,7 @@ export function ManageLabelsDialog(props: Props) {
       onClose={onClose}
     >
       <h2>Manage labels</h2>
-      <ul className="manage-labels-dialog__list">
+      <ul ref={listRef} className="manage-labels-dialog__list">
         {board.labels.map((label, index) => (
           <ManageLabelRow
             key={label.name}
