@@ -54,7 +54,9 @@ put information outside the supported fields in a board file.
   `citrine`, `sphene`, `aquamarine`, `amethyst`, `morganite`, or `selenite`.
 
 Card order within a Column and Column order within the Board are user-visible.
-Preserve both unless the operation intentionally changes them.
+Preserve both unless the operation intentionally changes them. Board `labels`
+order is user-visible: Facet displays labels on cards in registry order. The
+order of names in `card.labels` has no meaning.
 
 ## Card paths
 

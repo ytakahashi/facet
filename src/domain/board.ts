@@ -96,6 +96,20 @@ export function findLabelDefinition(
   return board.labels.find((label) => label.name === name);
 }
 
+// Count each card once per label, including unused registry entries. A
+// hand-edited card may repeat a name; that must not inflate a deletion prompt.
+export function countCardsByLabel(board: Board): Map<string, number> {
+  const counts = new Map(board.labels.map((label) => [label.name, 0]));
+  for (const column of board.columns) {
+    for (const card of column.cards) {
+      for (const name of new Set(card.labels)) {
+        if (counts.has(name)) counts.set(name, counts.get(name)! + 1);
+      }
+    }
+  }
+  return counts;
+}
+
 export function addCard(board: Board, columnId: string, card: Card): Board {
   if (containsCardPath(board, card.path)) {
     throw new CardAlreadyExistsError(card.path);
@@ -454,6 +468,21 @@ export function removeLabelDefinition(board: Board, name: string): Board {
     ),
   }));
   return { ...board, labels, columns };
+}
+
+// `toIndex` is a position in the rendered registry before the label is
+// removed. Moving forward shifts that position left by one, as in moveColumn.
+export function moveLabelDefinition(
+  board: Board,
+  name: string,
+  toIndex: number,
+): Board {
+  const fromIndex = board.labels.findIndex((label) => label.name === name);
+  if (fromIndex === -1) throw new Error(`Unknown label: ${name}`);
+  const labels = [...board.labels];
+  const [label] = labels.splice(fromIndex, 1);
+  labels.splice(fromIndex < toIndex ? toIndex - 1 : toIndex, 0, label);
+  return { ...board, labels };
 }
 
 // `toIndex` follows the same convention as moveCard's `to.index`: the position

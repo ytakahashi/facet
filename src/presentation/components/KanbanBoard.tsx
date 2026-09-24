@@ -4,12 +4,12 @@ import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/ad
 import type { Board } from "../../domain/board.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
-import type { LabelColor } from "../../domain/label.ts";
 import {
   useBoardStore,
   useFilterStore,
   useMarkdownViewer,
 } from "../context/appContext.ts";
+import { buildLabelDisplay } from "./labelDisplay.ts";
 import { resolveColumnMove } from "./resolveColumnMove.ts";
 import { resolveMove } from "./resolveMove.ts";
 import { Column } from "./Column.tsx";
@@ -63,13 +63,8 @@ export function KanbanBoard({ board }: { board: Board }) {
   // Kept after closing for the same reason as deleteTarget.
   const [repairTarget, setRepairTarget] = useState<CardModel>();
   const [isMissingCardOpen, setIsMissingCardOpen] = useState(false);
-  // Built once per registry change and threaded down to Card, rather than
-  // having every Card re-scan board.labels itself for each of its labels.
-  const labelColors = useMemo(
-    () =>
-      new Map<string, LabelColor>(
-        board.labels.map((label) => [label.name, label.color]),
-      ),
+  const labelDisplay = useMemo(
+    () => buildLabelDisplay(board.labels),
     [board.labels],
   );
 
@@ -84,10 +79,8 @@ export function KanbanBoard({ board }: { board: Board }) {
       // whether to act on it: the app owns both search keys, so neither falls
       // through to a default action when an existing modal makes it decline.
       event.preventDefault();
-      // Two dialogs must never be showModal() at once, and which ones are
-      // open is spread across this component, the new-board store and the
-      // Markdown viewer. Asking the DOM keeps this correct as dialogs are
-      // added, without a store to hold "something is modal" in.
+      // Search shortcuts do not open another modal while one is active.
+      // Asking the DOM covers dialogs owned by other components too.
       if (document.querySelector("dialog[open]")) return;
       if (shortcut === "title") {
         setIsTitleSearchOpen(true);
@@ -185,7 +178,7 @@ export function KanbanBoard({ board }: { board: Board }) {
             criteria={criteria}
             index={index}
             key={column.id}
-            labelColors={labelColors}
+            labelDisplay={labelDisplay}
             onAddCard={(columnId) => {
               setAddToColumnId(columnId);
               setIsAddCardOpen(true);
@@ -235,7 +228,7 @@ export function KanbanBoard({ board }: { board: Board }) {
       {
         /* Mounted before DeleteCardDialog so that when one hands over to the
           other, the effect that closes this dialog runs before the effect that
-          opens that one - two dialogs must never be showModal() at once. */
+          opens that one - these two dialogs must not overlap. */
       }
       {boardPath && repairTarget && (
         <MissingCardDialog
