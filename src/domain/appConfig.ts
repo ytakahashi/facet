@@ -16,3 +16,10 @@ export function addRecentBoard(config: AppConfig, path: string): AppConfig {
     recentBoards: [path, ...deduped].slice(0, MAX_RECENT_BOARDS),
   };
 }
+
+export function removeRecentBoard(config: AppConfig, path: string): AppConfig {
+  return {
+    ...config,
+    recentBoards: config.recentBoards.filter((entry) => entry !== path),
+  };
+}

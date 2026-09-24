@@ -14,10 +14,9 @@ import {
 } from "../domain/fileSystemPort.ts";
 import type { LabelColor, LabelDefinition } from "../domain/label.ts";
 
-// Trusts the parsed YAML's shape instead of validating it against a schema:
-// beyond load()'s check that `columns` is an array, a malformed field (wrong
-// type, missing key) surfaces as an odd value downstream (e.g. an unexpected
-// string in a typed union) rather than as a clear parse error.
+// Validate the fields load() consumes, but not the complete board schema:
+// unsupported enum values, duplicate identities, and unknown keys still pass
+// through. Those can surface as odd values downstream or be lost on save.
 //
 // save() and create() write these files through toRaw(), so the shape holds
 // for boards this app produced. What stays unchecked is a hand-edited file -
@@ -48,6 +47,57 @@ interface RawBoard {
   columns?: RawColumn[];
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) &&
+    value.every((item) => typeof item === "string");
+}
+
+function isRawCard(value: unknown): value is RawCard {
+  return isRecord(value) && typeof value.path === "string" &&
+    (value.title === undefined || typeof value.title === "string") &&
+    (value.priority === undefined || typeof value.priority === "string") &&
+    (value.labels === undefined || isStringArray(value.labels));
+}
+
+function isRawColumn(value: unknown): value is RawColumn {
+  return isRecord(value) && typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    (value.cards === undefined ||
+      (Array.isArray(value.cards) && value.cards.every(isRawCard)));
+}
+
+function isRawLabelDefinition(value: unknown): value is RawLabelDefinition {
+  return isRecord(value) && typeof value.name === "string" &&
+    typeof value.color === "string";
+}
+
+function isRawBoard(value: unknown): value is RawBoard & {
+  columns: RawColumn[];
+} {
+  return isRecord(value) && typeof value.version === "number" &&
+    typeof value.name === "string" &&
+    Array.isArray(value.columns) && value.columns.every(isRawColumn) &&
+    (value.labels === undefined ||
+      (Array.isArray(value.labels) &&
+        value.labels.every(isRawLabelDefinition)));
+}
+
+// Shared by load() and loadName() so a named entry has the same board-file
+// structure load() expects, without reading any referenced Markdown files.
+function parseRawBoard(content: string, path: string): RawBoard & {
+  columns: RawColumn[];
+} {
+  const raw: unknown = parse(content);
+  if (!isRawBoard(raw)) {
+    throw new Error(`Invalid board file: ${path}`);
+  }
+  return raw;
+}
+
 export class YamlBoardRepository implements BoardRepository {
   private readonly fileSystem: FileSystemPort;
 
@@ -58,11 +108,7 @@ export class YamlBoardRepository implements BoardRepository {
   async load(path: string): Promise<LoadedBoard> {
     const { content, revision } = await this.fileSystem
       .readTextFileWithRevision(path);
-    const raw = parse(content) as RawBoard | null;
-
-    if (!raw || !Array.isArray(raw.columns)) {
-      throw new Error(`Invalid board file: ${path}`);
-    }
+    const raw = parseRawBoard(content, path);
 
     const boardDirectory = directoryOf(path);
     const columns: Column[] = [];
@@ -84,6 +130,10 @@ export class YamlBoardRepository implements BoardRepository {
       board: { version: raw.version, name: raw.name, labels, columns },
       revision,
     };
+  }
+
+  async loadName(path: string): Promise<string> {
+    return parseRawBoard(await this.fileSystem.readTextFile(path), path).name;
   }
 
   private async loadCard(

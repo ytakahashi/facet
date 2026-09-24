@@ -106,6 +106,19 @@ describe("toUiError", () => {
     });
   });
 
+  it("maps a failed recent board removal to a message naming the path", () => {
+    const error = new UseCaseError("recent-boards.remove-failed", {
+      path: "/boards/a.board.yaml",
+    });
+
+    const result = toUiError(error);
+
+    expect(result).toEqual({
+      message:
+        "Failed to remove the board at /boards/a.board.yaml from recent boards.",
+    });
+  });
+
   it("maps a missing Markdown file to a message naming the path", () => {
     const error = new UseCaseError(
       "card.file-not-found",
