@@ -326,6 +326,80 @@ columns:
   });
 });
 
+describe("YamlBoardRepository.loadName", () => {
+  it("returns the board name", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+columns: []
+`,
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const name = await repository.loadName("/board/development.board.yaml");
+
+    expect(name).toBe("Development");
+  });
+
+  it("rejects a file that load would reject", async () => {
+    const fileSystem = new FakeFileSystemPort({
+      "/board/notes.yaml": "name: Not a board\n",
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const act = () => repository.loadName("/board/notes.yaml");
+
+    await expect(act).rejects.toThrow("Invalid board file");
+  });
+
+  it.each([
+    ["a null column", "columns: [null]"],
+    [
+      "a non-array card list",
+      "columns: [{ id: doing, name: Doing, cards: bad }]",
+    ],
+    [
+      "a card without a path",
+      "columns: [{ id: doing, name: Doing, cards: [{}] }]",
+    ],
+    ["a non-array label registry", "labels: bad\ncolumns: []"],
+  ])("rejects %s in both board reads", async (_case, fields) => {
+    const path = "/board/broken.board.yaml";
+    const repository = new YamlBoardRepository(
+      new FakeFileSystemPort({
+        [path]: `version: 1\nname: Broken\n${fields}\n`,
+      }),
+    );
+
+    await expect(repository.loadName(path)).rejects.toThrow(
+      "Invalid board file",
+    );
+    await expect(repository.load(path)).rejects.toThrow("Invalid board file");
+  });
+
+  it("accepts older boards without labels or card lists", async () => {
+    const path = "/board/older.board.yaml";
+    const repository = new YamlBoardRepository(
+      new FakeFileSystemPort({
+        [path]:
+          "version: 1\nname: Older\ncolumns: [{ id: todo, name: Todo }]\n",
+      }),
+    );
+
+    expect(await repository.loadName(path)).toBe("Older");
+    expect((await repository.load(path)).board.columns[0].cards).toEqual([]);
+  });
+
+  it("passes a missing file through as a not-found error", async () => {
+    const repository = new YamlBoardRepository(new FakeFileSystemPort());
+
+    const act = () => repository.loadName("/board/gone.board.yaml");
+
+    await expect(act).rejects.toMatchObject({ kind: "not-found" });
+  });
+});
+
 describe("YamlBoardRepository.save", () => {
   it("writes the board as YAML, dropping derived fields", async () => {
     const fileSystem = new FakeFileSystemPort();

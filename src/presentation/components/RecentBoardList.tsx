@@ -1,37 +1,81 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import type { RecentBoardEntry } from "../../usecase/listRecentBoardEntries.ts";
 import { useRecentBoards, useWorkspace } from "../context/appContext.ts";
-import type { UiError } from "../errors/toUiError.ts";
-import { toUiError } from "../errors/toUiError.ts";
 
 function basenameOf(path: string): string {
   const index = path.lastIndexOf("/");
   return index === -1 ? path : path.slice(index + 1);
 }
 
-export function RecentBoardList() {
-  const { list } = useRecentBoards();
+const STATUS_BADGES: Record<RecentBoardEntry["status"], string | undefined> = {
+  available: undefined,
+  missing: "File not found",
+  unreadable: "Cannot read",
+};
+
+function RecentBoardEntryRow({ entry }: { entry: RecentBoardEntry }) {
   const openBoard = useWorkspace((state) => state.openBoard);
-  const [recentBoards, setRecentBoards] = useState<string[]>([]);
-  const [error, setError] = useState<UiError>();
+  const remove = useRecentBoards((state) => state.remove);
+  const fileName = basenameOf(entry.path);
+  // A hand-edited board can carry a blank name; the file name stands in so the
+  // entry never renders without a heading.
+  const name = entry.status === "available" && entry.name.trim() !== ""
+    ? entry.name
+    : undefined;
+  const title = name ?? fileName;
+  const badge = STATUS_BADGES[entry.status];
 
+  return (
+    <li
+      className={`recent-board-list__item${
+        entry.status === "available" ? "" : " recent-board-list__item--missing"
+      }`}
+    >
+      {
+        /* Still opens when the file cannot be read, so the user gets the
+          reason from the open failure rather than a dead entry. */
+      }
+      <button
+        type="button"
+        className="recent-board-list__entry"
+        onClick={() => openBoard(entry.path)}
+      >
+        <span className="recent-board-list__entry-heading">
+          <span className="recent-board-list__entry-name">{title}</span>
+          {name !== undefined && (
+            <span className="recent-board-list__entry-file">{fileName}</span>
+          )}
+          {badge && (
+            <span className="recent-board-list__entry-badge">{badge}</span>
+          )}
+        </span>
+        <span className="recent-board-list__entry-path">{entry.path}</span>
+      </button>
+      <button
+        type="button"
+        className="recent-board-list__remove"
+        aria-label={`Remove ${title} from Recent Boards`}
+        title="Remove from Recent Boards"
+        onClick={() => void remove(entry.path)}
+      >
+        ×
+      </button>
+    </li>
+  );
+}
+
+export function RecentBoardList() {
+  const entries = useRecentBoards((state) => state.entries);
+  const error = useRecentBoards((state) => state.error);
+  const load = useRecentBoards((state) => state.load);
+
+  // Reloaded whenever the start screen is shown: board names are read from
+  // their files, which may have changed since the last visit.
   useEffect(() => {
-    let cancelled = false;
-    list()
-      .then((paths) => {
-        if (!cancelled) {
-          setRecentBoards(paths);
-          setError(undefined);
-        }
-      })
-      .catch((loadError) => {
-        if (!cancelled) setError(toUiError(loadError));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [list]);
+    void load();
+  }, [load]);
 
-  if (recentBoards.length === 0 && !error) {
+  if (entries.length === 0 && !error) {
     return null;
   }
 
@@ -40,19 +84,8 @@ export function RecentBoardList() {
       <h2>Recent Boards</h2>
       {error && <p role="alert">{error.message}</p>}
       <ul className="recent-board-list__entries">
-        {recentBoards.map((path) => (
-          <li key={path}>
-            <button
-              type="button"
-              className="recent-board-list__entry"
-              onClick={() => openBoard(path)}
-            >
-              <span className="recent-board-list__entry-name">
-                {basenameOf(path)}
-              </span>
-              <span className="recent-board-list__entry-path">{path}</span>
-            </button>
-          </li>
+        {entries.map((entry) => (
+          <RecentBoardEntryRow key={entry.path} entry={entry} />
         ))}
       </ul>
     </div>

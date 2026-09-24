@@ -22,6 +22,10 @@ class FakeBoardRepository implements BoardRepository {
     return Promise.resolve({ board: this.board, revision: "revision-1" });
   }
 
+  loadName(): Promise<string> {
+    throw new Error("not needed for this test");
+  }
+
   save(): Promise<string> {
     throw new Error("not needed for this test");
   }

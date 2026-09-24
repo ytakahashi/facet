@@ -8,16 +8,13 @@ import type { FilterState } from "../store/filterStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import type { NewBoardDialogState } from "../store/newBoardDialogStore.ts";
 import type { PaneLayoutState } from "../store/paneLayoutStore.ts";
+import type { RecentBoardsState } from "../store/recentBoardsStore.ts";
 import type { WorkspaceState } from "../store/workspaceStore.ts";
 
 export interface DirectoryBrowsing {
   listDirectory(path: string): Promise<DirEntry[]>;
   homeDirectory(): Promise<string>;
   createDirectory(parentDirectory: string, name: string): Promise<string>;
-}
-
-export interface RecentBoards {
-  list(): Promise<string[]>;
 }
 
 export interface CardContentReading {
@@ -32,7 +29,7 @@ export interface AppDependencies {
   directoryBrowsing: DirectoryBrowsing;
   newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
   paneLayout: UseBoundStore<StoreApi<PaneLayoutState>>;
-  recentBoards: RecentBoards;
+  recentBoards: UseBoundStore<StoreApi<RecentBoardsState>>;
   workspace: UseBoundStore<StoreApi<WorkspaceState>>;
 }
 
@@ -98,8 +95,10 @@ export function usePaneLayout<T>(selector: (state: PaneLayoutState) => T): T {
   return useAppDependencies().paneLayout(selector);
 }
 
-export function useRecentBoards(): RecentBoards {
-  return useAppDependencies().recentBoards;
+export function useRecentBoards<T>(
+  selector: (state: RecentBoardsState) => T,
+): T {
+  return useAppDependencies().recentBoards(selector);
 }
 
 export function useWorkspace<T>(selector: (state: WorkspaceState) => T): T {

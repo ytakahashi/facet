@@ -35,7 +35,8 @@ export type UseCaseErrorCode =
   | "markdown.file-gone"
   | "markdown.load-failed"
   | "markdown.save-failed"
-  | "recent-boards.load-failed";
+  | "recent-boards.load-failed"
+  | "recent-boards.remove-failed";
 
 export class UseCaseError extends Error {
   readonly code: UseCaseErrorCode;

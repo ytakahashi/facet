@@ -29,6 +29,7 @@ function makeBoardRepository(
 ): BoardRepository {
   return {
     load: vi.fn(),
+    loadName: vi.fn(),
     save: vi.fn(),
     create: vi.fn().mockResolvedValue(undefined),
     ...overrides,

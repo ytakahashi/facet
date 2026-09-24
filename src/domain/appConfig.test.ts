@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { AppConfig } from "./appConfig.ts";
-import { addRecentBoard, emptyAppConfig } from "./appConfig.ts";
+import {
+  addRecentBoard,
+  emptyAppConfig,
+  removeRecentBoard,
+} from "./appConfig.ts";
 
 function makeConfig(overrides?: Partial<AppConfig>): AppConfig {
   return { version: 1, recentBoards: [], ...overrides };
@@ -65,5 +69,31 @@ describe("addRecentBoard", () => {
     expect(result.recentBoards).toHaveLength(10);
     expect(result.recentBoards[0]).toBe("/boards/new.board.yaml");
     expect(result.recentBoards).not.toContain("/boards/9.board.yaml");
+  });
+});
+
+describe("removeRecentBoard", () => {
+  it("removes the path and keeps the order of the rest", () => {
+    const config = makeConfig({
+      recentBoards: [
+        "/boards/a.board.yaml",
+        "/boards/b.board.yaml",
+        "/boards/c.board.yaml",
+      ],
+    });
+
+    const result = removeRecentBoard(config, "/boards/b.board.yaml");
+
+    expect(result).toEqual(makeConfig({
+      recentBoards: ["/boards/a.board.yaml", "/boards/c.board.yaml"],
+    }));
+  });
+
+  it("leaves the list unchanged when the path is not recorded", () => {
+    const config = makeConfig({ recentBoards: ["/boards/a.board.yaml"] });
+
+    const result = removeRecentBoard(config, "/boards/b.board.yaml");
+
+    expect(result).toEqual(config);
   });
 });

@@ -5,8 +5,10 @@ import { YamlConfigRepository } from "../infrastructure/yamlConfigRepository.ts"
 import { getHomeDirectory, listDirectory } from "../usecase/browseDirectory.ts";
 import { createBoard } from "../usecase/createBoard.ts";
 import { createBoardDirectory } from "../usecase/createBoardDirectory.ts";
+import { listRecentBoardEntries } from "../usecase/listRecentBoardEntries.ts";
 import { listRecentBoards } from "../usecase/listRecentBoards.ts";
 import { openBoard as openBoardUseCase } from "../usecase/openBoard.ts";
+import { removeRecentBoard } from "../usecase/removeRecentBoard.ts";
 import { saveBoard } from "../usecase/saveBoard.ts";
 import { viewMarkdown } from "../usecase/viewMarkdown.ts";
 import { saveMarkdown } from "../usecase/saveMarkdown.ts";
@@ -26,6 +28,7 @@ import { createFilterStore } from "../presentation/store/filterStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
 import { createPaneLayoutStore } from "../presentation/store/paneLayoutStore.ts";
+import { createRecentBoardsStore } from "../presentation/store/recentBoardsStore.ts";
 import { createWorkspaceStore } from "../presentation/store/workspaceStore.ts";
 
 const fileSystem = new DenoFileSystemAdapter();
@@ -105,9 +108,13 @@ export const appDependencies: AppDependencies = {
   },
   newBoardDialog: createNewBoardDialogStore(),
   paneLayout: createPaneLayoutStore(),
-  recentBoards: {
-    list: () => listRecentBoards({ configRepository }),
-  },
+  recentBoards: createRecentBoardsStore({
+    list: () => listRecentBoardEntries({ configRepository, boardRepository }),
+    remove: async (path) => {
+      await removeRecentBoard(path, { configRepository });
+      void refreshRecentMenu();
+    },
+  }),
   workspace: createWorkspaceStore({
     createSession: createBoardSession,
     confirmCloseBoard: () =>
