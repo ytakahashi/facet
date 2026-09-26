@@ -138,7 +138,7 @@ delete. Two consequences:
   `showModal()` / `close()` in an effect. They carry a handful of rules that are
   easy to break and slow to diagnose.
 - Read existing comments around the dialogs in `MarkdownViewer.tsx` and
-  `KanbanBoard.tsx` and the grouped selectors in `src/presentation/App.css`.
+  `BoardScreen.tsx` and the grouped selectors in `src/presentation/App.css`.
 
 ## Errors
 

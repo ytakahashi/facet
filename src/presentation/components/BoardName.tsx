@@ -8,10 +8,8 @@ interface BoardNameProps {
 // Inline rename with the same rules as ColumnHeader: Enter/blur commits,
 // Escape cancels, and the committed value is trimmed. Editing state stays
 // local; only the committed name reaches the store.
-// Callers must key this component by board identity (KanbanBoard keys it by
-// the board path): without a key, an edit in progress would survive a board
-// switch and Enter/blur would rename the newly opened board with the
-// previous board's draft.
+// BoardSessionProvider is keyed by tab identity, so an edit in progress cannot
+// survive a board switch and rename another board with the previous draft.
 export function BoardName({ name, onRename }: BoardNameProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -33,7 +31,7 @@ export function BoardName({ name, onRename }: BoardNameProps) {
   if (isEditing) {
     return (
       <input
-        className="kanban-board__name-input"
+        className="board-screen__name-input"
         type="text"
         value={draft}
         aria-label="Board name"
@@ -52,10 +50,10 @@ export function BoardName({ name, onRename }: BoardNameProps) {
   }
 
   return (
-    <h1 className="kanban-board__name">
+    <h1 className="board-screen__name">
       <button
         type="button"
-        className="kanban-board__name-button"
+        className="board-screen__name-button"
         title={name}
         onClick={startEditing}
       >

@@ -5,7 +5,7 @@ import {
   useWorkspace,
 } from "./context/appContext.ts";
 import { FilterSidebar } from "./components/FilterSidebar.tsx";
-import { KanbanBoard } from "./components/KanbanBoard.tsx";
+import { BoardScreen } from "./components/BoardScreen.tsx";
 import { MarkdownViewer } from "./components/MarkdownViewer.tsx";
 import { NewBoardDialog } from "./components/NewBoardDialog.tsx";
 import { StartScreen } from "./components/StartScreen.tsx";
@@ -32,7 +32,7 @@ function BoardView() {
     <div className="board-workspace">
       <FilterSidebar board={board} />
       <div className="board-main">
-        <KanbanBoard board={board} />
+        <BoardScreen board={board} />
         {markdownStatus !== "idle" && <MarkdownViewer />}
       </div>
     </div>
