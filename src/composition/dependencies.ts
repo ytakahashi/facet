@@ -1,4 +1,5 @@
 import { DenoApplicationMenu } from "../infrastructure/denoApplicationMenu.ts";
+import { DenoContextMenu } from "../infrastructure/denoContextMenu.ts";
 import { DenoFileSystemAdapter } from "../infrastructure/denoFileSystemAdapter.ts";
 import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
 import { YamlConfigRepository } from "../infrastructure/yamlConfigRepository.ts";
@@ -36,6 +37,7 @@ const fileSystem = new DenoFileSystemAdapter();
 const boardRepository = new YamlBoardRepository(fileSystem);
 const configRepository = new YamlConfigRepository(fileSystem);
 const applicationMenu = new DenoApplicationMenu(fileSystem);
+const contextMenu = new DenoContextMenu();
 
 async function refreshRecentMenu(): Promise<void> {
   try {
@@ -102,6 +104,7 @@ export const appDependencies: AppDependencies = {
   cardContentReading: {
     read: (cards) => readCardContents(cards, { fileSystem }),
   },
+  contextMenu,
   directoryBrowsing: {
     listDirectory: (path) => listDirectory(path, { fileSystem }),
     homeDirectory: () => getHomeDirectory({ fileSystem }),
@@ -135,4 +138,10 @@ export function startApplicationMenu(): void {
     newBoard: () => appDependencies.newBoardDialog.getState().open(),
     openRecent: (path) => appDependencies.workspace.getState().openBoard(path),
   });
+}
+
+// Called once at startup, like startApplicationMenu: the host queue serves a
+// single waiter, so exactly one loop may collect context menu clicks.
+export function startContextMenu(): void {
+  contextMenu.start();
 }

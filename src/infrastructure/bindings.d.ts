@@ -1,5 +1,5 @@
 import type { DirEntry, FileRevision } from "../domain/fileSystemPort.ts";
-import type { MenuItem } from "./denoApplicationMenu.ts";
+import type { MenuItem } from "./denoMenuItem.ts";
 
 export type ReadTextFileResult =
   | { read: true; content: string; revision: FileRevision }
@@ -40,6 +40,8 @@ export interface Bindings {
   mkdir(path: string): Promise<void>;
   setApplicationMenu(menu: MenuItem[]): Promise<void>;
   nextMenuClick(): Promise<string>;
+  showContextMenu(x: number, y: number, menu: MenuItem[]): Promise<void>;
+  nextContextMenuClick(): Promise<string>;
 }
 
 declare global {
