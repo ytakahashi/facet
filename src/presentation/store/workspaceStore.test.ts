@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { CreateBoardInput } from "../../usecase/createBoard.ts";
 import type { BoardSession } from "../context/appContext.ts";
 import type { BoardState } from "./boardStore.ts";
+import { createBoardViewStore } from "./boardViewStore.ts";
 import { createFilterStore } from "./filterStore.ts";
 import type { MarkdownViewerState } from "./markdownViewerStore.ts";
 import { createWorkspaceStore } from "./workspaceStore.ts";
@@ -19,6 +20,7 @@ function makeSession(overrides: {
   close?: MarkdownViewerState["close"];
 } = {}): BoardSession {
   return {
+    boardView: createBoardViewStore(),
     boardStore: create<BoardState>(() => ({
       status: "empty",
       isSaving: false,

@@ -2,11 +2,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { create } from "zustand";
 import { describe, expect, it } from "vitest";
 import type { BoardState } from "../store/boardStore.ts";
+import { createBoardViewStore } from "../store/boardViewStore.ts";
 import type { FilterState } from "../store/filterStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import {
   BoardSessionProvider,
   useBoardStore,
+  useBoardView,
   useFilterStore,
   useMarkdownViewer,
 } from "./appContext.ts";
@@ -14,6 +16,7 @@ import type { BoardSession } from "./appContext.ts";
 
 function makeSession(label: string): BoardSession {
   return {
+    boardView: createBoardViewStore(),
     boardStore: create<BoardState>(
       () => ({ status: "empty", path: label } as BoardState),
     ),
@@ -30,7 +33,8 @@ function BoardStateProbe() {
   const boardPath = useBoardStore((state) => state.path);
   const selectedPath = useMarkdownViewer((state) => state.selectedPath);
   const sidebarOpen = useFilterStore((state) => state.isSidebarOpen);
-  return <span>{`${boardPath}/${selectedPath}/${sidebarOpen}`}</span>;
+  const view = useBoardView((state) => state.mode);
+  return <span>{`${boardPath}/${selectedPath}/${sidebarOpen}/${view}`}</span>;
 }
 
 describe("BoardSessionProvider", () => {
@@ -47,7 +51,7 @@ describe("BoardSessionProvider", () => {
     );
 
     expect(output).toBe(
-      "<span>first/first/true</span><span>second/second/false</span>",
+      "<span>first/first/true/board</span><span>second/second/false/board</span>",
     );
   });
 

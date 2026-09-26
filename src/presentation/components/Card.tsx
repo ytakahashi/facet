@@ -9,12 +9,13 @@ import {
   attachClosestEdge,
   extractClosestEdge,
 } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import type { Card as CardModel, CardFileState } from "../../domain/card.ts";
+import type { Card as CardModel } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
 import { orderCardLabels } from "../../domain/label.ts";
 import { useMarkdownViewer } from "../context/appContext.ts";
 import type { CardDragData } from "./dragData.ts";
 import type { LabelDisplay } from "./labelDisplay.ts";
+import { missingHint } from "./cardFileStateHint.ts";
 
 interface CardProps {
   card: CardModel;
@@ -136,17 +137,4 @@ export function Card(
       )}
     </div>
   );
-}
-
-// The two broken states are told apart by wording rather than by two badges:
-// what to do about them differs, but neither is something the tile itself can
-// fix.
-function missingHint(fileState: CardFileState): string {
-  if (fileState === "unresolvable") {
-    return "This card's path must point inside the board directory.";
-  }
-  if (fileState === "unreadable") {
-    return "The file at this path could not be read.";
-  }
-  return "No file at this path.";
 }

@@ -24,6 +24,7 @@ import type {
   BoardSession,
 } from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
+import { createBoardViewStore } from "../presentation/store/boardViewStore.ts";
 import { createFilterStore } from "../presentation/store/filterStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
@@ -48,6 +49,7 @@ async function refreshRecentMenu(): Promise<void> {
 
 function createBoardSession(): BoardSession {
   return {
+    boardView: createBoardViewStore(),
     boardStore: createBoardStore({
       openBoard: async (path) => {
         const loadedBoard = await openBoardUseCase(path, {
