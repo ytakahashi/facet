@@ -22,6 +22,10 @@ export interface CardContentReading {
   read(cards: readonly Card[]): Promise<CardContentReadResult[]>;
 }
 
+export interface ClipboardWriting {
+  copyText(text: string): Promise<void>;
+}
+
 export type ContextMenuEntry =
   | { kind: "item"; label: string; enabled: boolean; onSelect: () => void }
   | { kind: "submenu"; label: string; entries: readonly ContextMenuEntry[] }
@@ -42,11 +46,13 @@ export interface ContextMenu {
 // BoardSession can be supplied as a unit. Components use purpose-specific hooks.
 export interface AppDependencies {
   cardContentReading: CardContentReading;
+  clipboard: ClipboardWriting;
   contextMenu: ContextMenu;
   directoryBrowsing: DirectoryBrowsing;
   newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
   paneLayout: UseBoundStore<StoreApi<PaneLayoutState>>;
   recentBoards: UseBoundStore<StoreApi<RecentBoardsState>>;
+  showAlert: (message: string) => void;
   workspace: UseBoundStore<StoreApi<WorkspaceState>>;
 }
 
@@ -93,6 +99,10 @@ export function useCardContentReading(): CardContentReading {
   return useAppDependencies().cardContentReading;
 }
 
+export function useClipboard(): ClipboardWriting {
+  return useAppDependencies().clipboard;
+}
+
 export function useContextMenu(): ContextMenu {
   return useAppDependencies().contextMenu;
 }
@@ -125,6 +135,10 @@ export function useRecentBoards<T>(
   selector: (state: RecentBoardsState) => T,
 ): T {
   return useAppDependencies().recentBoards(selector);
+}
+
+export function useShowAlert(): (message: string) => void {
+  return useAppDependencies().showAlert;
 }
 
 export function useWorkspace<T>(selector: (state: WorkspaceState) => T): T {

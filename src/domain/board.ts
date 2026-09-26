@@ -73,6 +73,21 @@ export function findCardByPath(board: Board, path: string): Card | undefined {
   return undefined;
 }
 
+// Menu actions can outlive the board position they were shown for. Resolve a
+// card's current location by its path identity when the action is selected.
+export function findCardLocation(
+  board: Board,
+  path: string,
+): CardLocation | undefined {
+  for (const column of board.columns) {
+    const index = column.cards.findIndex((card) =>
+      isSameCardPath(card.path, path)
+    );
+    if (index !== -1) return { columnId: column.id, index };
+  }
+  return undefined;
+}
+
 // Looks up by card identity rather than the exact spelling stored in the board.
 // History can outlive a board reload, and the reloaded path may differ only in
 // case or Unicode composition while still naming the same file on macOS.

@@ -23,6 +23,7 @@ export type UseCaseErrorCode =
   | "card.not-markdown-file"
   | "card.outside-board-directory"
   | "card.title-required"
+  | "clipboard.write-failed"
   | "directory.already-exists"
   | "directory.browse-failed"
   | "directory.create-failed"

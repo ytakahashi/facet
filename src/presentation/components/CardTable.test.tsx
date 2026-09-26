@@ -44,6 +44,7 @@ function markup(board: Board, session = makeSession()): string {
         board={board}
         onDeleteCard={vi.fn()}
         onRepairCard={vi.fn()}
+        onCardContextMenu={vi.fn()}
       />
     </BoardSessionProvider>,
   );

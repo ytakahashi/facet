@@ -1,17 +1,23 @@
 import { useEffect, useState } from "react";
+import type { MouseEvent } from "react";
 import type { Board } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
 import {
   useBoardStore,
   useBoardView,
+  useClipboard,
+  useContextMenu,
   useFilterStore,
   useMarkdownViewer,
+  useShowAlert,
 } from "../context/appContext.ts";
+import { toUiError } from "../errors/toUiError.ts";
 import { BoardName } from "./BoardName.tsx";
 import { CardContentSearchDialog } from "./CardContentSearchDialog.tsx";
 import { CardSearchDialog } from "./CardSearchDialog.tsx";
 import { CardTable } from "./CardTable.tsx";
+import { buildCardContextMenu, isTextEditingTarget } from "./contextMenus.ts";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { KanbanBoard } from "./KanbanBoard.tsx";
 import { MissingCardDialog } from "./MissingCardDialog.tsx";
@@ -24,6 +30,10 @@ import {
 
 export function BoardScreen({ board }: { board: Board }) {
   const renameBoard = useBoardStore((state) => state.renameBoard);
+  const moveCardToColumn = useBoardStore((state) => state.moveCardToColumn);
+  const clipboard = useClipboard();
+  const contextMenu = useContextMenu();
+  const showAlert = useShowAlert();
   const saveError = useBoardStore((state) => state.saveError);
   const saveConflict = useBoardStore((state) => state.saveConflict);
   const conflictResolutionError = useBoardStore(
@@ -85,6 +95,26 @@ export function BoardScreen({ board }: { board: Board }) {
     setIsMissingCardOpen(true);
   }
 
+  function handleCardContextMenu(card: Card, event: MouseEvent<HTMLElement>) {
+    if (isTextEditingTarget(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    function copy(text: string): void {
+      void clipboard.copyText(text).catch((error) => {
+        showAlert(toUiError(error).message);
+      });
+    }
+
+    contextMenu.show(
+      { x: event.clientX, y: event.clientY },
+      buildCardContextMenu(card, board, {
+        copyText: copy,
+        moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
+      }),
+    );
+  }
+
   function handleSearchSelect(card: Card) {
     // Each search dialog has already closed itself by now. Clear both drivers
     // so this handoff cannot leave one shortcut swallowed by stale open state.
@@ -143,6 +173,7 @@ export function BoardScreen({ board }: { board: Board }) {
             board={board}
             onDeleteCard={openDeleteCard}
             onRepairCard={openMissingCard}
+            onCardContextMenu={handleCardContextMenu}
           />
         )
         : (
@@ -150,6 +181,7 @@ export function BoardScreen({ board }: { board: Board }) {
             board={board}
             onDeleteCard={openDeleteCard}
             onRepairCard={openMissingCard}
+            onCardContextMenu={handleCardContextMenu}
           />
         )}
       {

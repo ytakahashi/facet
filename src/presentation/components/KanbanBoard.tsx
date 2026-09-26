@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { MouseEvent } from "react";
 import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { Board } from "../../domain/board.ts";
@@ -15,10 +16,11 @@ interface KanbanBoardProps {
   board: Board;
   onDeleteCard: (card: CardModel) => void;
   onRepairCard: (card: CardModel) => void;
+  onCardContextMenu: (card: CardModel, event: MouseEvent<HTMLElement>) => void;
 }
 
 export function KanbanBoard(
-  { board, onDeleteCard, onRepairCard }: KanbanBoardProps,
+  { board, onDeleteCard, onRepairCard, onCardContextMenu }: KanbanBoardProps,
 ) {
   const columnsRef = useRef<HTMLDivElement>(null);
   const moveCard = useBoardStore((state) => state.moveCard);
@@ -83,6 +85,7 @@ export function KanbanBoard(
             }}
             onDeleteCard={onDeleteCard}
             onRepairCard={onRepairCard}
+            onCardContextMenu={onCardContextMenu}
             onRename={renameColumn}
             onRemove={removeColumn}
           />

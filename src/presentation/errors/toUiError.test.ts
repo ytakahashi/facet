@@ -3,6 +3,12 @@ import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "./toUiError.ts";
 
 describe("toUiError", () => {
+  it("maps clipboard failure to user-facing wording", () => {
+    expect(toUiError(new UseCaseError("clipboard.write-failed"))).toEqual({
+      message: "Failed to copy to the clipboard.",
+    });
+  });
+
   it("maps a usecase code and details to a field error", () => {
     const error = new UseCaseError("card.file-already-exists", {
       path: "/board/card.md",

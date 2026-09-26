@@ -205,6 +205,79 @@ describe("createBoardStore", () => {
     );
   });
 
+  it("moves the card at its current position to the destination's end", async () => {
+    const board = makeBoard({
+      columns: [
+        {
+          id: "doing",
+          name: "Doing",
+          cards: [
+            {
+              path: "other.md",
+              fileState: "available",
+              labels: [],
+              displayTitle: "Other",
+            },
+            {
+              path: "a.md",
+              fileState: "available",
+              labels: [],
+              displayTitle: "A",
+            },
+          ],
+        },
+        {
+          id: "done",
+          name: "Done",
+          cards: [{
+            path: "done.md",
+            fileState: "available",
+            labels: [],
+            displayTitle: "Done",
+          }],
+        },
+      ],
+    });
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(board)),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().moveCardToColumn("a.md", "done");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+
+    expect(
+      useBoardStore.getState().board?.columns[0].cards.map((card) => card.path),
+    )
+      .toEqual(["other.md"]);
+    expect(
+      useBoardStore.getState().board?.columns[1].cards.map((card) => card.path),
+    )
+      .toEqual(["done.md", "a.md"]);
+    expect(saveBoard).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a stale card, missing destination, or current column", async () => {
+    const board = makeBoard();
+    const saveBoard = vi.fn().mockResolvedValue("revision-2");
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(board)),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().moveCardToColumn("gone.md", "done");
+    useBoardStore.getState().moveCardToColumn("a.md", "removed");
+    useBoardStore.getState().moveCardToColumn("a.md", "doing");
+
+    expect(useBoardStore.getState().board).toBe(board);
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
   it("keeps the optimistic board and reports an error when saving fails", async () => {
     const board = makeBoard();
     const saveFailedError = new UseCaseError("board.save-failed", {
