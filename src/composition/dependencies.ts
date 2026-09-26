@@ -1,9 +1,11 @@
 import { DenoApplicationMenu } from "../infrastructure/denoApplicationMenu.ts";
 import { DenoContextMenu } from "../infrastructure/denoContextMenu.ts";
 import { DenoFileSystemAdapter } from "../infrastructure/denoFileSystemAdapter.ts";
+import { WebClipboard } from "../infrastructure/webClipboard.ts";
 import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
 import { YamlConfigRepository } from "../infrastructure/yamlConfigRepository.ts";
 import { getHomeDirectory, listDirectory } from "../usecase/browseDirectory.ts";
+import { copyToClipboard } from "../usecase/copyToClipboard.ts";
 import { createBoard } from "../usecase/createBoard.ts";
 import { createBoardDirectory } from "../usecase/createBoardDirectory.ts";
 import { listRecentBoardEntries } from "../usecase/listRecentBoardEntries.ts";
@@ -38,6 +40,7 @@ const boardRepository = new YamlBoardRepository(fileSystem);
 const configRepository = new YamlConfigRepository(fileSystem);
 const applicationMenu = new DenoApplicationMenu(fileSystem);
 const contextMenu = new DenoContextMenu();
+const clipboard = new WebClipboard();
 
 async function refreshRecentMenu(): Promise<void> {
   try {
@@ -104,6 +107,9 @@ export const appDependencies: AppDependencies = {
   cardContentReading: {
     read: (cards) => readCardContents(cards, { fileSystem }),
   },
+  clipboard: {
+    copyText: (text) => copyToClipboard(text, { clipboard }),
+  },
   contextMenu,
   directoryBrowsing: {
     listDirectory: (path) => listDirectory(path, { fileSystem }),
@@ -120,6 +126,7 @@ export const appDependencies: AppDependencies = {
       void refreshRecentMenu();
     },
   }),
+  showAlert: (message) => alert(message),
   workspace: createWorkspaceStore({
     createSession: createBoardSession,
     confirmCloseBoard: () =>

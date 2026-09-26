@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { MouseEvent } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import {
   draggable,
@@ -24,10 +25,19 @@ interface CardProps {
   labelDisplay: LabelDisplay;
   onDelete: (card: CardModel) => void;
   onRepair: (card: CardModel) => void;
+  onCardContextMenu: (card: CardModel, event: MouseEvent<HTMLElement>) => void;
 }
 
 export function Card(
-  { card, columnId, index, labelDisplay, onDelete, onRepair }: CardProps,
+  {
+    card,
+    columnId,
+    index,
+    labelDisplay,
+    onDelete,
+    onRepair,
+    onCardContextMenu,
+  }: CardProps,
 ) {
   const isSelected = useMarkdownViewer((state) =>
     state.selectedPath === card.path
@@ -86,6 +96,7 @@ export function Card(
       // A broken card has nothing to show in the viewer, so its click goes to
       // the repair dialog instead of a load error the user cannot act on.
       onClick={() => isBroken ? onRepair(card) : void selectCard(card)}
+      onContextMenu={(event) => onCardContextMenu(card, event)}
     >
       {
         /* Revealed on hover/focus-within (see App.css) rather than shown on

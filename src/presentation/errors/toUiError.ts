@@ -84,6 +84,8 @@ export function toUiError(error: unknown): UiError {
       };
     case "card.title-required":
       return { message: "Title is required.", field: "title" };
+    case "clipboard.write-failed":
+      return { message: "Failed to copy to the clipboard." };
     case "directory.already-exists":
       return { message: `A file or directory already exists${atPath(path)}.` };
     case "directory.browse-failed":

@@ -11,6 +11,7 @@ import {
   createEmptyBoard,
   findCardByEquivalentPath,
   findCardByPath,
+  findCardLocation,
   findLabelDefinition,
   LabelAlreadyExistsError,
   moveCard,
@@ -82,6 +83,29 @@ describe("findCardByEquivalentPath", () => {
     });
 
     expect(findCardByEquivalentPath(board, "b.md")).toBeUndefined();
+  });
+});
+
+describe("findCardLocation", () => {
+  it("finds a card's column and index by path identity", () => {
+    const board = makeBoard({
+      columns: [
+        makeColumn({ id: "todo", cards: [makeCard({ path: "first.md" })] }),
+        makeColumn({
+          id: "doing",
+          cards: [
+            makeCard({ path: "other.md" }),
+            makeCard({ path: "Notes/caf\u00e9.md" }),
+          ],
+        }),
+      ],
+    });
+
+    expect(findCardLocation(board, "notes/./cafe\u0301.md")).toEqual({
+      columnId: "doing",
+      index: 1,
+    });
+    expect(findCardLocation(board, "absent.md")).toBeUndefined();
   });
 });
 

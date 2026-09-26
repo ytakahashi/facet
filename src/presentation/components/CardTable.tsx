@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import type { MouseEvent } from "react";
 import type { Board } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
@@ -17,6 +18,7 @@ interface CardTableProps {
   board: Board;
   onDeleteCard: (card: Card) => void;
   onRepairCard: (card: Card) => void;
+  onCardContextMenu: (card: Card, event: MouseEvent<HTMLElement>) => void;
 }
 
 const columns: { key: CardTableSortKey; title: string }[] = [
@@ -28,7 +30,7 @@ const columns: { key: CardTableSortKey; title: string }[] = [
 ];
 
 export function CardTable(
-  { board, onDeleteCard, onRepairCard }: CardTableProps,
+  { board, onDeleteCard, onRepairCard, onCardContextMenu }: CardTableProps,
 ) {
   const criteria = useFilterStore((state) => state.criteria);
   const tableSort = useBoardView((state) => state.tableSort);
@@ -102,6 +104,7 @@ export function CardTable(
                   ? "card-table__row card-table__row--selected"
                   : "card-table__row"}
                 onClick={() => openCard(card)}
+                onContextMenu={(event) => onCardContextMenu(card, event)}
               >
                 <td>
                   <div className="card-table__title-cell">

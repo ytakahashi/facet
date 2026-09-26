@@ -9,6 +9,7 @@ import {
   CardAlreadyExistsError,
   containsCardPath,
   findCardByPath,
+  findCardLocation,
   findLabelDefinition,
   LabelAlreadyExistsError,
   moveCard as moveCardDomain,
@@ -65,6 +66,7 @@ export interface BoardState {
   openBoard: (path: string) => Promise<void>;
   createBoard: (input: CreateBoardInput) => Promise<string>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
+  moveCardToColumn: (cardPath: string, columnId: string) => void;
   moveColumn: (columnId: string, toIndex: number) => void;
   addColumn: (name: string) => void;
   renameBoard: (name: string) => void;
@@ -384,6 +386,16 @@ export function createBoardStore({
         const nextBoard = moveCardDomain(board, from, to);
         set({ board: nextBoard });
         queueSave(path, nextBoard);
+      },
+      moveCardToColumn: (cardPath: string, columnId: string) => {
+        const { board } = get();
+        if (!board) return;
+        // Native menu selection is asynchronous: the card may have moved or
+        // disappeared since the menu opened, so use its path to locate it now.
+        const from = findCardLocation(board, cardPath);
+        if (!from || from.columnId === columnId) return;
+        if (!board.columns.some((column) => column.id === columnId)) return;
+        get().moveCard(from, { columnId, index: Infinity });
       },
       moveColumn: (columnId: string, toIndex: number) => {
         const { board, path } = get();

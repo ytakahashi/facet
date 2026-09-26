@@ -32,6 +32,7 @@ interface ColumnProps {
   onAddCard: (columnId: string) => void;
   onDeleteCard: (card: CardModel) => void;
   onRepairCard: (card: CardModel) => void;
+  onCardContextMenu: (card: CardModel, event: MouseEvent<HTMLElement>) => void;
   onRename: (columnId: string, name: string) => void;
   onRemove: (columnId: string) => void;
 }
@@ -45,6 +46,7 @@ export function Column(
     onAddCard,
     onDeleteCard,
     onRepairCard,
+    onCardContextMenu,
     onRename,
     onRemove,
   }: ColumnProps,
@@ -172,6 +174,7 @@ export function Column(
             labelDisplay={labelDisplay}
             onDelete={onDeleteCard}
             onRepair={onRepairCard}
+            onCardContextMenu={onCardContextMenu}
           />
         ))}
         {
