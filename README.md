@@ -71,7 +71,7 @@ system WebView rather than shipping a browser of its own.
 
 ## Getting started
 
-Requires macOS and [Deno](https://deno.com/) 2.9.4 or newer.
+Requires macOS and [Deno](https://deno.com/) 2.9.7 or newer.
 
 ```sh
 deno install          # install the dependencies
