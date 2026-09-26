@@ -56,4 +56,4 @@ jobs:
         run: deno install --frozen
 
       - name: Build desktop app
-        run: deno task desktop:build
+        run: deno task desktop
