@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FileSystemPort } from "../domain/fileSystemPort.ts";
-import type { MenuItem } from "./denoApplicationMenu.ts";
+import type { MenuItem } from "./denoMenuItem.ts";
 import {
   buildApplicationMenu,
   DenoApplicationMenu,

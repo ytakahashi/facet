@@ -31,6 +31,8 @@ export interface HostBindings {
   mkdir(path: string): Promise<void>;
   setApplicationMenu(menu: Deno.MenuItem[]): Promise<void>;
   nextMenuClick(): Promise<string>;
+  showContextMenu(x: number, y: number, menu: Deno.MenuItem[]): Promise<void>;
+  nextContextMenuClick(): Promise<string>;
 }
 
 // Registering in one pass, from a value typed as HostBindings, is what makes a

@@ -22,11 +22,27 @@ export interface CardContentReading {
   read(cards: readonly Card[]): Promise<CardContentReadResult[]>;
 }
 
+export type ContextMenuEntry =
+  | { kind: "item"; label: string; enabled: boolean; onSelect: () => void }
+  | { kind: "submenu"; label: string; entries: readonly ContextMenuEntry[] }
+  | { kind: "separator" };
+
+// A native menu at a point in the viewport (a MouseEvent's clientX/clientY).
+// Nothing reports a menu dismissed without a choice, so show() returns
+// nothing to wait for: a chosen entry's onSelect is the only outcome.
+export interface ContextMenu {
+  show(
+    position: { x: number; y: number },
+    entries: readonly ContextMenuEntry[],
+  ): void;
+}
+
 // App-wide services share one context: adding one requires a field and a hook,
 // not another provider. Board-specific stores have their own context so a
 // BoardSession can be supplied as a unit. Components use purpose-specific hooks.
 export interface AppDependencies {
   cardContentReading: CardContentReading;
+  contextMenu: ContextMenu;
   directoryBrowsing: DirectoryBrowsing;
   newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
   paneLayout: UseBoundStore<StoreApi<PaneLayoutState>>;
@@ -75,6 +91,10 @@ export function useBoardView<T>(selector: (state: BoardViewState) => T): T {
 
 export function useCardContentReading(): CardContentReading {
   return useAppDependencies().cardContentReading;
+}
+
+export function useContextMenu(): ContextMenu {
+  return useAppDependencies().contextMenu;
 }
 
 export function useDirectoryBrowsing(): DirectoryBrowsing {

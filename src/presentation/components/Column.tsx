@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import {
@@ -16,7 +17,9 @@ import {
   filterColumnCards,
 } from "../../domain/cardFilter.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
+import { useContextMenu } from "../context/appContext.ts";
 import type { LabelDisplay } from "./labelDisplay.ts";
+import { buildColumnContextMenu, isTextEditingTarget } from "./contextMenus.ts";
 import type { CardListDropData, ColumnDragData } from "./dragData.ts";
 import { Card } from "./Card.tsx";
 import { ColumnHeader } from "./ColumnHeader.tsx";
@@ -52,6 +55,8 @@ export function Column(
   const [isDraggedOver, setIsDraggedOver] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const contextMenu = useContextMenu();
   const visibleCards = filterColumnCards(column, criteria);
   const areCardsHidden = areColumnCardsHidden(column, criteria);
   const cardCount = column.cards.length;
@@ -129,11 +134,31 @@ export function Column(
     );
   }, [column.id, index]);
 
+  function handleContextMenu(event: MouseEvent<HTMLDivElement>) {
+    if (isTextEditingTarget(event.target)) return;
+    event.preventDefault();
+    // Handled here, so no enclosing element opens a menu of its own as well.
+    event.stopPropagation();
+    contextMenu.show(
+      { x: event.clientX, y: event.clientY },
+      buildColumnContextMenu({
+        addCard: () => onAddCard(column.id),
+        rename: () => setIsEditingName(true),
+      }),
+    );
+  }
+
   return (
-    <div ref={columnRef} className={className}>
+    <div
+      ref={columnRef}
+      className={className}
+      onContextMenu={handleContextMenu}
+    >
       <ColumnHeader
         column={column}
         dragHandleRef={dragHandleRef}
+        isEditing={isEditingName}
+        onEditingChange={setIsEditingName}
         onRename={onRename}
         onRemove={onRemove}
       />

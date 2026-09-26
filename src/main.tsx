@@ -5,10 +5,12 @@ import App from "./presentation/App.tsx";
 import {
   appDependencies,
   startApplicationMenu,
+  startContextMenu,
 } from "./composition/dependencies.ts";
 import { AppProvider } from "./presentation/context/appContext.ts";
 
 startApplicationMenu();
+startContextMenu();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

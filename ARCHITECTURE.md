@@ -35,9 +35,14 @@ The host is a thin I/O layer.
   would end up split across the process boundary.
 
 `win.bind()` only ever runs view → host. The one thing that starts on the host
-side — a native menu click — comes back through a call the view leaves open
+side — a click on a native menu — comes back through a call the view leaves open
 instead. `desktop/menuClickQueue.ts` and `infrastructure/denoApplicationMenu.ts`
 hold what that costs.
+
+- The application menu and context menus each have their own queue and their own
+  open call, because a queue serves a single waiter.
+- The host shows either kind of menu as it is handed. What a menu contains and
+  what each item does are decided in the view.
 
 The domain sits on the WebView side for two further reasons:
 

@@ -18,6 +18,14 @@ const win = new Deno.BrowserWindow<HostBindings>({ title: "Facet" });
 const menuClicks = createMenuClickQueue();
 win.addEventListener("menuclick", (e) => menuClicks.push(e.detail.id));
 
+// A queue of its own: each queue serves a single waiter, and the view polls
+// application menu clicks and context menu clicks from separate loops.
+const contextMenuClicks = createMenuClickQueue();
+win.addEventListener(
+  "contextmenuclick",
+  (e) => contextMenuClicks.push(e.detail.id),
+);
+
 const handlers: HostBindings = {
   readTextFile,
   writeTextFile,
@@ -33,6 +41,11 @@ const handlers: HostBindings = {
   // contents.
   setApplicationMenu: async (menu) => win.setApplicationMenu(menu),
   nextMenuClick: () => menuClicks.next(),
+  // Pass-through for the same reason as setApplicationMenu. The coordinates
+  // are the view's clientX/clientY as they are: the menu opens with its
+  // top-left corner at the pointer without any conversion.
+  showContextMenu: async (x, y, menu) => win.showContextMenu(x, y, menu),
+  nextContextMenuClick: () => contextMenuClicks.next(),
 };
 
 bindAll(win, handlers);
