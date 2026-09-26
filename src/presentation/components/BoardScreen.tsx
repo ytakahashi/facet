@@ -4,15 +4,18 @@ import type { Card } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
 import {
   useBoardStore,
+  useBoardView,
   useFilterStore,
   useMarkdownViewer,
 } from "../context/appContext.ts";
 import { BoardName } from "./BoardName.tsx";
 import { CardContentSearchDialog } from "./CardContentSearchDialog.tsx";
 import { CardSearchDialog } from "./CardSearchDialog.tsx";
+import { CardTable } from "./CardTable.tsx";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { KanbanBoard } from "./KanbanBoard.tsx";
 import { MissingCardDialog } from "./MissingCardDialog.tsx";
+import { ViewSwitcher } from "./ViewSwitcher.tsx";
 import { resolveBoardSearchShortcut } from "./boardSearchShortcut.ts";
 import {
   EXTERNAL_CHANGE_CONFLICT_DETAIL,
@@ -34,6 +37,8 @@ export function BoardScreen({ board }: { board: Board }) {
   const reloadBoard = useBoardStore((state) => state.reloadBoard);
   const overwriteBoard = useBoardStore((state) => state.overwriteBoard);
   const boardPath = useBoardStore((state) => state.path);
+  const mode = useBoardView((state) => state.mode);
+  const setMode = useBoardView((state) => state.setMode);
   const criteria = useFilterStore((state) => state.criteria);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
   const [isTitleSearchOpen, setIsTitleSearchOpen] = useState(false);
@@ -98,7 +103,10 @@ export function BoardScreen({ board }: { board: Board }) {
 
   return (
     <div className="board-screen">
-      <BoardName name={board.name} onRename={renameBoard} />
+      <div className="board-screen__header">
+        <BoardName name={board.name} onRename={renameBoard} />
+        <ViewSwitcher mode={mode} onChange={setMode} />
+      </div>
       {saveError && (
         <SaveErrorBanner
           message={saveError}
@@ -129,11 +137,21 @@ export function BoardScreen({ board }: { board: Board }) {
             : <button type="button" onClick={retrySave}>Retry</button>}
         </SaveErrorBanner>
       )}
-      <KanbanBoard
-        board={board}
-        onDeleteCard={openDeleteCard}
-        onRepairCard={openMissingCard}
-      />
+      {mode === "board"
+        ? (
+          <KanbanBoard
+            board={board}
+            onDeleteCard={openDeleteCard}
+            onRepairCard={openMissingCard}
+          />
+        )
+        : (
+          <CardTable
+            board={board}
+            onDeleteCard={openDeleteCard}
+            onRepairCard={openMissingCard}
+          />
+        )}
       {
         /* A broken search hit hands over to the repair dialog, so search
           dialogs must close before that dialog opens. */

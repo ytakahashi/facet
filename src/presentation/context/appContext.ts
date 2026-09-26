@@ -4,6 +4,7 @@ import type { Card } from "../../domain/card.ts";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import type { CardContentReadResult } from "../../usecase/readCardContents.ts";
 import type { BoardState } from "../store/boardStore.ts";
+import type { BoardViewState } from "../store/boardViewStore.ts";
 import type { FilterState } from "../store/filterStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import type { NewBoardDialogState } from "../store/newBoardDialogStore.ts";
@@ -37,6 +38,7 @@ export interface BoardSession {
   boardStore: UseBoundStore<StoreApi<BoardState>>;
   markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
   filterStore: UseBoundStore<StoreApi<FilterState>>;
+  boardView: UseBoundStore<StoreApi<BoardViewState>>;
 }
 
 const AppContext = createContext<AppDependencies | null>(null);
@@ -65,6 +67,10 @@ function useBoardSession(): BoardSession {
 
 export function useBoardStore<T>(selector: (state: BoardState) => T): T {
   return useBoardSession().boardStore(selector);
+}
+
+export function useBoardView<T>(selector: (state: BoardViewState) => T): T {
+  return useBoardSession().boardView(selector);
 }
 
 export function useCardContentReading(): CardContentReading {

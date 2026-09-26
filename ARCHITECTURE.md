@@ -90,9 +90,10 @@ Stores live in `src/presentation/store/` as `create*` factories rather than
 module-level singletons. Importing a store module does not construct a store,
 and a test can stand one up against fakes. `composition/dependencies.ts` calls
 the factories. Each open board has a tab with its own `BoardSession` containing
-the board store, Markdown viewer, and filter store. The workspace and window
-layout are app-wide. Only the active tab's board components are mounted; the
-other sessions retain their store state while their components are unmounted.
+the board store, Markdown viewer, filter store, and board view store. The
+workspace and window layout are app-wide. Only the active tab's board components
+are mounted; the other sessions retain their store state while their components
+are unmounted.
 
 Board changes are applied optimistically and written back through
 `BoardSaveQueue`, which coalesces overlapping changes and surfaces a failure as
@@ -103,8 +104,8 @@ Two things deliberately never reach the board file.
 - `Card.fileState`: Whether a file exists is a fact about the file system, and
   copying it in would create a second source of truth. Facet does not watch for
   that as well, so the state is only ever as fresh as the last read.
-- Filter criteria: What has been filtered to is a view of the board rather than
-  a fact about it.
+- Filter criteria, view mode, and table sort: These describe how the board is
+  shown rather than facts about its content.
 
 ### Order of operations for anything destructive
 
