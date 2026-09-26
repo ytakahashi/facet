@@ -37,7 +37,7 @@ function optionId(index: number): string {
 
 // Searches a fresh snapshot of every card's file each time it opens. Query
 // and selection remain local because they only help continue a search on this
-// board; KanbanBoard remounts the dialog when the board path changes.
+// board; BoardScreen remounts the dialog when the board path changes.
 export function CardContentSearchDialog(
   { board, criteria, open, onClose, onSelect }: CardContentSearchDialogProps,
 ) {
