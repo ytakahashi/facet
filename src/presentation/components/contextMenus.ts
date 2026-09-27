@@ -66,13 +66,22 @@ export function buildCardContextMenu(
 export interface BoardContextMenuActions {
   copyText: (text: string) => void;
   reveal: (path: string) => void;
+  refresh: () => void;
 }
 
 export function buildBoardContextMenu(
   boardPath: string,
+  canRefresh: boolean,
   actions: BoardContextMenuActions,
 ): ContextMenuEntry[] {
   return [
+    {
+      kind: "item",
+      label: "Reload Board",
+      enabled: canRefresh,
+      onSelect: actions.refresh,
+    },
+    { kind: "separator" },
     {
       kind: "item",
       label: "Copy Board File Path",

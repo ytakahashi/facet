@@ -140,19 +140,38 @@ describe("buildCardContextMenu", () => {
 });
 
 describe("buildBoardContextMenu", () => {
-  it("copies and reveals the board file path", () => {
+  it("reloads, copies, and reveals the board file path", () => {
     const copyText = vi.fn();
     const reveal = vi.fn();
-    const entries = buildBoardContextMenu("/board/board.yaml", {
+    const refresh = vi.fn();
+    const entries = buildBoardContextMenu("/board/board.yaml", true, {
       copyText,
       reveal,
+      refresh,
     });
 
     expect(entries.map((entry) => entry.kind === "item" && entry.label))
-      .toEqual(["Copy Board File Path", "Reveal in Finder"]);
+      .toEqual([
+        "Reload Board",
+        false,
+        "Copy Board File Path",
+        "Reveal in Finder",
+      ]);
+    select(entries, "Reload Board");
     select(entries, "Copy Board File Path");
     select(entries, "Reveal in Finder");
+    expect(refresh).toHaveBeenCalledOnce();
     expect(copyText).toHaveBeenCalledWith("/board/board.yaml");
     expect(reveal).toHaveBeenCalledWith("/board/board.yaml");
+  });
+
+  it("disables reload when the board cannot be refreshed", () => {
+    const entries = buildBoardContextMenu("/board/board.yaml", false, {
+      copyText: vi.fn(),
+      reveal: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    expect(entries[0]).toMatchObject({ label: "Reload Board", enabled: false });
   });
 });
