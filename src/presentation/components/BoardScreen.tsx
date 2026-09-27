@@ -9,6 +9,7 @@ import {
   useClipboard,
   useContextMenu,
   useFilterStore,
+  useFinder,
   useMarkdownViewer,
   useShowAlert,
 } from "../context/appContext.ts";
@@ -17,7 +18,11 @@ import { BoardName } from "./BoardName.tsx";
 import { CardContentSearchDialog } from "./CardContentSearchDialog.tsx";
 import { CardSearchDialog } from "./CardSearchDialog.tsx";
 import { CardTable } from "./CardTable.tsx";
-import { buildCardContextMenu, isTextEditingTarget } from "./contextMenus.ts";
+import {
+  buildBoardContextMenu,
+  buildCardContextMenu,
+  isTextEditingTarget,
+} from "./contextMenus.ts";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { KanbanBoard } from "./KanbanBoard.tsx";
 import { MissingCardDialog } from "./MissingCardDialog.tsx";
@@ -32,6 +37,7 @@ export function BoardScreen({ board }: { board: Board }) {
   const renameBoard = useBoardStore((state) => state.renameBoard);
   const moveCardToColumn = useBoardStore((state) => state.moveCardToColumn);
   const clipboard = useClipboard();
+  const finder = useFinder();
   const contextMenu = useContextMenu();
   const showAlert = useShowAlert();
   const saveError = useBoardStore((state) => state.saveError);
@@ -95,23 +101,43 @@ export function BoardScreen({ board }: { board: Board }) {
     setIsMissingCardOpen(true);
   }
 
+  function runMenuAction(action: Promise<void>): void {
+    void action.catch((error) => showAlert(toUiError(error).message));
+  }
+
+  function copyText(text: string): void {
+    runMenuAction(clipboard.copyText(text));
+  }
+
+  function reveal(path: string): void {
+    runMenuAction(finder.reveal(path));
+  }
+
   function handleCardContextMenu(card: Card, event: MouseEvent<HTMLElement>) {
     if (isTextEditingTarget(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
 
-    function copy(text: string): void {
-      void clipboard.copyText(text).catch((error) => {
-        showAlert(toUiError(error).message);
-      });
-    }
-
     contextMenu.show(
       { x: event.clientX, y: event.clientY },
       buildCardContextMenu(card, board, {
-        copyText: copy,
+        copyText,
+        reveal,
         moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
       }),
+    );
+  }
+
+  function handleBoardContextMenu(event: MouseEvent<HTMLDivElement>) {
+    if (!boardPath || isTextEditingTarget(event.target)) return;
+    // Dialogs are mounted under BoardScreen but keep WebKit's own menu.
+    if (event.target instanceof Element && event.target.closest("dialog")) {
+      return;
+    }
+    event.preventDefault();
+    contextMenu.show(
+      { x: event.clientX, y: event.clientY },
+      buildBoardContextMenu(boardPath, { copyText, reveal }),
     );
   }
 
@@ -132,7 +158,7 @@ export function BoardScreen({ board }: { board: Board }) {
   }
 
   return (
-    <div className="board-screen">
+    <div className="board-screen" onContextMenu={handleBoardContextMenu}>
       <div className="board-screen__header">
         <BoardName name={board.name} onRename={renameBoard} />
         <ViewSwitcher mode={mode} onChange={setMode} />

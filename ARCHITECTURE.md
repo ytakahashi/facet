@@ -17,7 +17,7 @@ A Deno host process owns the native window; the app runs in the system WebView.
 ```mermaid
 flowchart TB
   subgraph host["desktop/ — Deno host process"]
-    H["native window and menu<br>file-system bindings<br>serves dist/"]
+    H["native window and menu<br>file-system and Finder bindings<br>serves dist/"]
   end
   subgraph view["src/ — system WebView"]
     V["the board, its cards<br>and the Markdown editor"]
@@ -29,7 +29,8 @@ flowchart TB
 
 The host is a thin I/O layer.
 
-- It reads, writes, moves and lists files. It knows nothing about app features.
+- It reads, writes, moves and lists files, and asks Finder to reveal a path. It
+  knows nothing about app features.
 - That is what keeps the layering below meaningful: if the host parsed YAML on
   the way in, it would have to serialise it on the way out, and the domain model
   would end up split across the process boundary.

@@ -47,8 +47,6 @@ and that Facet may need to reload them.
 
 ## File operations
 
-- Moving a Card to another Column changes its position in the Board file; it
-  does not move or rename the Markdown file.
 - Removing a Card from a Board and deleting its Markdown file are separate
   operations.
 - Markdown deletion is permanent; Facet does not move the file to Trash.

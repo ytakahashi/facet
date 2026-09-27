@@ -3,6 +3,26 @@ import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "./toUiError.ts";
 
 describe("toUiError", () => {
+  it("maps Finder failures to messages about the selected path", () => {
+    expect(toUiError(
+      new UseCaseError("finder.not-found", {
+        path: "/board/card.md",
+      }),
+    )).toEqual({
+      message: "The file and its folder could not be found at /board/card.md.",
+    });
+    expect(toUiError(
+      new UseCaseError("finder.reveal-failed", {
+        path: "/board/card.md",
+      }),
+    )).toEqual({
+      message: "Failed to reveal /board/card.md in Finder.",
+    });
+    expect(toUiError(new UseCaseError("finder.reveal-failed"))).toEqual({
+      message: "Failed to reveal the file in Finder.",
+    });
+  });
+
   it("maps clipboard failure to user-facing wording", () => {
     expect(toUiError(new UseCaseError("clipboard.write-failed"))).toEqual({
       message: "Failed to copy to the clipboard.",

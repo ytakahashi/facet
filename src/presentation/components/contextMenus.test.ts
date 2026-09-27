@@ -3,6 +3,7 @@ import type { ContextMenuEntry } from "../context/appContext.ts";
 import type { Board } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import {
+  buildBoardContextMenu,
   buildCardContextMenu,
   buildColumnContextMenu,
 } from "./contextMenus.ts";
@@ -61,14 +62,18 @@ describe("buildCardContextMenu", () => {
 
   it("offers both paths and other columns in board order", () => {
     const copyText = vi.fn();
+    const reveal = vi.fn();
     const moveToColumn = vi.fn();
     const entries = buildCardContextMenu(card, board, {
       copyText,
+      reveal,
       moveToColumn,
     });
 
     expect(entries.map((entry) => entry.kind)).toEqual([
       "item",
+      "item",
+      "separator",
       "item",
       "separator",
       "submenu",
@@ -78,7 +83,9 @@ describe("buildCardContextMenu", () => {
     expect(copyText).toHaveBeenNthCalledWith(1, "notes/card.md");
     expect(copyText).toHaveBeenNthCalledWith(2, "/board/notes/card.md");
     expect(copyText).toHaveBeenCalledTimes(2);
-    const move = entries[3];
+    select(entries, "Reveal in Finder");
+    expect(reveal).toHaveBeenCalledWith("/board/notes/card.md");
+    const move = entries[5];
     if (move.kind !== "submenu") throw new Error("no Move to submenu");
     expect(move.entries.map((entry) => entry.kind === "item" && entry.label))
       .toEqual(["Doing", "Done"]);
@@ -98,7 +105,7 @@ describe("buildCardContextMenu", () => {
     const entries = buildCardContextMenu(
       unresolved,
       { ...board, columns: [{ ...board.columns[0], cards: [unresolved] }] },
-      { copyText, moveToColumn: vi.fn() },
+      { copyText, reveal: vi.fn(), moveToColumn: vi.fn() },
     );
 
     expect(entries[0]).toMatchObject({ label: "Copy Path", enabled: true });
@@ -106,10 +113,46 @@ describe("buildCardContextMenu", () => {
       label: "Copy Absolute Path",
       enabled: false,
     });
-    expect(entries[3]).toEqual({
+    expect(entries[3]).toMatchObject({
+      label: "Reveal in Finder",
+      enabled: false,
+    });
+    expect(entries[5]).toEqual({
       kind: "submenu",
       label: "Move to",
       entries: [],
     });
+  });
+
+  it("keeps Reveal in Finder enabled for a missing card with a resolved path", () => {
+    const missing = { ...card, fileState: "missing" as const };
+    const reveal = vi.fn();
+    const entries = buildCardContextMenu(
+      missing,
+      { ...board, columns: [{ ...board.columns[0], cards: [missing] }] },
+      { copyText: vi.fn(), reveal, moveToColumn: vi.fn() },
+    );
+
+    expect(entries[3]).toMatchObject({ enabled: true });
+    select(entries, "Reveal in Finder");
+    expect(reveal).toHaveBeenCalledWith("/board/notes/card.md");
+  });
+});
+
+describe("buildBoardContextMenu", () => {
+  it("copies and reveals the board file path", () => {
+    const copyText = vi.fn();
+    const reveal = vi.fn();
+    const entries = buildBoardContextMenu("/board/board.yaml", {
+      copyText,
+      reveal,
+    });
+
+    expect(entries.map((entry) => entry.kind === "item" && entry.label))
+      .toEqual(["Copy Board File Path", "Reveal in Finder"]);
+    select(entries, "Copy Board File Path");
+    select(entries, "Reveal in Finder");
+    expect(copyText).toHaveBeenCalledWith("/board/board.yaml");
+    expect(reveal).toHaveBeenCalledWith("/board/board.yaml");
   });
 });

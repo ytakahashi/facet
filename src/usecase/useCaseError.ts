@@ -30,6 +30,8 @@ export type UseCaseErrorCode =
   | "directory.home-failed"
   | "directory.invalid-name"
   | "directory.name-required"
+  | "finder.not-found"
+  | "finder.reveal-failed"
   | "label.already-exists"
   | "markdown.delete-failed"
   | "markdown.conflict"
