@@ -1,6 +1,7 @@
 import { DenoApplicationMenu } from "../infrastructure/denoApplicationMenu.ts";
 import { DenoContextMenu } from "../infrastructure/denoContextMenu.ts";
 import { DenoFileSystemAdapter } from "../infrastructure/denoFileSystemAdapter.ts";
+import { DenoFinder } from "../infrastructure/denoFinder.ts";
 import { WebClipboard } from "../infrastructure/webClipboard.ts";
 import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
 import { YamlConfigRepository } from "../infrastructure/yamlConfigRepository.ts";
@@ -21,6 +22,7 @@ import { addExistingMarkdownCard } from "../usecase/addExistingMarkdownCard.ts";
 import { relocateMarkdownCard } from "../usecase/relocateMarkdownCard.ts";
 import { recreateMarkdownCard } from "../usecase/recreateMarkdownCard.ts";
 import { readCardContents } from "../usecase/readCardContents.ts";
+import { revealInFinder } from "../usecase/revealInFinder.ts";
 import { renameMarkdownCard } from "../usecase/renameMarkdownCard.ts";
 import type {
   AppDependencies,
@@ -41,6 +43,7 @@ const configRepository = new YamlConfigRepository(fileSystem);
 const applicationMenu = new DenoApplicationMenu(fileSystem);
 const contextMenu = new DenoContextMenu();
 const clipboard = new WebClipboard();
+const finder = new DenoFinder();
 
 async function refreshRecentMenu(): Promise<void> {
   try {
@@ -116,6 +119,9 @@ export const appDependencies: AppDependencies = {
     homeDirectory: () => getHomeDirectory({ fileSystem }),
     createDirectory: (parentDirectory, name) =>
       createBoardDirectory(parentDirectory, name, { fileSystem }),
+  },
+  finder: {
+    reveal: (path) => revealInFinder(path, { finder }),
   },
   newBoardDialog: createNewBoardDialogStore(),
   paneLayout: createPaneLayoutStore(),

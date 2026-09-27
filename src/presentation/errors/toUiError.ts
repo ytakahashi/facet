@@ -98,6 +98,16 @@ export function toUiError(error: unknown): UiError {
       return { message: "Enter a single valid directory name." };
     case "directory.name-required":
       return { message: "Directory name is required." };
+    case "finder.not-found":
+      return {
+        message: `The file and its folder could not be found${atPath(path)}.`,
+      };
+    case "finder.reveal-failed":
+      return {
+        message: path
+          ? `Failed to reveal ${path} in Finder.`
+          : "Failed to reveal the file in Finder.",
+      };
     case "label.already-exists":
       return {
         message: "A label with this name already exists.",

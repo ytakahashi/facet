@@ -24,6 +24,10 @@ export type RenameFileResult =
     reason: "not-found" | "already-exists" | "is-a-directory";
   };
 
+export type RevealInFinderResult =
+  | { revealed: true }
+  | { revealed: false; reason: "not-found" | "failed" };
+
 export interface Bindings {
   readTextFile(path: string): Promise<ReadTextFileResult>;
   writeTextFile(
@@ -42,6 +46,7 @@ export interface Bindings {
   nextMenuClick(): Promise<string>;
   showContextMenu(x: number, y: number, menu: MenuItem[]): Promise<void>;
   nextContextMenuClick(): Promise<string>;
+  revealInFinder(path: string): Promise<RevealInFinderResult>;
 }
 
 declare global {

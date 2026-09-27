@@ -26,6 +26,10 @@ export interface ClipboardWriting {
   copyText(text: string): Promise<void>;
 }
 
+export interface FinderRevealing {
+  reveal(path: string): Promise<void>;
+}
+
 export type ContextMenuEntry =
   | { kind: "item"; label: string; enabled: boolean; onSelect: () => void }
   | { kind: "submenu"; label: string; entries: readonly ContextMenuEntry[] }
@@ -49,6 +53,7 @@ export interface AppDependencies {
   clipboard: ClipboardWriting;
   contextMenu: ContextMenu;
   directoryBrowsing: DirectoryBrowsing;
+  finder: FinderRevealing;
   newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
   paneLayout: UseBoundStore<StoreApi<PaneLayoutState>>;
   recentBoards: UseBoundStore<StoreApi<RecentBoardsState>>;
@@ -109,6 +114,10 @@ export function useContextMenu(): ContextMenu {
 
 export function useDirectoryBrowsing(): DirectoryBrowsing {
   return useAppDependencies().directoryBrowsing;
+}
+
+export function useFinder(): FinderRevealing {
+  return useAppDependencies().finder;
 }
 
 export function useFilterStore<T>(selector: (state: FilterState) => T): T {

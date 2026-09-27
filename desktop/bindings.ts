@@ -7,6 +7,7 @@ import type {
   WriteTextFileResult,
 } from "./fileSystem.ts";
 import type { RenameFileResult } from "./renameFile.ts";
+import type { RevealInFinderResult } from "./revealInFinder.ts";
 
 // The host's half of the boundary, and the mirror of
 // src/infrastructure/bindings.d.ts. Declared twice on purpose: the two sides
@@ -33,6 +34,7 @@ export interface HostBindings {
   nextMenuClick(): Promise<string>;
   showContextMenu(x: number, y: number, menu: Deno.MenuItem[]): Promise<void>;
   nextContextMenuClick(): Promise<string>;
+  revealInFinder(path: string): Promise<RevealInFinderResult>;
 }
 
 // Registering in one pass, from a value typed as HostBindings, is what makes a

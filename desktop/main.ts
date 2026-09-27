@@ -11,6 +11,7 @@ import {
   writeTextFile,
 } from "./fileSystem.ts";
 import { renameFile } from "./renameFile.ts";
+import { revealInFinder } from "./revealInFinder.ts";
 import { createMenuClickQueue } from "./menuClickQueue.ts";
 
 const win = new Deno.BrowserWindow<HostBindings>({ title: "Facet" });
@@ -46,6 +47,7 @@ const handlers: HostBindings = {
   // top-left corner at the pointer without any conversion.
   showContextMenu: async (x, y, menu) => win.showContextMenu(x, y, menu),
   nextContextMenuClick: () => contextMenuClicks.next(),
+  revealInFinder: (path) => revealInFinder(path),
 };
 
 bindAll(win, handlers);

@@ -5,6 +5,7 @@ import type { Card } from "../../domain/card.ts";
 
 export interface CardContextMenuActions {
   copyText: (text: string) => void;
+  reveal: (path: string) => void;
   moveToColumn: (columnId: string) => void;
 }
 
@@ -39,6 +40,17 @@ export function buildCardContextMenu(
     },
     { kind: "separator" },
     {
+      kind: "item",
+      label: "Reveal in Finder",
+      enabled: card.absolutePath !== undefined,
+      onSelect: () => {
+        if (card.absolutePath !== undefined) {
+          actions.reveal(card.absolutePath);
+        }
+      },
+    },
+    { kind: "separator" },
+    {
       kind: "submenu",
       label: "Move to",
       entries: destinations.map((column) => ({
@@ -47,6 +59,31 @@ export function buildCardContextMenu(
         enabled: true,
         onSelect: () => actions.moveToColumn(column.id),
       })),
+    },
+  ];
+}
+
+export interface BoardContextMenuActions {
+  copyText: (text: string) => void;
+  reveal: (path: string) => void;
+}
+
+export function buildBoardContextMenu(
+  boardPath: string,
+  actions: BoardContextMenuActions,
+): ContextMenuEntry[] {
+  return [
+    {
+      kind: "item",
+      label: "Copy Board File Path",
+      enabled: true,
+      onSelect: () => actions.copyText(boardPath),
+    },
+    {
+      kind: "item",
+      label: "Reveal in Finder",
+      enabled: true,
+      onSelect: () => actions.reveal(boardPath),
     },
   ];
 }
