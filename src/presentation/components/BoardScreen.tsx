@@ -14,6 +14,7 @@ import {
   useShowAlert,
 } from "../context/appContext.ts";
 import { toUiError } from "../errors/toUiError.ts";
+import { canRefreshBoard } from "../store/boardStore.ts";
 import { BoardName } from "./BoardName.tsx";
 import { CardContentSearchDialog } from "./CardContentSearchDialog.tsx";
 import { CardSearchDialog } from "./CardSearchDialog.tsx";
@@ -41,6 +42,7 @@ export function BoardScreen({ board }: { board: Board }) {
   const contextMenu = useContextMenu();
   const showAlert = useShowAlert();
   const saveError = useBoardStore((state) => state.saveError);
+  const refreshError = useBoardStore((state) => state.refreshError);
   const saveConflict = useBoardStore((state) => state.saveConflict);
   const conflictResolutionError = useBoardStore(
     (state) => state.conflictResolutionError,
@@ -49,7 +51,10 @@ export function BoardScreen({ board }: { board: Board }) {
     (state) => state.conflictResolution,
   );
   const isSaving = useBoardStore((state) => state.isSaving);
+  const isRefreshing = useBoardStore((state) => state.isRefreshing);
+  const canRefresh = useBoardStore(canRefreshBoard);
   const retrySave = useBoardStore((state) => state.retrySave);
+  const refreshBoard = useBoardStore((state) => state.refreshBoard);
   const reloadBoard = useBoardStore((state) => state.reloadBoard);
   const overwriteBoard = useBoardStore((state) => state.overwriteBoard);
   const boardPath = useBoardStore((state) => state.path);
@@ -137,7 +142,11 @@ export function BoardScreen({ board }: { board: Board }) {
     event.preventDefault();
     contextMenu.show(
       { x: event.clientX, y: event.clientY },
-      buildBoardContextMenu(boardPath, { copyText, reveal }),
+      buildBoardContextMenu(
+        boardPath,
+        canRefresh,
+        { copyText, reveal, refresh: () => void refreshBoard() },
+      ),
     );
   }
 
@@ -175,14 +184,16 @@ export function BoardScreen({ board }: { board: Board }) {
                 <button
                   type="button"
                   onClick={() => void reloadBoard()}
-                  disabled={isSaving || conflictResolution !== undefined}
+                  disabled={isSaving || isRefreshing ||
+                    conflictResolution !== undefined}
                 >
                   {conflictResolution === "reloading" ? "Reloading…" : "Reload"}
                 </button>
                 <button
                   type="button"
                   onClick={overwriteBoard}
-                  disabled={isSaving || conflictResolution !== undefined}
+                  disabled={isSaving || isRefreshing ||
+                    conflictResolution !== undefined}
                 >
                   {conflictResolution === "overwriting"
                     ? "Overwriting…"
@@ -190,7 +201,22 @@ export function BoardScreen({ board }: { board: Board }) {
                 </button>
               </>
             )
-            : <button type="button" onClick={retrySave}>Retry</button>}
+            : (
+              <button type="button" onClick={retrySave} disabled={isRefreshing}>
+                Retry
+              </button>
+            )}
+        </SaveErrorBanner>
+      )}
+      {refreshError && (
+        <SaveErrorBanner message={refreshError}>
+          <button
+            type="button"
+            onClick={() => void refreshBoard()}
+            disabled={!canRefresh}
+          >
+            Retry
+          </button>
         </SaveErrorBanner>
       )}
       {mode === "board"

@@ -4,7 +4,7 @@ import type { Card } from "../../domain/card.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import type { BoardStoreDeps } from "./boardStore.ts";
-import { createBoardStore } from "./boardStore.ts";
+import { canRefreshBoard, createBoardStore } from "./boardStore.ts";
 
 // Every dependency is required by the store, but a given test only cares about
 // one or two of them. Spelling out only those keeps each test's setup about
@@ -2045,6 +2045,222 @@ describe("createBoardStore", () => {
       saveError: undefined,
       conflictResolutionError: undefined,
     });
+  });
+
+  it("refreshes a loaded board without confirmation and uses its new revision", async () => {
+    const diskBoard = makeBoard({ name: "From disk" });
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockResolvedValueOnce(loaded(diskBoard, "revision-2"));
+    const saveBoard = vi.fn().mockResolvedValue("revision-3");
+    const confirmDiscardBoard = vi.fn(() => true);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard,
+      confirmDiscardBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    await useBoardStore.getState().refreshBoard();
+    useBoardStore.getState().renameBoard("After refresh");
+
+    expect(confirmDiscardBoard).not.toHaveBeenCalled();
+    expect(useBoardStore.getState().board?.name).toBe("After refresh");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledOnce());
+    expect(saveBoard).toHaveBeenCalledWith(
+      "/board/development.board.yaml",
+      expect.objectContaining({ name: "After refresh" }),
+      "revision-2",
+    );
+  });
+
+  it("confirms before refreshing after a non-conflict save failure", async () => {
+    const diskBoard = makeBoard({ name: "From disk" });
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockResolvedValueOnce(loaded(diskBoard, "revision-2"));
+    const confirmDiscardBoard = vi.fn()
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard: vi.fn().mockRejectedValue(
+        new UseCaseError("board.save-failed"),
+      ),
+      confirmDiscardBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveError).toBeDefined()
+    );
+
+    await useBoardStore.getState().refreshBoard();
+    expect(openBoard).toHaveBeenCalledOnce();
+    expect(useBoardStore.getState().board?.name).toBe("Local edit");
+
+    await useBoardStore.getState().refreshBoard();
+    expect(confirmDiscardBoard.mock.calls).toEqual([["refresh"], ["refresh"]]);
+    expect(openBoard).toHaveBeenCalledTimes(2);
+    expect(useBoardStore.getState().board).toBe(diskBoard);
+    expect(useBoardStore.getState().saveError).toBeUndefined();
+  });
+
+  it("uses conflict reload when refreshing a conflicted board", async () => {
+    const diskBoard = makeBoard({ name: "From disk" });
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockResolvedValueOnce(loaded(diskBoard, "revision-2"));
+    const confirmDiscardBoard = vi.fn(() => true);
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard: vi.fn().mockRejectedValue(new UseCaseError("board.conflict")),
+      confirmDiscardBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    await useBoardStore.getState().refreshBoard();
+
+    expect(confirmDiscardBoard).toHaveBeenCalledExactlyOnceWith("reload");
+    expect(useBoardStore.getState().board).toBe(diskBoard);
+  });
+
+  it("blocks overlapping refresh and save actions while refreshing", async () => {
+    const refreshing = deferred<ReturnType<typeof loaded>>();
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockReturnValueOnce(refreshing.promise);
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({ openBoard, saveBoard }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const firstRefresh = useBoardStore.getState().refreshBoard();
+    await useBoardStore.getState().refreshBoard();
+    useBoardStore.getState().retrySave();
+
+    expect(useBoardStore.getState().isRefreshing).toBe(true);
+    expect(canRefreshBoard(useBoardStore.getState())).toBe(false);
+    expect(openBoard).toHaveBeenCalledTimes(2);
+    expect(saveBoard).not.toHaveBeenCalled();
+
+    refreshing.resolve(loaded(makeBoard({ name: "From disk" }), "revision-2"));
+    await firstRefresh;
+    expect(useBoardStore.getState().isRefreshing).toBe(false);
+  });
+
+  it("does not refresh while a save is in progress", async () => {
+    const saving = deferred<string>();
+    const openBoard = vi.fn().mockResolvedValue(loaded(makeBoard()));
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard: vi.fn().mockReturnValue(saving.promise),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(true)
+    );
+
+    await useBoardStore.getState().refreshBoard();
+
+    expect(openBoard).toHaveBeenCalledOnce();
+    saving.resolve("revision-2");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+  });
+
+  it("preserves the loaded board and reports a refresh failure", async () => {
+    const board = makeBoard();
+    const refreshError = new UseCaseError("board.open-failed");
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(board))
+      .mockRejectedValueOnce(refreshError);
+    const useBoardStore = createBoardStore(makeDeps({ openBoard }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    await useBoardStore.getState().refreshBoard();
+
+    expect(useBoardStore.getState()).toMatchObject({
+      status: "loaded",
+      board,
+      isRefreshing: false,
+      refreshError: toUiError(refreshError).message,
+    });
+  });
+
+  it("keeps a failed refresh retryable after a successful save", async () => {
+    const originalBoard = makeBoard();
+    let diskBoard = originalBoard;
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(originalBoard))
+      .mockRejectedValueOnce(new UseCaseError("board.open-failed"))
+      .mockImplementationOnce(() =>
+        Promise.resolve(loaded(diskBoard, "revision-2"))
+      );
+    const saveBoard = vi.fn((_path: string, board: Board) => {
+      diskBoard = board;
+      return Promise.resolve("revision-2");
+    });
+    const useBoardStore = createBoardStore(makeDeps({ openBoard, saveBoard }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    await useBoardStore.getState().refreshBoard();
+    useBoardStore.getState().renameBoard("Edited after failure");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledOnce());
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+
+    expect(useBoardStore.getState().refreshError).toBeDefined();
+    expect(canRefreshBoard(useBoardStore.getState())).toBe(true);
+
+    await useBoardStore.getState().refreshBoard();
+
+    expect(useBoardStore.getState().board).toBe(diskBoard);
+    expect(useBoardStore.getState().board?.name).toBe("Edited after failure");
+    expect(useBoardStore.getState().refreshError).toBeUndefined();
+    expect(openBoard).toHaveBeenCalledTimes(3);
+  });
+
+  it("discards a refresh result and revision after a local edit", async () => {
+    const refreshing = deferred<ReturnType<typeof loaded>>();
+    const saving = deferred<string>();
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard(), "revision-1"))
+      .mockReturnValueOnce(refreshing.promise);
+    const saveBoard = vi.fn()
+      .mockReturnValueOnce(saving.promise)
+      .mockResolvedValueOnce("revision-3");
+    const useBoardStore = createBoardStore(makeDeps({ openBoard, saveBoard }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const refresh = useBoardStore.getState().refreshBoard();
+    useBoardStore.getState().renameBoard("Local edit");
+    refreshing.resolve(
+      loaded(makeBoard({ name: "From disk" }), "disk-revision"),
+    );
+    await refresh;
+    expect(useBoardStore.getState().board?.name).toBe("Local edit");
+    expect(useBoardStore.getState().refreshError).toBe(
+      toUiError(new UseCaseError("board.changed-during-refresh")).message,
+    );
+
+    saving.resolve("revision-2");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().isSaving).toBe(false)
+    );
+    useBoardStore.getState().renameBoard("Next edit");
+    await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
+    expect(saveBoard).toHaveBeenLastCalledWith(
+      "/board/development.board.yaml",
+      expect.objectContaining({ name: "Next edit" }),
+      "revision-2",
+    );
   });
 
   it("does not start another reload while conflict resolution is in progress", async () => {

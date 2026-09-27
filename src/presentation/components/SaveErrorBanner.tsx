@@ -10,8 +10,8 @@ export interface SaveErrorBannerProps {
   children?: ReactNode;
 }
 
-// Keeps save failures and conflicts visually consistent while leaving each
-// caller responsible for the actions and wording its state actually permits.
+// Keeps file operation errors visually consistent while leaving each caller
+// responsible for the actions and wording its state actually permits.
 export function SaveErrorBanner({
   message,
   detail,

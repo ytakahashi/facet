@@ -59,7 +59,9 @@ export interface BoardState {
   path?: string;
   error?: string;
   isSaving: boolean;
+  isRefreshing: boolean;
   saveError?: string;
+  refreshError?: string;
   saveConflict: boolean;
   conflictResolutionError?: string;
   conflictResolution?: "reloading" | "overwriting";
@@ -97,8 +99,17 @@ export interface BoardState {
   ) => Promise<Card>;
   removeCard: (path: string, options: RemoveCardOptions) => Promise<void>;
   retrySave: () => void;
+  refreshBoard: () => Promise<void>;
   reloadBoard: () => Promise<void>;
   overwriteBoard: () => void;
+}
+
+export function canRefreshBoard(
+  state: BoardState,
+): state is BoardState & { board: Board; path: string } {
+  return state.status === "loaded" && state.board !== undefined &&
+    !!state.path && !state.isSaving && !state.isRefreshing &&
+    state.conflictResolution === undefined;
 }
 
 export interface NewCardInput {
@@ -126,7 +137,7 @@ export type SaveBoard = (
   board: Board,
   expectedRevision: FileRevision | undefined,
 ) => Promise<FileRevision>;
-export type BoardDiscardReason = "reload";
+export type BoardDiscardReason = "reload" | "refresh";
 export type ConfirmDiscardBoard = (reason: BoardDiscardReason) => boolean;
 export type ConfirmOverwriteBoard = () => boolean;
 export type CreateMarkdownCard = (
@@ -259,25 +270,42 @@ export function createBoardStore({
 
     async function loadBoard(
       path: string,
-      mode: "open" | "reload",
+      mode: "open" | "reload" | "refresh",
+      expectedBoard?: Board,
     ): Promise<void> {
       const request = ++loadGeneration;
       if (mode === "open") {
         set({
           status: "loading",
           error: undefined,
+          isRefreshing: false,
+          refreshError: undefined,
           conflictResolution: undefined,
           conflictResolutionError: undefined,
         });
-      } else {
+      } else if (mode === "reload") {
         set({
           conflictResolution: "reloading",
           conflictResolutionError: undefined,
         });
+      } else {
+        set({ isRefreshing: true, refreshError: undefined });
       }
       try {
         const { board, revision } = await openBoard(path);
         if (request !== loadGeneration) return;
+        // An edit during refresh may already be queued for saving. Discard
+        // both the disk board and its revision so that save keeps the revision
+        // it started with and the local edit remains visible.
+        if (mode === "refresh" && get().board !== expectedBoard) {
+          set({
+            isRefreshing: false,
+            refreshError: toUiError(
+              new UseCaseError("board.changed-during-refresh"),
+            ).message,
+          });
+          return;
+        }
         revisions.set(path, revision);
         conflictedPaths.delete(path);
         set({
@@ -286,6 +314,8 @@ export function createBoardStore({
           path,
           saveConflict: false,
           saveError: undefined,
+          isRefreshing: false,
+          refreshError: undefined,
           conflictResolutionError: undefined,
           conflictResolution: undefined,
           error: undefined,
@@ -294,6 +324,8 @@ export function createBoardStore({
         if (request !== loadGeneration) return;
         if (mode === "open") {
           set({ status: "error", error: toUiError(error).message });
+        } else if (mode === "refresh") {
+          set({ isRefreshing: false, refreshError: toUiError(error).message });
         } else {
           // A failed reload must leave the optimistic board available for a
           // later retry or overwrite instead of replacing it with an error
@@ -368,6 +400,7 @@ export function createBoardStore({
     return {
       status: "empty",
       isSaving: false,
+      isRefreshing: false,
       saveConflict: false,
       openBoard: async (path: string) => {
         await loadBoard(path, "open");
@@ -843,22 +876,49 @@ export function createBoardStore({
         queueSave(current.path, nextBoard);
       },
       retrySave: () => {
-        const { board, path, saveConflict } = get();
-        if (board && path && !saveConflict) queueSave(path, board);
+        const { board, path, saveConflict, isRefreshing } = get();
+        if (board && path && !saveConflict && !isRefreshing) {
+          queueSave(path, board);
+        }
+      },
+      refreshBoard: async () => {
+        const current = get();
+        if (!canRefreshBoard(current)) return;
+        const { board, path, saveConflict, saveError } = current;
+        if (saveConflict) {
+          await get().reloadBoard();
+          return;
+        }
+        if (saveError && !confirmDiscardBoard("refresh")) return;
+        await loadBoard(path, "refresh", board);
       },
       reloadBoard: async () => {
-        const { path, saveConflict, isSaving, conflictResolution } = get();
+        const {
+          path,
+          saveConflict,
+          isSaving,
+          isRefreshing,
+          conflictResolution,
+        } = get();
         if (
-          !path || !saveConflict || isSaving || conflictResolution ||
+          !path || !saveConflict || isSaving || isRefreshing ||
+          conflictResolution ||
           !confirmDiscardBoard("reload")
         ) return;
         await loadBoard(path, "reload");
       },
       overwriteBoard: () => {
-        const { board, path, saveConflict, isSaving, conflictResolution } =
-          get();
+        const {
+          board,
+          path,
+          saveConflict,
+          isSaving,
+          isRefreshing,
+          conflictResolution,
+        } = get();
         if (
-          !board || !path || !saveConflict || isSaving || conflictResolution ||
+          !board || !path || !saveConflict || isSaving || isRefreshing ||
+          conflictResolution ||
           !confirmOverwriteBoard()
         ) {
           return;

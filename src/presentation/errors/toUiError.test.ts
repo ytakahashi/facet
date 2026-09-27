@@ -3,6 +3,11 @@ import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "./toUiError.ts";
 
 describe("toUiError", () => {
+  it("explains why a reload result was discarded", () => {
+    expect(toUiError(new UseCaseError("board.changed-during-refresh")))
+      .toEqual({ message: "Board was edited during reload. Reload again." });
+  });
+
   it("maps Finder failures to messages about the selected path", () => {
     expect(toUiError(
       new UseCaseError("finder.not-found", {
