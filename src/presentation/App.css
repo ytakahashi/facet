@@ -1493,6 +1493,54 @@ body.is-pane-resizing * {
   background: none;
 }
 
+/* Takes over the <pre>'s bottom margin so the block keeps its spacing, and
+   `.markdown-preview > :last-child` still clears it at the end. */
+.markdown-preview__code-block {
+  position: relative;
+  margin: 0 0 16px;
+}
+
+.markdown-preview__code-block pre {
+  margin: 0;
+}
+
+/* Hidden until the block is hovered, like .card__delete. Opacity rather than
+   display so revealing it never reflows the code. */
+.markdown-preview__copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.markdown-preview__code-block:hover .markdown-preview__copy,
+.markdown-preview__code-block:focus-within .markdown-preview__copy,
+.markdown-preview__copy--copied {
+  opacity: 1;
+}
+
+.markdown-preview__copy:hover {
+  color: var(--color-text-strong);
+}
+
+/* Amethyst: the copy has happened and holds, not something in flight. */
+.markdown-preview__copy--copied,
+.markdown-preview__copy--copied:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
 .markdown-preview table {
   width: 100%;
   border-collapse: collapse;

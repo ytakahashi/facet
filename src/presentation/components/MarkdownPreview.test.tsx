@@ -105,6 +105,39 @@ https://example.org
     expect(output).toContain(">Diagram</span>");
   });
 
+  it("adds a copy button to a code block when copying is provided", () => {
+    const output = renderToStaticMarkup(
+      <MarkdownPreview
+        markdown={"```ts\nconst a = 1;\n```"}
+        onCopyCode={() => Promise.resolve()}
+      />,
+    );
+
+    expect(output).toContain('class="markdown-preview__code-block"');
+    expect(output).toContain('<pre><code class="language-ts">');
+    expect(output).toContain('aria-label="Copy code"');
+  });
+
+  it("renders a code block without a copy button when copying is not provided", () => {
+    const output = render("```\nconst a = 1;\n```");
+
+    expect(output).toContain("<pre>");
+    expect(output).not.toContain("markdown-preview__code-block");
+    expect(output).not.toContain("<button");
+  });
+
+  it("does not add a copy button to inline code", () => {
+    const output = renderToStaticMarkup(
+      <MarkdownPreview
+        markdown="Run `deno task test` first."
+        onCopyCode={() => Promise.resolve()}
+      />,
+    );
+
+    expect(output).toContain("<code>deno task test</code>");
+    expect(output).not.toContain("<button");
+  });
+
   it("does not render raw HTML as an element", () => {
     const output = render("<b>test</b>");
 
