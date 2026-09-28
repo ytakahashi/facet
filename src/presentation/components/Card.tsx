@@ -126,11 +126,6 @@ export function Card(
           Missing
         </span>
       )}
-      {card.priority && (
-        <span className={`card__priority card__priority--${card.priority}`}>
-          {card.priority}
-        </span>
-      )}
       <p className="card__title">{card.displayTitle}</p>
       {card.labels.length > 0 && (
         <div className="card__labels">

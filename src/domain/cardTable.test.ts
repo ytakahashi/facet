@@ -111,67 +111,6 @@ describe("listCardTableRows", () => {
     ]);
   });
 
-  it("sorts priority high to low and leaves empty values last both ways", () => {
-    const value = board([{
-      id: "one",
-      name: "One",
-      cards: [
-        card("none-1"),
-        card("low", { priority: "low" }),
-        card("high", { priority: "high" }),
-        card("none-2"),
-        card("medium", { priority: "medium" }),
-      ],
-    }]);
-
-    expect(paths(value, { key: "priority", direction: "asc" })).toEqual([
-      "high",
-      "medium",
-      "low",
-      "none-1",
-      "none-2",
-    ]);
-    expect(paths(value, { key: "priority", direction: "desc" })).toEqual([
-      "low",
-      "medium",
-      "high",
-      "none-1",
-      "none-2",
-    ]);
-  });
-
-  it("ranks unknown priorities after known ones and by name", () => {
-    // Loading accepts any string as a priority, so a hand-edited board can
-    // carry one outside the union.
-    const unknown = (value: string) => value as Card["priority"];
-    const value = board([{
-      id: "one",
-      name: "One",
-      cards: [
-        card("none"),
-        card("urgent", { priority: unknown("urgent") }),
-        card("low", { priority: "low" }),
-        card("blocker", { priority: unknown("blocker") }),
-        card("high", { priority: "high" }),
-      ],
-    }]);
-
-    expect(paths(value, { key: "priority", direction: "asc" })).toEqual([
-      "high",
-      "low",
-      "blocker",
-      "urgent",
-      "none",
-    ]);
-    expect(paths(value, { key: "priority", direction: "desc" })).toEqual([
-      "urgent",
-      "blocker",
-      "low",
-      "high",
-      "none",
-    ]);
-  });
-
   it("sorts labels by registry sequence, prefixes, then unknown names", () => {
     const value = board([{
       id: "one",
@@ -207,28 +146,26 @@ describe("listCardTableRows", () => {
     ]);
   });
 
-  it("filters labels, priority, and hidden columns from the rows", () => {
+  it("filters labels and hidden columns from the rows", () => {
     const value = board([
       {
         id: "left",
         name: "Left",
         cards: [
-          card("match", { labels: ["bug"], priority: "high" }),
-          card("wrong-label", { labels: ["docs"], priority: "high" }),
-          card("wrong-priority", { labels: ["bug"], priority: "low" }),
+          card("match", { labels: ["bug"] }),
+          card("wrong-label", { labels: ["docs"] }),
         ],
       },
       {
         id: "right",
         name: "Right",
-        cards: [card("hidden", { labels: ["bug"], priority: "high" })],
+        cards: [card("hidden", { labels: ["bug"] })],
       },
     ]);
 
     expect(
       listCardTableRows(value, {
         labels: new Set(["bug"]),
-        priority: "high",
         hiddenColumnIds: new Set(["right"]),
       }, undefined).map((row) => row.card.path),
     ).toEqual(["match"]);

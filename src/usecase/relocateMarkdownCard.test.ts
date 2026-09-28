@@ -27,7 +27,6 @@ function makeCard(overrides: Partial<Card> = {}): Card {
     path: "gone.md",
     absolutePath: "/board/gone.md",
     fileState: "missing",
-    priority: "high",
     labels: ["search"],
     displayTitle: "gone",
     ...overrides,
@@ -50,7 +49,6 @@ describe("relocateMarkdownCard", () => {
       path: "ideas/moved.md",
       absolutePath: "/board/ideas/moved.md",
       fileState: "available",
-      priority: "high",
       labels: ["search"],
       displayTitle: "Moved card",
     });

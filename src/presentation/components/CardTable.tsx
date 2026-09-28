@@ -25,7 +25,6 @@ const columns: { key: CardTableSortKey; title: string }[] = [
   { key: "title", title: "Title" },
   { key: "labels", title: "Labels" },
   { key: "column", title: "Column" },
-  { key: "priority", title: "Priority" },
   { key: "path", title: "Path" },
 ];
 
@@ -75,6 +74,7 @@ export function CardTable(
             {columns.map(({ key, title }) => (
               <th
                 key={key}
+                className={`card-table__heading--${key}`}
                 scope="col"
                 aria-sort={tableSort?.key === key
                   ? tableSort.direction === "asc" ? "ascending" : "descending"
@@ -157,15 +157,6 @@ export function CardTable(
                   </div>
                 </td>
                 <td>{column.name}</td>
-                <td>
-                  {card.priority && (
-                    <span
-                      className={`card__priority card__priority--${card.priority}`}
-                    >
-                      {card.priority}
-                    </span>
-                  )}
-                </td>
                 <td className="card-table__path" title={card.path}>
                   <span>{card.path}</span>
                 </td>

@@ -1,6 +1,5 @@
 import type { Card } from "./card.ts";
 import type { LabelColor, LabelDefinition } from "./label.ts";
-import type { Priority } from "./priority.ts";
 import { isSameCardPath, normalizeCardPath } from "./boardPath.ts";
 
 export interface Column {
@@ -210,33 +209,6 @@ export function setCardTitle(
   return { ...board, columns };
 }
 
-// `priority` of `undefined` clears the card's priority. `Priority` is a
-// closed union, so unlike title/name fields there is no blank-value case to
-// guard against here - the caller can only ever pass a valid value or
-// undefined.
-export function setCardPriority(
-  board: Board,
-  cardPath: string,
-  priority: Priority | undefined,
-): Board {
-  const normalizedPath = normalizeCardPath(cardPath);
-  let found = false;
-  const columns = board.columns.map((column) => {
-    const index = column.cards.findIndex((c) =>
-      normalizeCardPath(c.path) === normalizedPath
-    );
-    if (index === -1) return column;
-    found = true;
-    const cards = [...column.cards];
-    cards[index] = { ...cards[index], priority };
-    return { ...column, cards };
-  });
-  if (!found) {
-    throw new Error(`Unknown card: ${cardPath}`);
-  }
-  return { ...board, columns };
-}
-
 // A card may only reference labels present in the board's registry - the
 // registry is the single source of truth for which names (and colors) exist.
 // The caller (store) checks card.labels.includes(labelName) before calling,
@@ -377,7 +349,7 @@ export function renameColumn(
 }
 
 // Refuses to remove a column that still holds cards: card references carry
-// user data (priority, labels, order), and no code path may drop them
+// user data (labels, title override, order), and no code path may drop them
 // silently. The UI keeps the delete action disabled for non-empty columns.
 export function removeColumn(board: Board, columnId: string): Board {
   const column = board.columns.find((c) => c.id === columnId);

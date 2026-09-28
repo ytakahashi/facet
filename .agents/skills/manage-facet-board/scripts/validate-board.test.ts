@@ -13,7 +13,6 @@ const validBoard = {
     name: "Doing",
     cards: [{
       path: "notes/improve-search.md",
-      priority: "high",
       labels: ["search"],
     }],
   }],
@@ -35,7 +34,7 @@ Deno.test("reports schema and relationship errors", async () => {
       cards: [
         {
           path: "notes/../task.md",
-          priority: "urgent",
+          priority: "high",
           labels: ["undefined", "undefined"],
         },
         { path: "TASK.md", labels: [] },
@@ -46,7 +45,7 @@ Deno.test("reports schema and relationship errors", async () => {
   assertEquals(result.warnings, []);
   assertEquals(result.errors, [
     "board.custom is not supported and would be lost on save",
-    "board.columns[0].cards[0].priority must be low, medium, or high",
+    "board.columns[0].cards[0].priority is not supported and would be lost on save",
     'board.columns[0].cards[0].labels[0] references undefined label "undefined"',
     'board.columns[0].cards[0].labels[1] references undefined label "undefined"',
     'board.columns[0].cards[0].labels[1] duplicates label "undefined"',

@@ -29,7 +29,6 @@ import { ManageLabelsDialog } from "./ManageLabelsDialog.tsx";
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
 import { PaneResizer } from "./PaneResizer.tsx";
 import { RenameCardFileDialog } from "./RenameCardFileDialog.tsx";
-import { PriorityPicker } from "./PriorityPicker.tsx";
 import {
   EXTERNAL_CHANGE_CONFLICT_DETAIL,
   SaveErrorBanner,
@@ -114,7 +113,6 @@ export function MarkdownViewer() {
   const board = useBoardStore((state) => state.board);
   const boardPath = useBoardStore((state) => state.path);
   const renameCard = useBoardStore((state) => state.renameCard);
-  const setCardPriority = useBoardStore((state) => state.setCardPriority);
   const addCardLabel = useBoardStore((state) => state.addCardLabel);
   const removeCardLabel = useBoardStore((state) => state.removeCardLabel);
   const createLabel = useBoardStore((state) => state.createLabel);
@@ -238,10 +236,6 @@ export function MarkdownViewer() {
 
         {card && (
           <div className="markdown-viewer__meta">
-            <PriorityPicker
-              priority={card.priority}
-              onChange={(priority) => setCardPriority(card.path, priority)}
-            />
             <div className="markdown-viewer__labels">
               {orderCardLabels(card.labels, labelDisplay.positions).map((
                 label,

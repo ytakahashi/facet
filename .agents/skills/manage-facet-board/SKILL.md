@@ -1,6 +1,6 @@
 ---
 name: manage-facet-board
-description: Read, create, validate, and safely update Facet YAML boards and their Markdown cards. Use when a task involves Facet board files, card paths, columns, labels, priorities, or links between Facet cards. Do not use for developing the Facet application itself.
+description: Read, create, validate, and safely update Facet YAML boards and their Markdown cards. Use when a task involves Facet board files, card paths, columns, labels, or links between Facet cards. Do not use for developing the Facet application itself.
 ---
 
 # Manage Facet boards

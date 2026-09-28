@@ -4,7 +4,6 @@ import {
   type CardFilterCriteria,
   EMPTY_CARD_FILTER,
 } from "../../domain/cardFilter.ts";
-import type { Priority } from "../../domain/priority.ts";
 
 export interface FilterState {
   criteria: CardFilterCriteria;
@@ -12,7 +11,6 @@ export interface FilterState {
   toggleSidebar: () => void;
   toggleLabel: (name: string) => void;
   toggleColumnVisibility: (columnId: string) => void;
-  setPriority: (priority: Priority | undefined) => void;
   syncLabels: (validNames: ReadonlySet<string>) => void;
   clear: () => void;
 }
@@ -43,8 +41,6 @@ export function createFilterStore(): UseBoundStore<StoreApi<FilterState>> {
           ),
         },
       })),
-    setPriority: (priority) =>
-      set((state) => ({ criteria: { ...state.criteria, priority } })),
     // A label the registry no longer has (renamed or deleted) is dropped
     // from the selection. Renaming updates every card's labels array too
     // (see renameLabelDefinition), so a stale name here would keep

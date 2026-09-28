@@ -25,7 +25,6 @@ import type { LabelColor, LabelDefinition } from "../domain/label.ts";
 interface RawCard {
   path: string;
   title?: string;
-  priority?: string;
   labels?: string[];
 }
 
@@ -59,7 +58,6 @@ function isStringArray(value: unknown): value is string[] {
 function isRawCard(value: unknown): value is RawCard {
   return isRecord(value) && typeof value.path === "string" &&
     (value.title === undefined || typeof value.title === "string") &&
-    (value.priority === undefined || typeof value.priority === "string") &&
     (value.labels === undefined || isStringArray(value.labels));
 }
 
@@ -156,7 +154,6 @@ export class YamlBoardRepository implements BoardRepository {
         ? "unresolvable"
         : readResult?.fileState ?? "unreadable",
       titleOverride: rawCard.title,
-      priority: rawCard.priority as Card["priority"],
       labels: rawCard.labels ?? [],
       displayTitle: resolveCardTitle(
         rawCard.title,
@@ -207,7 +204,6 @@ export class YamlBoardRepository implements BoardRepository {
         cards: column.cards.map((card) => ({
           path: card.path,
           ...(card.titleOverride ? { title: card.titleOverride } : {}),
-          ...(card.priority ? { priority: card.priority } : {}),
           labels: card.labels,
         })),
       })),

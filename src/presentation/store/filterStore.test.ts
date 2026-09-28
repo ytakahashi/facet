@@ -8,22 +8,8 @@ describe("createFilterStore", () => {
     expect(useFilterStore.getState().isSidebarOpen).toBe(false);
   });
 
-  it("sets, replaces, and clears the selected priority", () => {
-    const useFilterStore = createFilterStore();
-
-    useFilterStore.getState().setPriority("low");
-    expect(useFilterStore.getState().criteria.priority).toBe("low");
-
-    useFilterStore.getState().setPriority("high");
-    expect(useFilterStore.getState().criteria.priority).toBe("high");
-
-    useFilterStore.getState().setPriority(undefined);
-    expect(useFilterStore.getState().criteria.priority).toBeUndefined();
-  });
-
   it("clears the criteria without changing sidebar visibility", () => {
     const useFilterStore = createFilterStore();
-    useFilterStore.getState().setPriority("medium");
     useFilterStore.getState().toggleLabel("bug");
     useFilterStore.getState().toggleColumnVisibility("done");
 
@@ -76,16 +62,14 @@ describe("createFilterStore", () => {
     );
   });
 
-  it("keeps the label and priority selection when a column is hidden", () => {
+  it("keeps the label selection when a column is hidden", () => {
     const useFilterStore = createFilterStore();
-    useFilterStore.getState().setPriority("high");
     useFilterStore.getState().toggleLabel("bug");
 
     useFilterStore.getState().toggleColumnVisibility("done");
 
     expect(useFilterStore.getState().criteria).toEqual({
       labels: new Set(["bug"]),
-      priority: "high",
       hiddenColumnIds: new Set(["done"]),
     });
   });
@@ -135,9 +119,8 @@ describe("createFilterStore", () => {
     expect(useFilterStore.getState().criteria.labels).toEqual(new Set());
   });
 
-  it("leaves selection and priority untouched when every selected label is still valid", () => {
+  it("leaves the selection untouched when every selected label is still valid", () => {
     const useFilterStore = createFilterStore();
-    useFilterStore.getState().setPriority("high");
     useFilterStore.getState().toggleLabel("bug");
     useFilterStore.getState().toggleColumnVisibility("done");
 
@@ -145,7 +128,6 @@ describe("createFilterStore", () => {
 
     expect(useFilterStore.getState().criteria).toEqual({
       labels: new Set(["bug"]),
-      priority: "high",
       hiddenColumnIds: new Set(["done"]),
     });
   });

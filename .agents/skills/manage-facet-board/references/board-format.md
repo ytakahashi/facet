@@ -19,7 +19,6 @@ columns:
     cards:
       - path: improve-search.md
         title: Improve search
-        priority: high
         labels:
           - search
 ```
@@ -29,7 +28,7 @@ The supported fields are:
 - Board: `version`, `name`, `labels`, `columns`
 - Label definition: `name`, `color`
 - Column: `id`, `name`, `cards`
-- Card: `path`, and the optional `title`, `priority`, and `labels`
+- Card: `path`, and the optional `title` and `labels`
 
 `labels` on a Board and `cards` on a Column may be absent in older or
 hand-written files; Facet reads either as an empty array. Facet-created and
@@ -49,7 +48,6 @@ put information outside the supported fields in a board file.
 - Label names are unique within a Board and are the identity used by Cards.
 - A Card may reference only labels present in the Board's `labels` registry.
 - A Card must not list the same label more than once.
-- `priority`, when present, is `low`, `medium`, or `high`.
 - `color` is one of `ruby`, `amber`, `emerald`, `sapphire`, `lapis`, `morion`,
   `citrine`, `sphene`, `aquamarine`, `amethyst`, `morganite`, or `selenite`.
 

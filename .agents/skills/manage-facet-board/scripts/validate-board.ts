@@ -4,7 +4,6 @@
 // validator portable when the skill is invoked outside the Facet repository.
 import { parse, YAMLParseError } from "npm:yaml@2.9.0";
 
-const PRIORITIES = new Set(["low", "medium", "high"]);
 const LABEL_COLORS = new Set([
   "ruby",
   "amber",
@@ -121,7 +120,7 @@ export async function validateBoard(
       }
       checkKeys(
         card,
-        ["path", "title", "priority", "labels"],
+        ["path", "title", "labels"],
         cardLocation,
         errors,
       );
@@ -145,12 +144,6 @@ export async function validateBoard(
 
       if (card.title !== undefined) {
         checkNonEmptyString(card.title, `${cardLocation}.title`, errors);
-      }
-      if (
-        card.priority !== undefined &&
-        (typeof card.priority !== "string" || !PRIORITIES.has(card.priority))
-      ) {
-        errors.push(`${cardLocation}.priority must be low, medium, or high`);
       }
 
       if (card.labels === undefined) continue;

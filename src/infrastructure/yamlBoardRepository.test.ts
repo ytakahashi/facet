@@ -112,7 +112,6 @@ columns:
     name: Doing
     cards:
       - path: improve-search.md
-        priority: high
         labels: [search]
 `,
       "/board/improve-search.md": "# Improve search\n\nDetails.",
@@ -134,13 +133,40 @@ columns:
               path: "improve-search.md",
               absolutePath: "/board/improve-search.md",
               fileState: "available",
-              priority: "high",
               labels: ["search"],
               displayTitle: "Improve search",
             },
           ],
         },
       ],
+    });
+  });
+
+  it("loads a card carrying a key it no longer reads, and drops it on save", async () => {
+    // Boards written by earlier versions can still carry `priority`.
+    const fileSystem = new FakeFileSystemPort({
+      "/board/development.board.yaml": `
+version: 1
+name: Development
+columns:
+  - id: doing
+    name: Doing
+    cards:
+      - path: improve-search.md
+        priority: high
+        labels: [search]
+`,
+      "/board/improve-search.md": "# Improve search",
+    });
+    const repository = new YamlBoardRepository(fileSystem);
+
+    const { board } = await repository.load("/board/development.board.yaml");
+    await repository.save("/board/development.board.yaml", board);
+
+    expect(board.columns[0].cards[0]).not.toHaveProperty("priority");
+    expect(parse(fileSystem.writes[0].content).columns[0].cards[0]).toEqual({
+      path: "improve-search.md",
+      labels: ["search"],
     });
   });
 
@@ -420,7 +446,6 @@ describe("YamlBoardRepository.save", () => {
               // loading must not leak into the saved file.
               fileState: "missing",
               titleOverride: "Custom title",
-              priority: "high",
               labels: ["search"],
               displayTitle: "Custom title",
             },
@@ -452,7 +477,6 @@ describe("YamlBoardRepository.save", () => {
             {
               path: "improve-search.md",
               title: "Custom title",
-              priority: "high",
               labels: ["search"],
             },
           ],
