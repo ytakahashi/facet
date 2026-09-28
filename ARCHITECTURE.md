@@ -76,6 +76,21 @@ Enforced by `.oxlintrc.json`, which also covers the `src/` ↔ `desktop/` split.
   a store, such as `BoardSaveQueue`.
 - Infrastructure-backed use cases are assembled in `composition/` and injected.
 
+Within `presentation/`, imports flow down these tiers:
+
+```text
+App.tsx
+board/  shell/
+kanban/  table/  search/  filter/  viewer/
+labels/
+shared/
+```
+
+Sibling directories at the same tier do not import each other. Shared code goes
+in a lower tier. `context/`, `errors/`, and `store/` can be imported from any
+tier, but do not import feature directories themselves. `.oxlintrc.json`
+enforces these directions.
+
 ## The domain model
 
 - Entities are plain data and every operation is a pure function returning a new

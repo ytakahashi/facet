@@ -4,12 +4,12 @@ import {
   useMarkdownViewer,
   useWorkspace,
 } from "./context/appContext.ts";
-import { FilterSidebar } from "./components/FilterSidebar.tsx";
-import { BoardScreen } from "./components/BoardScreen.tsx";
-import { MarkdownViewer } from "./components/MarkdownViewer.tsx";
-import { NewBoardDialog } from "./components/NewBoardDialog.tsx";
-import { StartScreen } from "./components/StartScreen.tsx";
-import { TabBar } from "./components/TabBar.tsx";
+import { FilterSidebar } from "./filter/FilterSidebar.tsx";
+import { BoardScreen } from "./board/BoardScreen.tsx";
+import { MarkdownViewer } from "./viewer/MarkdownViewer.tsx";
+import { NewBoardDialog } from "./shell/NewBoardDialog.tsx";
+import { StartScreen } from "./shell/StartScreen.tsx";
+import { TabBar } from "./shell/TabBar.tsx";
 import "./App.css";
 
 function BoardView() {

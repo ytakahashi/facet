@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
-import { DEFAULT_VIEWER_WIDTH } from "../components/viewerWidth.ts";
+
+// Keep the reset value here so the store does not depend on viewer code.
+const DEFAULT_VIEWER_WIDTH = 380;
 
 export type ViewerMode = "edit" | "preview";
 

@@ -76,6 +76,189 @@
         }]
       }
     },
+    // Keep these after src/presentation/**: the last matching override wins.
+    // Patterns match directory names in import specifiers, so adding a
+    // directory such as domain/search/ would also restrict imports of it.
+    {
+      "files": ["src/presentation/shared/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/labels/**",
+            "**/kanban/**",
+            "**/table/**",
+            "**/search/**",
+            "**/filter/**",
+            "**/viewer/**",
+            "**/board/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/labels/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/kanban/**",
+            "**/table/**",
+            "**/search/**",
+            "**/filter/**",
+            "**/viewer/**",
+            "**/board/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/kanban/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/table/**",
+            "**/search/**",
+            "**/filter/**",
+            "**/viewer/**",
+            "**/board/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/table/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/kanban/**",
+            "**/search/**",
+            "**/filter/**",
+            "**/viewer/**",
+            "**/board/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/search/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/kanban/**",
+            "**/table/**",
+            "**/filter/**",
+            "**/viewer/**",
+            "**/board/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/filter/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/kanban/**",
+            "**/table/**",
+            "**/search/**",
+            "**/viewer/**",
+            "**/board/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/viewer/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/kanban/**",
+            "**/table/**",
+            "**/search/**",
+            "**/filter/**",
+            "**/board/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/board/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/presentation/shell/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/board/**"
+          ]
+        }]
+      }
+    },
+    {
+      "files": [
+        "src/presentation/context/**",
+        "src/presentation/errors/**",
+        "src/presentation/store/**"
+      ],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            "**/infrastructure/**",
+            "**/composition/**",
+            "**/desktop/**",
+            "**/shared/**",
+            "**/labels/**",
+            "**/kanban/**",
+            "**/table/**",
+            "**/search/**",
+            "**/filter/**",
+            "**/viewer/**",
+            "**/board/**",
+            "**/shell/**"
+          ]
+        }]
+      }
+    },
     {
       "files": ["desktop/**"],
       "rules": {
