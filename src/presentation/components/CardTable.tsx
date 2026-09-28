@@ -74,6 +74,7 @@ export function CardTable(
             {columns.map(({ key, title }) => (
               <th
                 key={key}
+                className={`card-table__heading--${key}`}
                 scope="col"
                 aria-sort={tableSort?.key === key
                   ? tableSort.direction === "asc" ? "ascending" : "descending"

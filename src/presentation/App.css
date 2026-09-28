@@ -644,20 +644,21 @@
   color: var(--color-accent);
 }
 
-.card-table th:nth-child(1) {
-  width: 28%;
+/* Keyed by the column rather than its position, so adding or removing a
+   column cannot shift widths onto its neighbours. Keep the total at 100%:
+   a fixed layout scales any other sum to fill the table, which silently
+   changes every column's share. */
+.card-table__heading--title {
+  width: 33%;
 }
-.card-table th:nth-child(2) {
-  width: 23%;
+.card-table__heading--labels {
+  width: 25%;
 }
-.card-table th:nth-child(3) {
+.card-table__heading--column {
   width: 15%;
 }
-.card-table th:nth-child(4) {
-  width: 12%;
-}
-.card-table th:nth-child(5) {
-  width: 22%;
+.card-table__heading--path {
+  width: 27%;
 }
 
 .card-table__row {
