@@ -2,17 +2,24 @@ import { useMemo } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Card } from "../../domain/card.ts";
+import { codeBlockText } from "./codeBlockText.ts";
+import { MarkdownCodeBlock } from "./MarkdownCodeBlock.tsx";
 
 interface MarkdownPreviewProps {
   markdown: string;
   resolveLink?: (href: string) => Card | undefined;
   onOpenCard?: (card: Card) => void;
+  // Keep this stable across renders. A change to any of these callbacks
+  // rebuilds `components`, which remounts every code block and drops its
+  // "Copied" state.
+  onCopyCode?: (text: string) => Promise<void>;
 }
 
 export function MarkdownPreview({
   markdown,
   resolveLink,
   onOpenCard,
+  onCopyCode,
 }: MarkdownPreviewProps) {
   const components = useMemo<Components>(() => ({
     // Card links are buttons rather than anchors so no interaction path,
@@ -44,7 +51,20 @@ export function MarkdownPreview({
         {alt || "Image"}
       </span>
     ),
-  }), [onOpenCard, resolveLink]);
+    // Only block code is wrapped: inline `code` never reaches `pre`.
+    ...(onCopyCode && {
+      pre: ({ children, node }) => {
+        if (!node) {
+          throw new Error("react-markdown passes the hast node to components");
+        }
+        return (
+          <MarkdownCodeBlock text={codeBlockText(node)} onCopy={onCopyCode}>
+            {children}
+          </MarkdownCodeBlock>
+        );
+      },
+    }),
+  }), [onCopyCode, onOpenCard, resolveLink]);
 
   return (
     <div className="markdown-preview">

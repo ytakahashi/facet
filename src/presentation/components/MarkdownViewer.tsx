@@ -18,9 +18,12 @@ import type { Card } from "../../domain/card.ts";
 import { orderCardLabels } from "../../domain/label.ts";
 import {
   useBoardStore,
+  useClipboard,
   useMarkdownViewer,
   usePaneLayout,
+  useShowAlert,
 } from "../context/appContext.ts";
+import { toUiError } from "../errors/toUiError.ts";
 import { isCardSaving, isMarkdownDirty } from "../store/markdownViewerStore.ts";
 import { CardTitle } from "./CardTitle.tsx";
 import { buildLabelDisplay } from "./labelDisplay.ts";
@@ -127,6 +130,18 @@ export function MarkdownViewer() {
   const openCard = useCallback((card: Card) => {
     void selectCard(card);
   }, [selectCard]);
+  const clipboard = useClipboard();
+  const showAlert = useShowAlert();
+  // Reports the failure here and still rejects, so the code block keeps
+  // showing "Copy" rather than claiming the text was copied.
+  const copyCode = useCallback(async (text: string) => {
+    try {
+      await clipboard.copyText(text);
+    } catch (error) {
+      showAlert(toUiError(error).message);
+      throw error;
+    }
+  }, [clipboard, showAlert]);
   const card = status === "loaded" && board && selectedPath
     ? findCardByPath(board, selectedPath)
     : undefined;
@@ -417,6 +432,7 @@ export function MarkdownViewer() {
                     markdown={draft}
                     resolveLink={resolveLink}
                     onOpenCard={openCard}
+                    onCopyCode={copyCode}
                   />
                 </Suspense>
               )}
