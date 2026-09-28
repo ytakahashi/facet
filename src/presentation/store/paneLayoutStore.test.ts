@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createPaneLayoutStore } from "./paneLayoutStore.ts";
-import { DEFAULT_VIEWER_WIDTH } from "../components/viewerWidth.ts";
 
 describe("createPaneLayoutStore", () => {
   it("starts at the default viewer width", () => {
     const usePaneLayout = createPaneLayoutStore();
 
-    expect(usePaneLayout.getState().viewerWidth).toBe(DEFAULT_VIEWER_WIDTH);
+    expect(usePaneLayout.getState().viewerWidth).toBe(380);
   });
 
   it("keeps the width it is given", () => {
@@ -23,7 +22,7 @@ describe("createPaneLayoutStore", () => {
 
     usePaneLayout.getState().resetViewerWidth();
 
-    expect(usePaneLayout.getState().viewerWidth).toBe(DEFAULT_VIEWER_WIDTH);
+    expect(usePaneLayout.getState().viewerWidth).toBe(380);
   });
 
   it("starts in edit mode", () => {
