@@ -5,7 +5,6 @@ import { useBoardStore, useFilterStore } from "../context/appContext.ts";
 import { ColumnFilterList } from "./ColumnFilterList.tsx";
 import { LabelFilterList } from "./LabelFilterList.tsx";
 import { ManageLabelsDialog } from "./ManageLabelsDialog.tsx";
-import { PriorityPicker } from "./PriorityPicker.tsx";
 
 export function FilterSidebar({ board }: { board: Board }) {
   const [isManageLabelsOpen, setIsManageLabelsOpen] = useState(false);
@@ -22,7 +21,6 @@ export function FilterSidebar({ board }: { board: Board }) {
   const toggleColumnVisibility = useFilterStore(
     (state) => state.toggleColumnVisibility,
   );
-  const setPriority = useFilterStore((state) => state.setPriority);
   const syncLabels = useFilterStore((state) => state.syncLabels);
   const clear = useFilterStore((state) => state.clear);
 
@@ -79,14 +77,6 @@ export function FilterSidebar({ board }: { board: Board }) {
           </button>
         </div>
       </div>
-      <section className="filter-sidebar__section">
-        <h3 className="filter-sidebar__section-title">Priority</h3>
-        <PriorityPicker
-          priority={criteria.priority}
-          onChange={setPriority}
-          emptyLabel="All"
-        />
-      </section>
       <section className="filter-sidebar__section">
         <div className="filter-sidebar__section-heading">
           <h3 className="filter-sidebar__section-title">Labels</h3>

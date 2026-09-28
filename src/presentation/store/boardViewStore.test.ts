@@ -36,11 +36,11 @@ describe("createBoardViewStore", () => {
 
   it("retains sorting when switching views", () => {
     const store = createBoardViewStore();
-    store.getState().cycleTableSort("priority");
+    store.getState().cycleTableSort("path");
     store.getState().setMode("table");
     store.getState().setMode("board");
     expect(store.getState().tableSort).toEqual({
-      key: "priority",
+      key: "path",
       direction: "asc",
     });
   });

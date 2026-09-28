@@ -11,15 +11,10 @@ import {
   isCardHidden,
 } from "./cardFilter.ts";
 
-function makeCard(
-  path: string,
-  priority?: Card["priority"],
-  labels: string[] = [],
-): Card {
+function makeCard(path: string, labels: string[] = []): Card {
   return {
     path,
     fileState: "available",
-    priority,
     labels,
     displayTitle: path,
   };
@@ -40,12 +35,10 @@ function makeCriteria(
 }
 
 describe("card filters", () => {
-  it("is active only when a priority, a label, or a column is selected", () => {
+  it("is active only when a label or a column is selected", () => {
     const board = makeBoard([makeColumn("done")]);
 
     expect(isCardFilterActive(board, EMPTY_CARD_FILTER)).toBe(false);
-    expect(isCardFilterActive(board, makeCriteria({ priority: "high" })))
-      .toBe(true);
     expect(
       isCardFilterActive(board, makeCriteria({ labels: new Set(["bug"]) })),
     ).toBe(true);
@@ -68,56 +61,22 @@ describe("card filters", () => {
     expect(result).toBe(false);
   });
 
-  it("matches every card without a selected priority", () => {
-    expect(cardMatchesFilter(makeCard("unprioritized.md"), EMPTY_CARD_FILTER))
+  it("matches every card without a selected label", () => {
+    expect(cardMatchesFilter(makeCard("unlabeled.md"), EMPTY_CARD_FILTER))
       .toBe(true);
-    expect(
-      cardMatchesFilter(makeCard("high.md", "high"), EMPTY_CARD_FILTER),
-    ).toBe(true);
-  });
-
-  it("matches only cards with the selected priority", () => {
-    const criteria = makeCriteria({ priority: "high" });
-
-    expect(cardMatchesFilter(makeCard("high.md", "high"), criteria)).toBe(true);
-    expect(cardMatchesFilter(makeCard("low.md", "low"), criteria)).toBe(false);
-    expect(cardMatchesFilter(makeCard("none.md"), criteria)).toBe(false);
+    expect(cardMatchesFilter(makeCard("bug.md", ["bug"]), EMPTY_CARD_FILTER))
+      .toBe(true);
   });
 
   it("matches only cards carrying every selected label (AND)", () => {
     const criteria = makeCriteria({ labels: new Set(["bug", "urgent"]) });
 
-    expect(
-      cardMatchesFilter(
-        makeCard("both.md", undefined, ["bug", "urgent"]),
-        criteria,
-      ),
-    )
+    expect(cardMatchesFilter(makeCard("both.md", ["bug", "urgent"]), criteria))
       .toBe(true);
-    expect(
-      cardMatchesFilter(makeCard("one.md", undefined, ["bug"]), criteria),
-    ).toBe(false);
+    expect(cardMatchesFilter(makeCard("one.md", ["bug"]), criteria)).toBe(
+      false,
+    );
     expect(cardMatchesFilter(makeCard("none.md"), criteria)).toBe(false);
-  });
-
-  it("matches only cards satisfying both label and priority conditions", () => {
-    const criteria = makeCriteria({
-      labels: new Set(["bug"]),
-      priority: "high",
-    });
-
-    expect(
-      cardMatchesFilter(makeCard("match.md", "high", ["bug"]), criteria),
-    ).toBe(true);
-    expect(
-      cardMatchesFilter(
-        makeCard("wrong-priority.md", "low", ["bug"]),
-        criteria,
-      ),
-    ).toBe(false);
-    expect(
-      cardMatchesFilter(makeCard("missing-label.md", "high"), criteria),
-    ).toBe(false);
   });
 
   it("reports a column as hidden only while its id is selected", () => {
@@ -129,13 +88,11 @@ describe("card filters", () => {
   });
 
   it("reports a card as hidden by its column or by its own fields", () => {
-    const card = makeCard("shipped.md", "high", ["bug"]);
+    const card = makeCard("shipped.md", ["bug"]);
     const hiddenColumn = makeCriteria({ hiddenColumnIds: new Set(["done"]) });
-    const otherPriority = makeCriteria({ priority: "low" });
     const otherLabel = makeCriteria({ labels: new Set(["chore"]) });
 
     expect(isCardHidden(card, "done", hiddenColumn)).toBe(true);
-    expect(isCardHidden(card, "done", otherPriority)).toBe(true);
     expect(isCardHidden(card, "done", otherLabel)).toBe(true);
     expect(isCardHidden(card, "done", EMPTY_CARD_FILTER)).toBe(false);
     expect(isCardHidden(card, "doing", hiddenColumn)).toBe(false);
@@ -143,13 +100,13 @@ describe("card filters", () => {
 
   it("keeps each matching card's index in the column's card array", () => {
     const cards = [
-      makeCard("low.md", "low"),
-      makeCard("high-a.md", "high"),
-      makeCard("medium.md", "medium"),
-      makeCard("high-b.md", "high"),
+      makeCard("chore.md", ["chore"]),
+      makeCard("bug-a.md", ["bug"]),
+      makeCard("unlabeled.md"),
+      makeCard("bug-b.md", ["bug"]),
     ];
     const column = makeColumn("doing", cards);
-    const criteria = makeCriteria({ priority: "high" });
+    const criteria = makeCriteria({ labels: new Set(["bug"]) });
 
     const result = filterColumnCards(column, criteria);
 
@@ -160,8 +117,8 @@ describe("card filters", () => {
   });
 
   it("returns no cards when none match", () => {
-    const column = makeColumn("doing", [makeCard("low.md", "low")]);
-    const criteria = makeCriteria({ priority: "high" });
+    const column = makeColumn("doing", [makeCard("chore.md", ["chore"])]);
+    const criteria = makeCriteria({ labels: new Set(["bug"]) });
 
     const result = filterColumnCards(column, criteria);
 
@@ -169,12 +126,9 @@ describe("card filters", () => {
   });
 
   it("returns no cards from a hidden column, whatever the card conditions", () => {
-    const column = makeColumn("done", [
-      makeCard("shipped.md", "high", ["bug"]),
-    ]);
+    const column = makeColumn("done", [makeCard("shipped.md", ["bug"])]);
     const criteria = makeCriteria({
       labels: new Set(["bug"]),
-      priority: "high",
       hiddenColumnIds: new Set(["done"]),
     });
 

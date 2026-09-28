@@ -63,7 +63,6 @@ const board: Board = {
         displayTitle: "Zeta",
         fileState: "missing",
         labels: ["bug"],
-        priority: "high",
       },
       {
         path: "available.md",
@@ -100,7 +99,6 @@ describe("CardTable", () => {
     expect(output).toContain("Missing</span>");
     expect(output).toContain("No file at this path.");
     expect(output).toContain("card__label--ruby");
-    expect(output).toContain("card__priority--high");
     expect(output).toContain('aria-label="Delete Zeta"');
   });
 

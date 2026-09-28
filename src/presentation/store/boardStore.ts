@@ -23,14 +23,12 @@ import {
   renameColumn as renameColumnDomain,
   renameLabelDefinition as renameLabelDefinitionDomain,
   replaceCard as replaceCardDomain,
-  setCardPriority as setCardPriorityDomain,
   setCardTitle as setCardTitleDomain,
   setLabelColor as setLabelColorDomain,
 } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import type { FileRevision } from "../../domain/fileSystemPort.ts";
 import type { LabelColor } from "../../domain/label.ts";
-import type { Priority } from "../../domain/priority.ts";
 import {
   CardFileValidationError,
   resolveExistingMarkdownPath,
@@ -75,7 +73,6 @@ export interface BoardState {
   renameColumn: (columnId: string, name: string) => void;
   removeColumn: (columnId: string) => void;
   renameCard: (path: string, title: string) => void;
-  setCardPriority: (path: string, priority: Priority | undefined) => void;
   addCardLabel: (path: string, labelName: string) => void;
   removeCardLabel: (path: string, labelName: string) => void;
   createLabel: (name: string, color: LabelColor) => void;
@@ -516,18 +513,6 @@ export function createBoardStore({
         const card = findCardByPath(board, cardPath);
         if (!card || card.displayTitle === trimmedTitle) return;
         const nextBoard = setCardTitleDomain(board, cardPath, trimmedTitle);
-        set({ board: nextBoard });
-        queueSave(path, nextBoard);
-      },
-      setCardPriority: (cardPath: string, priority: Priority | undefined) => {
-        const { board, path } = get();
-        if (!board || !path) return;
-        // PriorityPicker only exposes the picker for a card it resolved via
-        // findCardByPath, but path is caller-supplied, so an unknown path is
-        // guarded here rather than left to throw from the domain layer.
-        const card = findCardByPath(board, cardPath);
-        if (!card || card.priority === priority) return;
-        const nextBoard = setCardPriorityDomain(board, cardPath, priority);
         set({ board: nextBoard });
         queueSave(path, nextBoard);
       },

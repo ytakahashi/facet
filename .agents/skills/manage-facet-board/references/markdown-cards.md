@@ -1,8 +1,7 @@
 # Markdown cards
 
 A Card is a reference from a board to a plain Markdown file. Facet does not put
-board position, priority, labels, or other task-management data into the
-Markdown file.
+board position, labels, or other task-management data into the Markdown file.
 
 ## File location and title
 

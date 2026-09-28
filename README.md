@@ -8,15 +8,15 @@ A local-first Markdown kanban desktop app for macOS.
 
 - Opens a YAML board file and shows the Markdown files it references as cards
 - Markdown files stay plain — no task-management metadata is written into them
-- The same Markdown can sit on several boards, each with its own columns,
-  priorities and labels
+- The same Markdown can sit on several boards, each with its own columns and
+  labels
 
 ## On the board
 
 - Drag cards between columns, and reorder them within a column
 - Add, rename, reorder and remove columns
-- Give a card a priority and any number of labels
-- Filter by label and priority, or hide whole columns from view
+- Give a card any number of labels
+- Filter by label, or hide whole columns from view
 - Search card titles or Markdown contents
 - Create and open boards from the menu bar, including recently opened ones
 

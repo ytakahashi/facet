@@ -1,21 +1,16 @@
 import type { Board, Column } from "./board.ts";
 import type { Card } from "./card.ts";
-import type { Priority } from "./priority.ts";
 
 // Every axis answers the same question - which cards the board shows right
 // now - so hiding a column hides its cards rather than the column itself:
 // the header stays interactive and the column stays a drop target.
 //
-// Label matching is AND (a card must carry every selected label), while
-// priority stays a single optional value rather than a set: a card only
-// ever has one priority, so letting a caller select several would make an
-// AND across them always match zero cards.
+// Label matching is AND: a card must carry every selected label.
 //
 // Columns are held as the hidden ids rather than the visible ones so that a
 // newly added column shows up without anyone having to update the filter.
 export interface CardFilterCriteria {
   labels: ReadonlySet<string>;
-  priority?: Priority;
   hiddenColumnIds: ReadonlySet<string>;
 }
 
@@ -31,7 +26,7 @@ export function isCardFilterActive(
   board: Board,
   criteria: CardFilterCriteria,
 ): boolean {
-  if (criteria.labels.size > 0 || criteria.priority !== undefined) return true;
+  if (criteria.labels.size > 0) return true;
   return board.columns.some((column) =>
     criteria.hiddenColumnIds.has(column.id)
   );
@@ -48,9 +43,6 @@ export function cardMatchesFilter(
   card: Card,
   criteria: CardFilterCriteria,
 ): boolean {
-  if (criteria.priority !== undefined && card.priority !== criteria.priority) {
-    return false;
-  }
   for (const label of criteria.labels) {
     if (!card.labels.includes(label)) return false;
   }

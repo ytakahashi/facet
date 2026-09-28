@@ -22,9 +22,8 @@
   --color-accent-warm: #c58f3c;
   --color-accent-warm-bg: rgba(197, 143, 60, 0.1);
 
-  --color-priority-high: #bf3b6c;
-  --color-priority-medium: #b46716;
-  --color-priority-low: #7b7782;
+  /* Errors and destructive actions. */
+  --color-danger: #bf3b6c;
 
   /* Label colors: 12 gemstones in two lightness/saturation tiers - deep
      (ruby/amber/emerald/sapphire/lapis/morion) and pale (citrine/sphene/
@@ -102,9 +101,7 @@
     --color-accent-warm: #dca54c;
     --color-accent-warm-bg: rgba(220, 165, 76, 0.12);
 
-    --color-priority-high: #c94b79;
-    --color-priority-medium: #c2842b;
-    --color-priority-low: #7b7782;
+    --color-danger: #c94b79;
 
     /* Deep tier: S 50% / L 52%. Pale tier: S 58% / L 78% - raised from an
        earlier, less saturated pass where every color shared one lightness

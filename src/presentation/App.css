@@ -385,10 +385,6 @@
   font-size: 12px;
 }
 
-.filter-sidebar .priority-picker {
-  flex-wrap: wrap;
-}
-
 .filter-sidebar__section + .filter-sidebar__section {
   margin-top: 20px;
 }
@@ -549,8 +545,8 @@
   margin-bottom: 16px;
   padding: 8px 12px;
   border-radius: 6px;
-  border: 1px solid var(--color-priority-high);
-  color: var(--color-priority-high);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
   font-size: 13px;
 }
 
@@ -705,17 +701,11 @@
 }
 
 /* The tile spacing does not apply inside a cell: the tile leaves room below
-   each badge and above the labels, and pads the priority clear of its delete
-   button, which the table puts in the title cell instead. The Missing badge
-   keeps its own padding so it reads as a badge like the labels do. */
+   each badge and above the labels. The Missing badge keeps its own padding so
+   it reads as a badge like the labels do. */
 .card-table .card__missing,
-.card-table .card__priority,
 .card-table .card__labels {
   margin: 0;
-}
-
-.card-table .card__priority {
-  padding: 0;
 }
 
 .card-table__delete {
@@ -741,7 +731,7 @@
 
 .card-table__delete:hover {
   background: var(--color-surface);
-  color: var(--color-priority-high);
+  color: var(--color-danger);
 }
 
 .card-table__path span {
@@ -1004,7 +994,7 @@
 
 .card__delete:hover {
   background: var(--color-surface);
-  color: var(--color-priority-high);
+  color: var(--color-danger);
 }
 
 /* Dashed, not solid: the drop indicators are solid lines in this same colour,
@@ -1048,30 +1038,8 @@
 }
 
 /* The delete button overlays the card's top-right corner. The inset lives on
-   the text rows rather than on .card's padding so the label row keeps its full
+   the title rather than on .card's padding so the label row keeps its full
    wrapping width. */
-.card__priority {
-  display: block;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-  padding-right: 20px;
-}
-
-.card__priority--high {
-  color: var(--color-priority-high);
-}
-
-.card__priority--medium {
-  color: var(--color-priority-medium);
-}
-
-.card__priority--low {
-  color: var(--color-priority-low);
-}
-
 .card__title {
   font-size: 14px;
   color: var(--color-text-strong);
@@ -1305,46 +1273,11 @@ body.is-pane-resizing * {
   margin-bottom: 10px;
 }
 
-.priority-picker {
-  display: flex;
-  gap: 6px;
-}
-
-.priority-picker button {
-  font-size: 12px;
-  padding: 3px 9px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: none;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.priority-picker__option--high.is-selected {
-  border-color: var(--color-priority-high);
-  color: var(--color-priority-high);
-}
-
-.priority-picker__option--medium.is-selected {
-  border-color: var(--color-priority-medium);
-  color: var(--color-priority-medium);
-}
-
-.priority-picker__option--low.is-selected {
-  border-color: var(--color-priority-low);
-  color: var(--color-priority-low);
-}
-
-.priority-picker button.is-selected {
-  background: var(--color-surface);
-}
-
 .markdown-viewer__labels {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 10px;
 }
 
 /* Same look as the labels button above it: two buttons in the same meta band
@@ -1712,7 +1645,7 @@ body.is-pane-resizing * {
 .delete-card-dialog__error,
 .missing-card-dialog__error,
 .rename-card-file-dialog__error {
-  color: var(--color-priority-high);
+  color: var(--color-danger);
   font-size: 13px;
 }
 
@@ -1820,7 +1753,7 @@ body.is-pane-resizing * {
   flex-direction: column;
   gap: 4px;
   margin: -8px 0 0;
-  color: var(--color-priority-high);
+  color: var(--color-danger);
   font-size: 12px;
 }
 
@@ -1870,11 +1803,9 @@ body.is-pane-resizing * {
   margin-right: auto;
 }
 
-/* Reuses the priority token that already stands for "high stakes" here rather
-   than introducing a second red. */
 .delete-card-dialog__confirm--destructive {
-  border-color: var(--color-priority-high);
-  color: var(--color-priority-high);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .board-directory-picker,
@@ -2250,7 +2181,7 @@ body.is-pane-resizing * {
 .manage-labels-dialog__error {
   flex-basis: 100%;
   margin: 0;
-  color: var(--color-priority-high);
+  color: var(--color-danger);
   font-size: 13px;
 }
 
@@ -2323,7 +2254,7 @@ body.is-pane-resizing * {
 .label-create-form__error {
   flex-basis: 100%;
   margin: 0;
-  color: var(--color-priority-high);
+  color: var(--color-danger);
   font-size: 13px;
 }
 
