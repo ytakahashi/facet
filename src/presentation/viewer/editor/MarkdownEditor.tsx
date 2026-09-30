@@ -18,10 +18,12 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void;
   board: Board;
   fromPath: string;
+  // Read on mount only, as the native attribute is.
+  autoFocus?: boolean;
 }
 
 export function MarkdownEditor(
-  { value, onChange, board, fromPath }: MarkdownEditorProps,
+  { value, onChange, board, fromPath, autoFocus = false }: MarkdownEditorProps,
 ) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const insertionTargetRef = useRef<LinkInsertionTarget | undefined>(
@@ -84,6 +86,7 @@ export function MarkdownEditor(
           setIsDialogOpen(true);
         }}
         spellCheck={false}
+        autoFocus={autoFocus}
       />
       <InsertCardLinkDialog
         board={board}

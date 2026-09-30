@@ -40,4 +40,13 @@ describe("createPaneLayoutStore", () => {
 
     expect(usePaneLayout.getState().viewerMode).toBe("preview");
   });
+
+  it("toggles between edit and preview and reports the new mode", () => {
+    const usePaneLayout = createPaneLayoutStore();
+
+    expect(usePaneLayout.getState().toggleViewerMode()).toBe("preview");
+    expect(usePaneLayout.getState().viewerMode).toBe("preview");
+    expect(usePaneLayout.getState().toggleViewerMode()).toBe("edit");
+    expect(usePaneLayout.getState().viewerMode).toBe("edit");
+  });
 });

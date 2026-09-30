@@ -5,6 +5,7 @@ function shortcut(
   overrides: Partial<KeyboardEvent> & Pick<KeyboardEvent, "key">,
 ) {
   return resolveViewerShortcut({
+    keyCode: 0,
     metaKey: true,
     ctrlKey: false,
     altKey: false,
@@ -12,6 +13,10 @@ function shortcut(
     isComposing: false,
     ...overrides,
   });
+}
+
+function escape(overrides: Partial<KeyboardEvent> = {}) {
+  return shortcut({ key: "Escape", metaKey: false, ...overrides });
 }
 
 describe("resolveViewerShortcut", () => {
@@ -22,6 +27,15 @@ describe("resolveViewerShortcut", () => {
   it("recognises Command-S as save with either letter case", () => {
     expect(shortcut({ key: "s" })).toBe("save");
     expect(shortcut({ key: "S" })).toBe("save");
+  });
+
+  it("recognises Command-E as toggle-mode with either letter case", () => {
+    expect(shortcut({ key: "e" })).toBe("toggle-mode");
+    expect(shortcut({ key: "E" })).toBe("toggle-mode");
+  });
+
+  it("recognises a bare Escape as close", () => {
+    expect(escape()).toBe("close");
   });
 
   it("leaves other Command combinations unclaimed", () => {
@@ -38,10 +52,28 @@ describe("resolveViewerShortcut", () => {
     expect(shortcut({ key: "s", ctrlKey: true })).toBeUndefined();
     expect(shortcut({ key: "s", altKey: true })).toBeUndefined();
     expect(shortcut({ key: "s", shiftKey: true })).toBeUndefined();
+    expect(shortcut({ key: "e", metaKey: false })).toBeUndefined();
+    expect(shortcut({ key: "e", ctrlKey: true })).toBeUndefined();
+    expect(shortcut({ key: "e", altKey: true })).toBeUndefined();
+    expect(shortcut({ key: "e", shiftKey: true })).toBeUndefined();
+  });
+
+  it("rejects Escape with any modifier", () => {
+    expect(escape({ metaKey: true })).toBeUndefined();
+    expect(escape({ ctrlKey: true })).toBeUndefined();
+    expect(escape({ altKey: true })).toBeUndefined();
+    expect(escape({ shiftKey: true })).toBeUndefined();
   });
 
   it("ignores the shortcut while an IME composition is active", () => {
     expect(shortcut({ key: "[", isComposing: true })).toBeUndefined();
     expect(shortcut({ key: "s", isComposing: true })).toBeUndefined();
+    expect(shortcut({ key: "e", isComposing: true })).toBeUndefined();
+    expect(escape({ isComposing: true })).toBeUndefined();
+  });
+
+  it("ignores a key the IME consumed after composition has ended", () => {
+    expect(escape({ keyCode: 229 })).toBeUndefined();
+    expect(shortcut({ key: "s", keyCode: 229 })).toBeUndefined();
   });
 });

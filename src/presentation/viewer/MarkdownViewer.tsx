@@ -51,6 +51,10 @@ const MarkdownPreview = lazy(() =>
   }))
 );
 
+function isEscapeOwnedByField(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("input") !== null;
+}
+
 export function MarkdownViewer() {
   const status = useMarkdownViewer((state) => state.status);
   const selectedPath = useMarkdownViewer((state) => state.selectedPath);
@@ -86,6 +90,14 @@ export function MarkdownViewer() {
   const resetWidth = usePaneLayout((state) => state.resetViewerWidth);
   const viewerMode = usePaneLayout((state) => state.viewerMode);
   const setViewerMode = usePaneLayout((state) => state.setViewerMode);
+  const toggleViewerMode = usePaneLayout((state) => state.toggleViewerMode);
+  // Set only when the shortcut switches to edit mode, where the user expects
+  // to type next. A button click or opening a card leaves focus where it was,
+  // so the request is dropped once the editor has mounted with it.
+  const [focusEditorOnMount, setFocusEditorOnMount] = useState(false);
+  useEffect(() => {
+    if (focusEditorOnMount) setFocusEditorOnMount(false);
+  }, [focusEditorOnMount]);
   const handleRef = useRef<HTMLDivElement>(null);
   const [availableWidth, setAvailableWidth] = useState(globalThis.innerWidth);
 
@@ -169,25 +181,46 @@ export function MarkdownViewer() {
   const [renameFileTarget, setRenameFileTarget] = useState<Card>();
   const [isRenameFileOpen, setIsRenameFileOpen] = useState(false);
 
+  // Matches when the Edit/Preview switch is shown below.
+  const canToggleMode = status === "loaded" && draft !== undefined;
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const shortcut = resolveViewerShortcut(event);
       if (!shortcut) return;
+      const isModalOpen = document.querySelector("dialog[open]") !== null;
+      if (shortcut === "close") {
+        // Escape is left unclaimed wherever something else owns it: a modal
+        // closes on Escape as its default action, which preventDefault would
+        // cancel, and single-line fields (card title, column and board names,
+        // including those on the board) use it to cancel their own edit. The
+        // Markdown textarea has no Escape behaviour, so it still closes here.
+        if (isModalOpen || isEscapeOwnedByField(event.target)) return;
+        event.preventDefault();
+        close();
+        return;
+      }
       // The viewer owns this shortcut while open, even when there is no back
       // destination, saving is unavailable, or a modal prevents acting on it.
       event.preventDefault();
-      if (document.querySelector("dialog[open]")) return;
-      if (shortcut === "back") {
-        if (board) void goBack(board);
-        return;
+      if (isModalOpen) return;
+      switch (shortcut) {
+        case "back":
+          if (board) void goBack(board);
+          return;
+        case "save":
+          if (canSave) void save();
+          return;
+        case "toggle-mode":
+          if (!canToggleMode) return;
+          if (toggleViewerMode() === "edit") setFocusEditorOnMount(true);
+          return;
       }
-      if (!canSave) return;
-      void save();
     }
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [board, canSave, goBack, save]);
+  }, [board, canSave, canToggleMode, close, goBack, save, toggleViewerMode]);
 
   // App only mounts this component for an open board, and every non-idle
   // viewer state identifies a selected card. A partial viewer would hide a
@@ -245,7 +278,9 @@ export function MarkdownViewer() {
             >
               {isSaving ? "Saving…" : "Save"}
             </button>
-            <button type="button" onClick={close}>Close</button>
+            <button type="button" title="Close (Esc)" onClick={close}>
+              Close
+            </button>
           </div>
         </div>
 
@@ -399,6 +434,7 @@ export function MarkdownViewer() {
               <button
                 type="button"
                 aria-pressed={viewerMode === "edit"}
+                title="Edit (⌘E)"
                 onClick={() => setViewerMode("edit")}
               >
                 Edit
@@ -406,6 +442,7 @@ export function MarkdownViewer() {
               <button
                 type="button"
                 aria-pressed={viewerMode === "preview"}
+                title="Preview (⌘E)"
                 onClick={() => setViewerMode("preview")}
               >
                 Preview
@@ -418,6 +455,7 @@ export function MarkdownViewer() {
                   onChange={updateDraft}
                   board={board}
                   fromPath={selectedPath}
+                  autoFocus={focusEditorOnMount}
                 />
               )
               : (
