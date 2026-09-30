@@ -16,12 +16,15 @@ export interface PaneLayoutState {
   resetViewerWidth: () => void;
   viewerMode: ViewerMode;
   setViewerMode: (mode: ViewerMode) => void;
+  // Returns the mode switched to, so a caller can react to the new mode
+  // without reading the store back.
+  toggleViewerMode: () => ViewerMode;
 }
 
 export function createPaneLayoutStore(): UseBoundStore<
   StoreApi<PaneLayoutState>
 > {
-  return create<PaneLayoutState>((set) => ({
+  return create<PaneLayoutState>((set, get) => ({
     viewerWidth: DEFAULT_VIEWER_WIDTH,
     // Clamping belongs to the caller, which is the only side that knows how
     // wide the workspace is.
@@ -29,5 +32,10 @@ export function createPaneLayoutStore(): UseBoundStore<
     resetViewerWidth: () => set({ viewerWidth: DEFAULT_VIEWER_WIDTH }),
     viewerMode: "edit",
     setViewerMode: (mode) => set({ viewerMode: mode }),
+    toggleViewerMode: () => {
+      const viewerMode = get().viewerMode === "edit" ? "preview" : "edit";
+      set({ viewerMode });
+      return viewerMode;
+    },
   }));
 }
