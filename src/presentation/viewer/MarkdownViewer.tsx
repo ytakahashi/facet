@@ -26,6 +26,7 @@ import {
 import { toUiError } from "../errors/toUiError.ts";
 import { isCardSaving, isMarkdownDirty } from "../store/markdownViewerStore.ts";
 import { CardTitle } from "./CardTitle.tsx";
+import { CardBoardPosition } from "./CardBoardPosition.tsx";
 import { buildLabelDisplay } from "../labels/labelDisplay.ts";
 import { LabelPickerDialog } from "../labels/LabelPickerDialog.tsx";
 import { ManageLabelsDialog } from "../labels/ManageLabelsDialog.tsx";
@@ -283,6 +284,8 @@ export function MarkdownViewer() {
             </button>
           </div>
         </div>
+
+        {card && <CardBoardPosition board={board} cardPath={card.path} />}
 
         {card && (
           <div className="markdown-viewer__meta">
