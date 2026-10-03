@@ -1270,6 +1270,29 @@ body.is-pane-resizing * {
   opacity: 0.5;
 }
 
+.markdown-viewer__position {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  margin: 0 0 10px;
+  color: var(--color-text);
+  font-size: 12px;
+}
+
+/* Keep the label and count visible while the column name takes the ellipsis. */
+.markdown-viewer__position-label,
+.markdown-viewer__position-count {
+  flex-shrink: 0;
+}
+
+.markdown-viewer__position-column {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .markdown-viewer__meta {
   margin-bottom: 10px;
 }
