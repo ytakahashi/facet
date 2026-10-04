@@ -1,3 +1,5 @@
+import { isImeProcessing } from "../shared/isImeProcessing.ts";
+
 export type ViewerShortcut = "back" | "save" | "close" | "toggle-mode";
 
 type ShortcutEvent = Pick<
@@ -11,16 +13,10 @@ type ShortcutEvent = Pick<
   | "isComposing"
 >;
 
-// WebKit can report the key that ends an IME composition with isComposing
-// already false; keyCode 229 still marks it as consumed by the IME.
-const IME_PROCESS_KEY_CODE = 229;
-
 export function resolveViewerShortcut(
   event: ShortcutEvent,
 ): ViewerShortcut | undefined {
-  if (event.isComposing || event.keyCode === IME_PROCESS_KEY_CODE) {
-    return undefined;
-  }
+  if (isImeProcessing(event)) return undefined;
   if (event.key === "Escape") {
     const hasModifier = event.metaKey || event.ctrlKey || event.altKey ||
       event.shiftKey;

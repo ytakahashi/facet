@@ -5,6 +5,7 @@ function shortcut(
   overrides: Partial<KeyboardEvent> & Pick<KeyboardEvent, "key">,
 ) {
   return resolveEditorShortcut({
+    keyCode: 0,
     metaKey: true,
     ctrlKey: false,
     altKey: false,
@@ -30,5 +31,9 @@ describe("resolveEditorShortcut", () => {
 
   it("ignores the shortcut while an IME is composing", () => {
     expect(shortcut({ key: "k", isComposing: true })).toBeUndefined();
+  });
+
+  it("ignores a key the IME consumed after composition has ended", () => {
+    expect(shortcut({ key: "k", keyCode: 229 })).toBeUndefined();
   });
 });
