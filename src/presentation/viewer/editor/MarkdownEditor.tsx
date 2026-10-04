@@ -20,10 +20,18 @@ interface MarkdownEditorProps {
   fromPath: string;
   // Read on mount only, as the native attribute is.
   autoFocus?: boolean;
+  readOnly?: boolean;
 }
 
 export function MarkdownEditor(
-  { value, onChange, board, fromPath, autoFocus = false }: MarkdownEditorProps,
+  {
+    value,
+    onChange,
+    board,
+    fromPath,
+    autoFocus = false,
+    readOnly = false,
+  }: MarkdownEditorProps,
 ) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const insertionTargetRef = useRef<LinkInsertionTarget | undefined>(
@@ -47,6 +55,7 @@ export function MarkdownEditor(
 
   function insertCardLink(card: Card) {
     setIsDialogOpen(false);
+    if (readOnly) return;
     const textarea = textareaRef.current;
     const target = insertionTargetRef.current;
     if (!textarea || !target) return;
@@ -71,13 +80,14 @@ export function MarkdownEditor(
         ref={textareaRef}
         className="markdown-editor"
         value={value}
+        readOnly={readOnly}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
           if (!resolveEditorShortcut(event.nativeEvent)) return;
           // Claim the app shortcut once recognised, even when this card's
           // path cannot produce a link and the palette therefore stays shut.
           event.preventDefault();
-          if (!isLinkableCardPath(fromPath)) return;
+          if (readOnly || !isLinkableCardPath(fromPath)) return;
           insertionTargetRef.current = resolveLinkInsertionTarget(
             value,
             event.currentTarget.selectionStart,

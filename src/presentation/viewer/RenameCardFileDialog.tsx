@@ -28,6 +28,9 @@ export function RenameCardFileDialog(
   // the path it started with, so moving the file now would land it back at the
   // path the file just left.
   const isSaving = useMarkdownViewer((state) => isCardSaving(state, card.path));
+  // A read started from the native menu can still be in flight when this
+  // dialog opens. Wait for it before moving the path it is reading.
+  const isRefreshing = useMarkdownViewer((state) => state.isRefreshing);
   const boardDirectory = directoryOf(boardPath);
   const initialDirectory = card.absolutePath
     ? directoryOf(card.absolutePath)
@@ -52,6 +55,7 @@ export function RenameCardFileDialog(
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (isSubmitting || isSaving || isRefreshing) return;
     const previousPath = card.path;
     setIsSubmitting(true);
     setError(undefined);
@@ -140,13 +144,19 @@ export function RenameCardFileDialog(
             Waiting for this card's Markdown to finish saving…
           </p>
         )}
+        {isRefreshing && (
+          <p className="rename-card-file-dialog__note" role="status">
+            Waiting for this card's Markdown to finish reloading…
+          </p>
+        )}
         <div className="rename-card-file-dialog__actions">
           <button type="button" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </button>
           <button
             type="submit"
-            disabled={!fileName.trim() || isSubmitting || isSaving}
+            disabled={!fileName.trim() || isSubmitting || isSaving ||
+              isRefreshing}
           >
             {isSubmitting ? "Moving…" : "Move file"}
           </button>

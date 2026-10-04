@@ -4,6 +4,7 @@ import type { Card } from "../../domain/card.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import {
+  canRefreshMarkdown,
   createMarkdownViewerStore as createMarkdownViewerStoreImplementation,
   isCardSaving,
 } from "./markdownViewerStore.ts";
@@ -1226,5 +1227,217 @@ describe("createMarkdownViewerStore", () => {
     await useMarkdownViewer.getState().goBack(makeBoard([a, repaired]));
 
     expect(useMarkdownViewer.getState().selectedPath).toBe(a.path);
+  });
+
+  describe("refreshMarkdown", () => {
+    it("replaces the baseline and draft and clears a save conflict", async () => {
+      const conflict = new UseCaseError("markdown.conflict");
+      const viewMarkdown = vi.fn()
+        .mockResolvedValueOnce({ content: "original", revision: "revision-1" })
+        .mockResolvedValueOnce({ content: "external", revision: "revision-3" });
+      const store = createMarkdownViewerStore(
+        viewMarkdown,
+        vi.fn().mockRejectedValue(conflict),
+        alwaysDiscard,
+      );
+      await store.getState().selectCard(makeCard());
+      store.getState().updateDraft("local");
+      await store.getState().save();
+
+      await store.getState().refreshMarkdown();
+
+      expect(store.getState()).toMatchObject({
+        status: "loaded",
+        content: "external",
+        draft: "external",
+        revision: "revision-3",
+        isRefreshing: false,
+      });
+      expect(store.getState().saveError).toBeUndefined();
+      expect(store.getState().conflict).toBeUndefined();
+      expect(viewMarkdown).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps an unsaved draft when discard is declined", async () => {
+      const viewMarkdown = vi.fn().mockResolvedValue("original");
+      const confirmDiscard = vi.fn(neverDiscard);
+      const store = createMarkdownViewerStore(
+        viewMarkdown,
+        vi.fn(),
+        confirmDiscard,
+      );
+      await store.getState().selectCard(makeCard());
+      store.getState().updateDraft("local");
+
+      await store.getState().refreshMarkdown();
+
+      expect(confirmDiscard).toHaveBeenCalledOnce();
+      expect(viewMarkdown).toHaveBeenCalledOnce();
+      expect(store.getState().draft).toBe("local");
+      expect(store.getState().isRefreshing).toBe(false);
+    });
+
+    it("keeps the baseline and draft after a read failure and retries", async () => {
+      const error = new UseCaseError("markdown.load-failed", {
+        path: "/board/improve-search.md",
+      });
+      const viewMarkdown = vi.fn()
+        .mockResolvedValueOnce("original")
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce({ content: "external", revision: "revision-3" });
+      const store = createMarkdownViewerStore(
+        viewMarkdown,
+        vi.fn(),
+        alwaysDiscard,
+      );
+      await store.getState().selectCard(makeCard());
+      store.getState().updateDraft("local");
+
+      await store.getState().refreshMarkdown();
+
+      expect(store.getState()).toMatchObject({
+        content: "original",
+        draft: "local",
+        revision: "revision-1",
+        isRefreshing: false,
+        refreshError: toUiError(error).message,
+      });
+
+      await store.getState().refreshMarkdown();
+      expect(store.getState().content).toBe("external");
+      expect(store.getState().refreshError).toBeUndefined();
+    });
+
+    it("blocks duplicate refreshes, edits, saves, and conflict actions while reading", async () => {
+      let finishRefresh!: (
+        value: { content: string; revision: string },
+      ) => void;
+      const reading = new Promise<{ content: string; revision: string }>(
+        (resolve) => {
+          finishRefresh = resolve;
+        },
+      );
+      const viewMarkdown = vi.fn()
+        .mockResolvedValueOnce("original")
+        .mockReturnValueOnce(reading);
+      const saveMarkdown = vi.fn().mockRejectedValueOnce(
+        new UseCaseError("markdown.conflict"),
+      );
+      const confirmOverwrite = vi.fn(alwaysOverwrite);
+      const store = createMarkdownViewerStore(
+        viewMarkdown,
+        saveMarkdown,
+        alwaysDiscard,
+        confirmOverwrite,
+      );
+      await store.getState().selectCard(makeCard());
+      store.getState().updateDraft("local");
+      await store.getState().save();
+
+      const refresh = store.getState().refreshMarkdown();
+      expect(canRefreshMarkdown(store.getState())).toBe(false);
+      await store.getState().refreshMarkdown();
+      store.getState().updateDraft("late edit");
+      await store.getState().save();
+      await store.getState().reloadFromDisk();
+      await store.getState().overwrite();
+
+      expect(viewMarkdown).toHaveBeenCalledTimes(2);
+      expect(saveMarkdown).toHaveBeenCalledOnce();
+      expect(confirmOverwrite).not.toHaveBeenCalled();
+      expect(store.getState().draft).toBe("local");
+
+      finishRefresh({ content: "external", revision: "revision-3" });
+      await refresh;
+      expect(canRefreshMarkdown(store.getState())).toBe(true);
+    });
+
+    it("refuses refresh while saving", async () => {
+      let finishSave!: (revision: string) => void;
+      const saving = new Promise<string>((resolve) => {
+        finishSave = resolve;
+      });
+      const viewMarkdown = vi.fn().mockResolvedValue("original");
+      const store = createMarkdownViewerStore(
+        viewMarkdown,
+        vi.fn().mockReturnValue(saving),
+        alwaysDiscard,
+      );
+      expect(canRefreshMarkdown(store.getState())).toBe(false);
+      await store.getState().selectCard(makeCard());
+      store.getState().updateDraft("local");
+      const save = store.getState().save();
+
+      expect(canRefreshMarkdown(store.getState())).toBe(false);
+      await store.getState().refreshMarkdown();
+      expect(viewMarkdown).toHaveBeenCalledOnce();
+      finishSave("revision-2");
+      await save;
+    });
+
+    it("refuses refresh while resolving a save conflict", async () => {
+      let finishReload!: (value: { content: string; revision: string }) => void;
+      const reloading = new Promise<{ content: string; revision: string }>(
+        (resolve) => {
+          finishReload = resolve;
+        },
+      );
+      const viewMarkdown = vi.fn()
+        .mockResolvedValueOnce("original")
+        .mockReturnValueOnce(reloading);
+      const store = createMarkdownViewerStore(
+        viewMarkdown,
+        vi.fn().mockRejectedValue(new UseCaseError("markdown.conflict")),
+        alwaysDiscard,
+      );
+      await store.getState().selectCard(makeCard());
+      store.getState().updateDraft("local");
+      await store.getState().save();
+
+      const reload = store.getState().reloadFromDisk();
+      expect(store.getState().conflictResolution).toBe("reloading");
+      expect(canRefreshMarkdown(store.getState())).toBe(false);
+      await store.getState().refreshMarkdown();
+      expect(viewMarkdown).toHaveBeenCalledTimes(2);
+
+      finishReload({ content: "external", revision: "revision-3" });
+      await reload;
+    });
+
+    it("drops a refresh result after selecting another card", async () => {
+      let finishRefresh!: (
+        value: { content: string; revision: string },
+      ) => void;
+      const reading = new Promise<{ content: string; revision: string }>(
+        (resolve) => {
+          finishRefresh = resolve;
+        },
+      );
+      const viewMarkdown = vi.fn()
+        .mockResolvedValueOnce("original")
+        .mockReturnValueOnce(reading)
+        .mockResolvedValueOnce("other");
+      const store = createMarkdownViewerStore(
+        viewMarkdown,
+        vi.fn(),
+        alwaysDiscard,
+      );
+      await store.getState().selectCard(makeCard());
+
+      const refresh = store.getState().refreshMarkdown();
+      await store.getState().selectCard(makeCard({
+        path: "other.md",
+        absolutePath: "/board/other.md",
+      }));
+      finishRefresh({ content: "stale", revision: "revision-stale" });
+      await refresh;
+
+      expect(store.getState()).toMatchObject({
+        selectedPath: "other.md",
+        content: "other",
+        draft: "other",
+        isRefreshing: false,
+      });
+    });
   });
 });
