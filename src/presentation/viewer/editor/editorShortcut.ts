@@ -1,6 +1,9 @@
+import { isImeProcessing } from "../../shared/isImeProcessing.ts";
+
 type ShortcutEvent = Pick<
   KeyboardEvent,
   | "key"
+  | "keyCode"
   | "metaKey"
   | "ctrlKey"
   | "altKey"
@@ -15,7 +18,7 @@ export function resolveEditorShortcut(
   event: ShortcutEvent,
 ): "insert-link" | undefined {
   if (
-    event.isComposing || !event.metaKey || event.ctrlKey || event.altKey ||
+    isImeProcessing(event) || !event.metaKey || event.ctrlKey || event.altKey ||
     event.shiftKey
   ) {
     return undefined;

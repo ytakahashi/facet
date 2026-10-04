@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useWorkspace } from "../context/appContext.ts";
 import type { BoardTab } from "../store/workspaceStore.ts";
+import { resolveTabShortcut } from "./tabShortcut.ts";
 
 function basenameOf(path: string): string {
   return path.slice(path.lastIndexOf("/") + 1);
@@ -54,6 +55,30 @@ export function TabBar() {
   const activateTab = useWorkspace((state) => state.activateTab);
   const closeTab = useWorkspace((state) => state.closeTab);
   const showStartScreen = useWorkspace((state) => state.showStartScreen);
+
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      const index = resolveTabShortcut(event);
+      if (index === undefined) return;
+      // Claim recognised keys even when no tab exists or a modal blocks them.
+      event.preventDefault();
+      // Switching would unmount board-owned dialogs and interrupt their work.
+      if (document.querySelector("dialog[open]")) return;
+      // Only board tabs are numbered; the trailing Start screen button is not.
+      const tab = tabs[index];
+      if (!tab || tab.id === activeTabId) return;
+      // Focus the persistent tab button synchronously before switching: blur
+      // commits inline edits before the old board unmounts. It also keeps
+      // keyboard navigation available after the switch.
+      tabListRef.current?.querySelector<HTMLButtonElement>(
+        `[id="board-tab-${tab.id}"]`,
+      )?.focus();
+      activateTab(tab.id);
+    }
+
+    document.addEventListener("keydown", handleShortcut);
+    return () => document.removeEventListener("keydown", handleShortcut);
+  }, [tabs, activeTabId, activateTab]);
 
   function handleKeyDown(event: React.KeyboardEvent) {
     if (
