@@ -6,24 +6,20 @@ import { isCardFileBroken } from "../../domain/card.ts";
 import {
   useBoardStore,
   useBoardView,
-  useClipboard,
   useContextMenu,
   useFilterStore,
-  useFinder,
   useMarkdownViewer,
-  useShowAlert,
 } from "../context/appContext.ts";
-import { toUiError } from "../errors/toUiError.ts";
 import { canRefreshBoard } from "../store/boardStore.ts";
 import { BoardName } from "./BoardName.tsx";
 import { CardContentSearchDialog } from "../search/CardContentSearchDialog.tsx";
 import { CardSearchDialog } from "../search/CardSearchDialog.tsx";
 import { CardTable } from "../table/CardTable.tsx";
-import {
-  buildBoardContextMenu,
-  buildCardContextMenu,
-} from "./boardContextMenus.ts";
+import { buildBoardContextMenu } from "./boardContextMenus.ts";
+import { buildCardContextMenu } from "../shared/cardContextMenu.ts";
+import { isInsideDialog } from "../shared/isInsideDialog.ts";
 import { isTextEditingTarget } from "../shared/isTextEditingTarget.ts";
+import { useMenuActions } from "../shared/useMenuActions.ts";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { KanbanBoard } from "../kanban/KanbanBoard.tsx";
 import { MissingCardDialog } from "./MissingCardDialog.tsx";
@@ -37,10 +33,8 @@ import {
 export function BoardScreen({ board }: { board: Board }) {
   const renameBoard = useBoardStore((state) => state.renameBoard);
   const moveCardToColumn = useBoardStore((state) => state.moveCardToColumn);
-  const clipboard = useClipboard();
-  const finder = useFinder();
+  const { copyText, reveal } = useMenuActions();
   const contextMenu = useContextMenu();
-  const showAlert = useShowAlert();
   const saveError = useBoardStore((state) => state.saveError);
   const refreshError = useBoardStore((state) => state.refreshError);
   const saveConflict = useBoardStore((state) => state.saveConflict);
@@ -106,18 +100,6 @@ export function BoardScreen({ board }: { board: Board }) {
     setIsMissingCardOpen(true);
   }
 
-  function runMenuAction(action: Promise<void>): void {
-    void action.catch((error) => showAlert(toUiError(error).message));
-  }
-
-  function copyText(text: string): void {
-    runMenuAction(clipboard.copyText(text));
-  }
-
-  function reveal(path: string): void {
-    runMenuAction(finder.reveal(path));
-  }
-
   function handleCardContextMenu(card: Card, event: MouseEvent<HTMLElement>) {
     if (isTextEditingTarget(event.target)) return;
     event.preventDefault();
@@ -136,9 +118,7 @@ export function BoardScreen({ board }: { board: Board }) {
   function handleBoardContextMenu(event: MouseEvent<HTMLDivElement>) {
     if (!boardPath || isTextEditingTarget(event.target)) return;
     // Dialogs are mounted under BoardScreen but keep WebKit's own menu.
-    if (event.target instanceof Element && event.target.closest("dialog")) {
-      return;
-    }
+    if (isInsideDialog(event.target)) return;
     event.preventDefault();
     contextMenu.show(
       { x: event.clientX, y: event.clientY },

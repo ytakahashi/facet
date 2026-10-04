@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { MouseEvent } from "react";
 import {
   findCardByEquivalentPath,
   findCardByPath,
@@ -19,11 +20,16 @@ import { orderCardLabels } from "../../domain/label.ts";
 import {
   useBoardStore,
   useClipboard,
+  useContextMenu,
   useMarkdownViewer,
   usePaneLayout,
   useShowAlert,
 } from "../context/appContext.ts";
 import { toUiError } from "../errors/toUiError.ts";
+import { buildCardContextMenu } from "../shared/cardContextMenu.ts";
+import { isInsideDialog } from "../shared/isInsideDialog.ts";
+import { isTextEditingTarget } from "../shared/isTextEditingTarget.ts";
+import { useMenuActions } from "../shared/useMenuActions.ts";
 import { isCardSaving, isMarkdownDirty } from "../store/markdownViewerStore.ts";
 import { CardTitle } from "./CardTitle.tsx";
 import { CardBoardPosition } from "./CardBoardPosition.tsx";
@@ -129,6 +135,7 @@ export function MarkdownViewer() {
   const board = useBoardStore((state) => state.board);
   const boardPath = useBoardStore((state) => state.path);
   const renameCard = useBoardStore((state) => state.renameCard);
+  const moveCardToColumn = useBoardStore((state) => state.moveCardToColumn);
   const addCardLabel = useBoardStore((state) => state.addCardLabel);
   const removeCardLabel = useBoardStore((state) => state.removeCardLabel);
   const createLabel = useBoardStore((state) => state.createLabel);
@@ -144,6 +151,8 @@ export function MarkdownViewer() {
     void selectCard(card);
   }, [selectCard]);
   const clipboard = useClipboard();
+  const contextMenu = useContextMenu();
+  const { copyText, reveal } = useMenuActions();
   const showAlert = useShowAlert();
   // Reports the failure here and still rejects, so the code block keeps
   // showing "Copy" rather than claiming the text was copied.
@@ -223,6 +232,21 @@ export function MarkdownViewer() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [board, canSave, canToggleMode, close, goBack, save, toggleViewerMode]);
 
+  function handleContextMenu(event: MouseEvent<HTMLDivElement>) {
+    if (!card || !board || isTextEditingTarget(event.target)) return;
+    // Dialogs are mounted inside the pane but keep WebKit's own menu.
+    if (isInsideDialog(event.target)) return;
+    event.preventDefault();
+    contextMenu.show(
+      { x: event.clientX, y: event.clientY },
+      buildCardContextMenu(card, board, {
+        copyText,
+        reveal,
+        moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
+      }),
+    );
+  }
+
   // App only mounts this component for an open board, and every non-idle
   // viewer state identifies a selected card. A partial viewer would hide a
   // broken store/composition invariant behind an incomplete UI.
@@ -245,7 +269,11 @@ export function MarkdownViewer() {
         onResize={setWidth}
         onReset={resetWidth}
       />
-      <div className="markdown-viewer" style={{ width: displayedWidth }}>
+      <div
+        className="markdown-viewer"
+        style={{ width: displayedWidth }}
+        onContextMenu={handleContextMenu}
+      >
         <div className="markdown-viewer__header">
           <div className="markdown-viewer__header-main">
             <button
