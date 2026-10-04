@@ -37,6 +37,8 @@ export interface MarkdownViewerState {
   // forgetting the first would let its file be deleted out from under a write
   // that then recreates it.
   savingPaths: ReadonlySet<string>;
+  isRefreshing: boolean;
+  refreshError?: string;
   saveError?: string;
   conflict?: MarkdownConflict;
   conflictResolutionError?: string;
@@ -46,6 +48,7 @@ export interface MarkdownViewerState {
   resetHistory: () => void;
   updateDraft: (content: string) => void;
   save: () => Promise<void>;
+  refreshMarkdown: () => Promise<void>;
   reloadFromDisk: () => Promise<void>;
   overwrite: () => Promise<void>;
   // Returns whether the viewer was actually closed, so closing its tab can
@@ -101,6 +104,17 @@ export function isCardSaving(
   return state.savingPaths.has(path);
 }
 
+export function canRefreshMarkdown(
+  state: MarkdownViewerState,
+): state is MarkdownViewerState & {
+  selectedPath: string;
+  absolutePath: string;
+} {
+  return state.status === "loaded" && !!state.selectedPath &&
+    !!state.absolutePath && !isCardSaving(state, state.selectedPath) &&
+    !state.isRefreshing && state.conflictResolution === undefined;
+}
+
 // Deliberately omits savingPaths: closing the viewer does not call off a write
 // that is already on its way, so the marker has to outlive the card's presence
 // on screen and is cleared by whichever save owns it.
@@ -112,6 +126,8 @@ const CLOSED_STATE = {
   revision: undefined,
   draft: undefined,
   error: undefined,
+  isRefreshing: false,
+  refreshError: undefined,
   saveError: undefined,
   conflict: undefined,
   conflictResolutionError: undefined,
@@ -135,7 +151,7 @@ export function createMarkdownViewerStore(
     async function loadMarkdown(
       selectedPath: string,
       absolutePath: string,
-      mode: "select" | "reload",
+      mode: "select" | "reload" | "refresh",
       // Only a new selection supplies history. Reloading the current file must
       // not turn that refresh into another navigation visit.
       history?: CardHistory,
@@ -151,16 +167,20 @@ export function createMarkdownViewerStore(
           revision: undefined,
           draft: undefined,
           error: undefined,
+          isRefreshing: false,
+          refreshError: undefined,
           saveError: undefined,
           conflict: undefined,
           conflictResolutionError: undefined,
           conflictResolution: undefined,
         });
-      } else {
+      } else if (mode === "reload") {
         set({
           conflictResolution: "reloading",
           conflictResolutionError: undefined,
         });
+      } else {
+        set({ isRefreshing: true, refreshError: undefined });
       }
 
       try {
@@ -172,6 +192,8 @@ export function createMarkdownViewerStore(
           revision,
           draft: content,
           error: undefined,
+          isRefreshing: false,
+          refreshError: undefined,
           saveError: undefined,
           conflict: undefined,
           conflictResolutionError: undefined,
@@ -184,12 +206,17 @@ export function createMarkdownViewerStore(
             status: "error",
             error: toUiError(error).message,
           });
-        } else {
+        } else if (mode === "reload") {
           // A failed conflict reload must not compound the problem by losing
           // the draft the user was trying to protect.
           set({
             conflictResolutionError: toUiError(error).message,
             conflictResolution: undefined,
+          });
+        } else {
+          set({
+            isRefreshing: false,
+            refreshError: toUiError(error).message,
           });
         }
       }
@@ -199,8 +226,13 @@ export function createMarkdownViewerStore(
       expectedRevision: FileRevision | undefined,
       resolution?: "overwriting",
     ) {
-      const { selectedPath, absolutePath, draft, savingPaths } = get();
-      if (!selectedPath || !absolutePath || draft === undefined) {
+      const { selectedPath, absolutePath, draft, savingPaths, isRefreshing } =
+        get();
+      // A refresh replaces the baseline and draft; a write started during it
+      // would race that replacement and leave an unrelated revision behind.
+      if (
+        isRefreshing || !selectedPath || !absolutePath || draft === undefined
+      ) {
         return;
       }
       // The Save button is already disabled while this card's write runs; this
@@ -318,6 +350,7 @@ export function createMarkdownViewerStore(
       status: "idle",
       history: emptyCardHistory(),
       savingPaths: new Set<string>(),
+      isRefreshing: false,
       selectCard: async (card: Card) => {
         const state = get();
         await openCard(card, recordCardVisit(state.history, card.path));
@@ -360,12 +393,21 @@ export function createMarkdownViewerStore(
         });
       },
       updateDraft: (content: string) => {
+        // Link insertion can also update the draft while the textarea is read-only.
+        if (get().isRefreshing) return;
         set({ draft: content });
       },
       save: async () => {
-        const { conflict, revision } = get();
-        if (conflict) return;
+        const { conflict, revision, isRefreshing } = get();
+        if (conflict || isRefreshing) return;
         await persist(revision);
+      },
+      refreshMarkdown: async () => {
+        const state = get();
+        // A native menu click can arrive after the item was enabled.
+        if (!canRefreshMarkdown(state)) return;
+        if (isMarkdownDirty(state) && !confirmDiscard()) return;
+        await loadMarkdown(state.selectedPath, state.absolutePath, "refresh");
       },
       reloadFromDisk: async () => {
         const state = get();
@@ -374,18 +416,20 @@ export function createMarkdownViewerStore(
           absolutePath,
           conflict,
           conflictResolution,
+          isRefreshing,
         } = state;
         if (
-          conflict !== "changed" || conflictResolution || !selectedPath ||
-          !absolutePath
+          conflict !== "changed" || conflictResolution || isRefreshing ||
+          !selectedPath || !absolutePath
         ) return;
         if (isMarkdownDirty(state) && !confirmDiscard()) return;
         await loadMarkdown(selectedPath, absolutePath, "reload");
       },
       overwrite: async () => {
-        const { conflict, conflictResolution } = get();
+        const { conflict, conflictResolution, isRefreshing } = get();
         if (
-          !conflict || conflictResolution || !confirmOverwrite(conflict)
+          !conflict || conflictResolution || isRefreshing ||
+          !confirmOverwrite(conflict)
         ) return;
         await persist(undefined, "overwriting");
       },
@@ -431,8 +475,8 @@ export function createMarkdownViewerStore(
         // Content and its revision survive the move together: FileRevision's
         // contract keeps a token valid across a rename that leaves bytes
         // unchanged. The generation counter is left alone too: nothing is in
-        // flight (the rename UI waits for a pending save), and bumping it would
-        // throw away a result that belongs to this very file.
+        // flight (the rename UI waits for a pending save or refresh), and
+        // bumping it would throw away a result that belongs to this very file.
         set({
           history,
           selectedPath: card.path,

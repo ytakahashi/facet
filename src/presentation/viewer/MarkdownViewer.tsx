@@ -26,11 +26,14 @@ import {
   useShowAlert,
 } from "../context/appContext.ts";
 import { toUiError } from "../errors/toUiError.ts";
-import { buildCardContextMenu } from "../shared/cardContextMenu.ts";
 import { isInsideDialog } from "../shared/isInsideDialog.ts";
 import { isTextEditingTarget } from "../shared/isTextEditingTarget.ts";
 import { useMenuActions } from "../shared/useMenuActions.ts";
-import { isCardSaving, isMarkdownDirty } from "../store/markdownViewerStore.ts";
+import {
+  canRefreshMarkdown,
+  isCardSaving,
+  isMarkdownDirty,
+} from "../store/markdownViewerStore.ts";
 import { CardTitle } from "./CardTitle.tsx";
 import { CardBoardPosition } from "./CardBoardPosition.tsx";
 import { buildLabelDisplay } from "../labels/labelDisplay.ts";
@@ -49,6 +52,7 @@ import {
   VIEWER_WIDTH_STEP,
 } from "./viewerWidth.ts";
 import { resolveViewerShortcut } from "./viewerShortcut.ts";
+import { buildViewerContextMenu } from "./viewerContextMenu.ts";
 
 // The Markdown parser is large enough to dominate the initial bundle, while
 // edit mode does not need it. Load that dependency only when preview is shown.
@@ -75,6 +79,9 @@ export function MarkdownViewer() {
     isCardSaving(state, state.selectedPath)
   );
   const saveError = useMarkdownViewer((state) => state.saveError);
+  const isRefreshing = useMarkdownViewer((state) => state.isRefreshing);
+  const refreshError = useMarkdownViewer((state) => state.refreshError);
+  const canRefresh = useMarkdownViewer(canRefreshMarkdown);
   const conflict = useMarkdownViewer((state) => state.conflict);
   const conflictResolutionError = useMarkdownViewer(
     (state) => state.conflictResolutionError,
@@ -82,9 +89,11 @@ export function MarkdownViewer() {
   const conflictResolution = useMarkdownViewer(
     (state) => state.conflictResolution,
   );
-  const canSave = isDirty && !isSaving && conflict === undefined;
+  const canSave = isDirty && !isSaving && !isRefreshing &&
+    conflict === undefined;
   const updateDraft = useMarkdownViewer((state) => state.updateDraft);
   const save = useMarkdownViewer((state) => state.save);
+  const refreshMarkdown = useMarkdownViewer((state) => state.refreshMarkdown);
   const reloadFromDisk = useMarkdownViewer((state) => state.reloadFromDisk);
   const overwrite = useMarkdownViewer((state) => state.overwrite);
   const close = useMarkdownViewer((state) => state.close);
@@ -239,10 +248,11 @@ export function MarkdownViewer() {
     event.preventDefault();
     contextMenu.show(
       { x: event.clientX, y: event.clientY },
-      buildCardContextMenu(card, board, {
+      buildViewerContextMenu(card, board, canRefresh, {
         copyText,
         reveal,
         moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
+        refresh: () => void refreshMarkdown(),
       }),
     );
   }
@@ -434,7 +444,8 @@ export function MarkdownViewer() {
                 <button
                   type="button"
                   onClick={reloadFromDisk}
-                  disabled={isSaving || conflictResolution !== undefined}
+                  disabled={isSaving || isRefreshing ||
+                    conflictResolution !== undefined}
                 >
                   {conflictResolution === "reloading" ? "Reloading…" : "Reload"}
                 </button>
@@ -442,7 +453,8 @@ export function MarkdownViewer() {
               <button
                 type="button"
                 onClick={overwrite}
-                disabled={isSaving || conflictResolution !== undefined}
+                disabled={isSaving || isRefreshing ||
+                  conflictResolution !== undefined}
               >
                 {conflictResolution === "overwriting"
                   ? (conflict === "gone" ? "Recreating…" : "Overwriting…")
@@ -451,6 +463,17 @@ export function MarkdownViewer() {
             </SaveErrorBanner>
           )
           : saveError && <SaveErrorBanner message={saveError} />}
+        {refreshError && (
+          <SaveErrorBanner message={refreshError}>
+            <button
+              type="button"
+              onClick={() => void refreshMarkdown()}
+              disabled={!canRefresh}
+            >
+              Retry
+            </button>
+          </SaveErrorBanner>
+        )}
         {status === "loading" && (
           <p className="markdown-viewer__placeholder">Loading…</p>
         )}
@@ -487,6 +510,7 @@ export function MarkdownViewer() {
                   board={board}
                   fromPath={selectedPath}
                   autoFocus={focusEditorOnMount}
+                  readOnly={isRefreshing}
                 />
               )
               : (
