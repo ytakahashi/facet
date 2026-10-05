@@ -126,6 +126,20 @@ https://example.org
     expect(output).not.toContain("<button");
   });
 
+  it("shows a Mermaid block as its code block until the diagram is drawn", () => {
+    const output = renderToStaticMarkup(
+      <MarkdownPreview
+        markdown={"```mermaid\nflowchart LR\n  A --> B\n```"}
+        onCopyCode={() => Promise.resolve()}
+      />,
+    );
+
+    expect(output).toContain('class="markdown-preview__code-block"');
+    expect(output).toContain('<pre><code class="language-mermaid">');
+    expect(output).toContain("A --&gt; B");
+    expect(output).not.toContain('class="markdown-preview__mermaid"');
+  });
+
   it("does not add a copy button to inline code", () => {
     const output = renderToStaticMarkup(
       <MarkdownPreview
