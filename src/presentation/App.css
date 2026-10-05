@@ -1564,6 +1564,44 @@ body.is-pane-resizing * {
   color: var(--color-accent);
 }
 
+/* The renderer fixes the outer SVG to its viewBox dimensions, so a wide
+   diagram scrolls rather than shrinking. */
+.markdown-preview__mermaid {
+  margin: 0 0 16px;
+  overflow-x: auto;
+}
+
+/* Auto margins center a narrow diagram and resolve to zero for a wide one,
+   so its left edge always stays reachable by scrolling; text-align would leave
+   that to how the engine aligns an overflowing line. Block also drops the
+   baseline gap an inline SVG leaves below itself. The child combinator keeps
+   this off SVGs nested in labels, such as icons. */
+.markdown-preview__mermaid > svg {
+  display: block;
+  margin-inline: auto;
+}
+
+/* Keeps a diagram from looking interactive: links in it are stripped and
+   their clicks cancelled, so a pointer cursor would only mislead. This is not
+   what stops navigation; the diagram's own CSS can override it. */
+.markdown-preview__mermaid svg {
+  pointer-events: none;
+}
+
+.markdown-preview__mermaid-failed {
+  margin: 0 0 16px;
+}
+
+.markdown-preview__mermaid-failed > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-preview__mermaid-error {
+  margin: 0 0 6px;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
 .markdown-preview table {
   width: 100%;
   border-collapse: collapse;

@@ -3,15 +3,17 @@ import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Card } from "../../../domain/card.ts";
 import { codeBlockText } from "./codeBlockText.ts";
+import { isMermaidCodeBlock } from "./isMermaidCodeBlock.ts";
 import { MarkdownCodeBlock } from "./MarkdownCodeBlock.tsx";
+import { MermaidDiagram } from "./MermaidDiagram.tsx";
 
 interface MarkdownPreviewProps {
   markdown: string;
   resolveLink?: (href: string) => Card | undefined;
   onOpenCard?: (card: Card) => void;
   // Keep this stable across renders. A change to any of these callbacks
-  // rebuilds `components`, which remounts every code block and drops its
-  // "Copied" state.
+  // rebuilds `components`, which remounts every code block, dropping its
+  // "Copied" state and redrawing every Mermaid diagram.
   onCopyCode?: (text: string) => Promise<void>;
 }
 
@@ -52,18 +54,22 @@ export function MarkdownPreview({
       </span>
     ),
     // Only block code is wrapped: inline `code` never reaches `pre`.
-    ...(onCopyCode && {
-      pre: ({ children, node }) => {
-        if (!node) {
-          throw new Error("react-markdown passes the hast node to components");
-        }
-        return (
-          <MarkdownCodeBlock text={codeBlockText(node)} onCopy={onCopyCode}>
+    pre: ({ children, node }) => {
+      if (!node) {
+        throw new Error("react-markdown passes the hast node to components");
+      }
+      const text = codeBlockText(node);
+      const codeBlock = onCopyCode
+        ? (
+          <MarkdownCodeBlock text={text} onCopy={onCopyCode}>
             {children}
           </MarkdownCodeBlock>
-        );
-      },
-    }),
+        )
+        : <pre>{children}</pre>;
+      return isMermaidCodeBlock(node)
+        ? <MermaidDiagram source={text} fallback={codeBlock} />
+        : codeBlock;
+    },
   }), [onCopyCode, onOpenCard, resolveLink]);
 
   return (
