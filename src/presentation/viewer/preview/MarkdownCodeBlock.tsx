@@ -40,6 +40,7 @@ export function MarkdownCodeBlock(
       <pre>{children}</pre>
       <button
         type="button"
+        data-find-ignore
         className={isCopied
           ? "markdown-preview__copy markdown-preview__copy--copied"
           : "markdown-preview__copy"}

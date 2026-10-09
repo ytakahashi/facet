@@ -116,6 +116,7 @@ https://example.org
     expect(output).toContain('class="markdown-preview__code-block"');
     expect(output).toContain('<pre><code class="language-ts">');
     expect(output).toContain('aria-label="Copy code"');
+    expect(output).toContain("data-find-ignore");
   });
 
   it("renders a code block without a copy button when copying is not provided", () => {

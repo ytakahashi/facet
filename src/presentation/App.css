@@ -1397,6 +1397,87 @@ body.is-pane-resizing * {
   color: var(--color-text);
 }
 
+.markdown-find {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.markdown-find input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.markdown-find input:focus-visible {
+  outline: 2px solid var(--color-accent-warm);
+  outline-offset: 1px;
+}
+
+.markdown-find__count {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+.markdown-find__count--empty {
+  color: var(--color-danger);
+}
+
+.markdown-find button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.markdown-find button:hover:not(:disabled) {
+  background: var(--color-accent-warm-bg);
+}
+
+.markdown-find button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* WKWebView does not inherit these highlight styles from the preview root.
+   Match descendants explicitly so the text-bearing elements are styled. */
+.markdown-preview::highlight(facet-find),
+.markdown-preview *::highlight(facet-find) {
+  background-color: var(--color-find-match-bg);
+  color: var(--color-text-strong);
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-accent-warm);
+}
+
+.markdown-preview::highlight(facet-find-active),
+.markdown-preview *::highlight(facet-find-active) {
+  background-color: var(--color-accent-warm);
+  color: var(--color-on-accent-warm);
+  text-decoration-line: none;
+}
+
 .markdown-preview {
   flex: 1;
   min-height: 0;

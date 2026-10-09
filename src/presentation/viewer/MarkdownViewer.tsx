@@ -53,6 +53,8 @@ import {
 } from "./viewerWidth.ts";
 import { resolveViewerShortcut } from "./viewerShortcut.ts";
 import { buildViewerContextMenu } from "./viewerContextMenu.ts";
+import { FindBar } from "./find/FindBar.tsx";
+import { useMarkdownFind } from "./find/useMarkdownFind.ts";
 
 // The Markdown parser is large enough to dominate the initial bundle, while
 // edit mode does not need it. Load that dependency only when preview is shown.
@@ -202,11 +204,18 @@ export function MarkdownViewer() {
 
   // Matches when the Edit/Preview switch is shown below.
   const canToggleMode = status === "loaded" && draft !== undefined;
+  const canFind = canToggleMode && viewerMode === "preview";
+  const find = useMarkdownFind(selectedPath, canFind);
+  const { open: openFind, next: nextFind, previous: previousFind } = find;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const shortcut = resolveViewerShortcut(event);
       if (!shortcut) return;
+      if (
+        (shortcut === "find-next" || shortcut === "find-previous") &&
+        (!canFind || !find.isOpen)
+      ) return;
       const isModalOpen = document.querySelector("dialog[open]") !== null;
       if (shortcut === "close") {
         // Escape is left unclaimed wherever something else owns it: a modal
@@ -224,6 +233,15 @@ export function MarkdownViewer() {
       event.preventDefault();
       if (isModalOpen) return;
       switch (shortcut) {
+        case "find":
+          if (canFind) openFind();
+          return;
+        case "find-next":
+          nextFind();
+          return;
+        case "find-previous":
+          previousFind();
+          return;
         case "back":
           if (board) void goBack(board);
           return;
@@ -239,7 +257,20 @@ export function MarkdownViewer() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [board, canSave, canToggleMode, close, goBack, save, toggleViewerMode]);
+  }, [
+    board,
+    canSave,
+    canToggleMode,
+    canFind,
+    find.isOpen,
+    openFind,
+    nextFind,
+    previousFind,
+    close,
+    goBack,
+    save,
+    toggleViewerMode,
+  ]);
 
   function handleContextMenu(event: MouseEvent<HTMLDivElement>) {
     if (!card || !board || isTextEditingTarget(event.target)) return;
@@ -502,6 +533,19 @@ export function MarkdownViewer() {
                 Preview
               </button>
             </div>
+            {canFind && find.isOpen && (
+              <FindBar
+                query={find.query}
+                count={find.ranges.length}
+                activeIndex={find.activeIndex}
+                focusToken={find.focusToken}
+                handledFocusToken={find.handledFocusToken}
+                onQueryChange={find.setQuery}
+                onNext={find.next}
+                onPrevious={find.previous}
+                onClose={find.close}
+              />
+            )}
             {viewerMode === "edit"
               ? (
                 <MarkdownEditor
@@ -522,10 +566,13 @@ export function MarkdownViewer() {
                   }
                 >
                   <MarkdownPreview
+                    key={selectedPath}
                     markdown={draft}
                     resolveLink={resolveLink}
                     onOpenCard={openCard}
                     onCopyCode={copyCode}
+                    find={find.previewFind}
+                    onFindTextChange={find.onFindTextChange}
                   />
                 </Suspense>
               )}

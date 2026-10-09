@@ -21,6 +21,10 @@
   --color-accent-bg: rgba(104, 89, 138, 0.08);
   --color-accent-warm: #c58f3c;
   --color-accent-warm-bg: rgba(197, 143, 60, 0.1);
+  /* Search matches need a stronger fill than hover states. */
+  --color-find-match-bg: rgba(197, 143, 60, 0.24);
+  /* Solid citrine highlights need a dark foreground in both schemes. */
+  --color-on-accent-warm: #231d2e;
 
   /* Errors and destructive actions. */
   --color-danger: #bf3b6c;
@@ -100,6 +104,7 @@
     --color-accent-bg: rgba(134, 117, 169, 0.12);
     --color-accent-warm: #dca54c;
     --color-accent-warm-bg: rgba(220, 165, 76, 0.12);
+    --color-find-match-bg: rgba(220, 165, 76, 0.28);
 
     --color-danger: #c94b79;
 
