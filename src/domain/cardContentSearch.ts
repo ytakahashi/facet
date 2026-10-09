@@ -1,6 +1,7 @@
 import type { Board } from "./board.ts";
 import type { Card } from "./card.ts";
 import { canonicalSearchQuery, canonicalSearchText } from "./searchText.ts";
+import type { TextRange } from "./textMatch.ts";
 
 // These are presentation-oriented initial limits rather than search
 // correctness constraints: keep one card from dominating the result list,
@@ -8,13 +9,6 @@ import { canonicalSearchQuery, canonicalSearchText } from "./searchText.ts";
 const MAX_VISIBLE_LINES = 3;
 const SNIPPET_LEADING_CODE_POINTS = 30;
 const MAX_SNIPPET_CODE_POINTS = 120;
-
-export interface TextRange {
-  // Offsets use JavaScript's UTF-16 string indices so presentation can pass
-  // them directly to String.slice when rendering highlighted segments.
-  start: number;
-  end: number;
-}
 
 export interface ContentLineHit {
   lineNumber: number;

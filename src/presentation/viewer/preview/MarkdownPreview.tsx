@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Card } from "../../../domain/card.ts";
@@ -6,6 +6,11 @@ import { codeBlockText } from "./codeBlockText.ts";
 import { isMermaidCodeBlock } from "./isMermaidCodeBlock.ts";
 import { MarkdownCodeBlock } from "./MarkdownCodeBlock.tsx";
 import { MermaidDiagram } from "./MermaidDiagram.tsx";
+import type { FindText } from "../find/markdownFindState.ts";
+import {
+  type FindPresentation,
+  usePreviewFind,
+} from "../find/usePreviewFind.ts";
 
 interface MarkdownPreviewProps {
   markdown: string;
@@ -15,6 +20,8 @@ interface MarkdownPreviewProps {
   // rebuilds `components`, which remounts every code block, dropping its
   // "Copied" state and redrawing every Mermaid diagram.
   onCopyCode?: (text: string) => Promise<void>;
+  find?: FindPresentation;
+  onFindTextChange?: (source: FindText) => void;
 }
 
 export function MarkdownPreview({
@@ -22,7 +29,11 @@ export function MarkdownPreview({
   resolveLink,
   onOpenCard,
   onCopyCode,
+  find,
+  onFindTextChange,
 }: MarkdownPreviewProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  usePreviewFind(rootRef, find, onFindTextChange);
   const components = useMemo<Components>(() => ({
     // Card links are buttons rather than anchors so no interaction path,
     // including modified clicks or dragging, can navigate the WebView.
@@ -72,11 +83,20 @@ export function MarkdownPreview({
     },
   }), [onCopyCode, onOpenCard, resolveLink]);
 
-  return (
-    <div className="markdown-preview">
+  // Find updates change overlays, not the Markdown document. Keep the element
+  // stable so react-markdown does not parse the same source on each keystroke.
+  const content = useMemo(
+    () => (
       <Markdown remarkPlugins={[remarkGfm]} components={components}>
         {markdown}
       </Markdown>
+    ),
+    [markdown, components],
+  );
+
+  return (
+    <div className="markdown-preview" ref={rootRef}>
+      {content}
     </div>
   );
 }

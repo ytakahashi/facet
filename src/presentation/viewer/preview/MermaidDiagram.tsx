@@ -47,7 +47,11 @@ export function MermaidDiagram({ source, fallback }: MermaidDiagramProps) {
   if ("failed" in result) {
     return (
       <div className="markdown-preview__mermaid-failed">
-        <p className="markdown-preview__mermaid-error" role="status">
+        <p
+          className="markdown-preview__mermaid-error"
+          role="status"
+          data-find-ignore
+        >
           Could not render this Mermaid diagram.
         </p>
         {fallback}

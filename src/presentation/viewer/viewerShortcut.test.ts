@@ -20,6 +20,28 @@ function escape(overrides: Partial<KeyboardEvent> = {}) {
 }
 
 describe("resolveViewerShortcut", () => {
+  it("recognises find without claiming the board content-search shortcut", () => {
+    expect(shortcut({ key: "f" })).toBe("find");
+    expect(shortcut({ key: "F" })).toBe("find");
+    expect(shortcut({ key: "F", shiftKey: true })).toBeUndefined();
+  });
+
+  it("recognises next and previous find with either letter case", () => {
+    expect(shortcut({ key: "g" })).toBe("find-next");
+    expect(shortcut({ key: "G" })).toBe("find-next");
+    expect(shortcut({ key: "g", shiftKey: true })).toBe("find-previous");
+    expect(shortcut({ key: "G", shiftKey: true })).toBe("find-previous");
+  });
+
+  it("rejects invalid modifiers and IME-consumed find keys", () => {
+    for (const key of ["f", "g"]) {
+      expect(shortcut({ key, metaKey: false })).toBeUndefined();
+      expect(shortcut({ key, ctrlKey: true })).toBeUndefined();
+      expect(shortcut({ key, altKey: true })).toBeUndefined();
+      expect(shortcut({ key, isComposing: true })).toBeUndefined();
+      expect(shortcut({ key, keyCode: 229 })).toBeUndefined();
+    }
+  });
   it("recognises Command-[ as back", () => {
     expect(shortcut({ key: "[" })).toBe("back");
   });
