@@ -2,6 +2,7 @@ import { type RefObject, useEffect, useRef } from "react";
 import { resolveFindShortcut } from "./findShortcut.ts";
 
 interface FindBarProps {
+  mode: "edit" | "preview";
   query: string;
   count: number;
   activeIndex: number | undefined;
@@ -17,6 +18,7 @@ interface FindBarProps {
 
 export function FindBar(
   {
+    mode,
     query,
     count,
     activeIndex,
@@ -29,6 +31,7 @@ export function FindBar(
   }: FindBarProps,
 ) {
   const input = useRef<HTMLInputElement>(null);
+  const targetName = mode === "edit" ? "editor" : "preview";
   useEffect(() => {
     if (handledFocusToken.current === focusToken || !input.current) return;
     handledFocusToken.current = focusToken;
@@ -39,13 +42,13 @@ export function FindBar(
     <div
       className="markdown-find"
       role="search"
-      aria-label="Find in Markdown preview"
+      aria-label={`Find in Markdown ${targetName}`}
     >
       <input
         ref={input}
         type="text"
-        aria-label="Find in preview"
-        placeholder="Find in preview"
+        aria-label={`Find in ${targetName}`}
+        placeholder={`Find in ${targetName}`}
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
         onKeyDown={(event) => {

@@ -204,9 +204,13 @@ export function MarkdownViewer() {
 
   // Matches when the Edit/Preview switch is shown below.
   const canToggleMode = status === "loaded" && draft !== undefined;
-  const canFind = canToggleMode && viewerMode === "preview";
-  const find = useMarkdownFind(selectedPath, canFind);
-  const { open: openFind, next: nextFind, previous: previousFind } = find;
+  const find = useMarkdownFind(selectedPath, canToggleMode, viewerMode);
+  const {
+    open: openFind,
+    close: closeFind,
+    next: nextFind,
+    previous: previousFind,
+  } = find;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -214,17 +218,25 @@ export function MarkdownViewer() {
       if (!shortcut) return;
       if (
         (shortcut === "find-next" || shortcut === "find-previous") &&
-        (!canFind || !find.isOpen)
+        (!canToggleMode || !find.isOpen)
       ) return;
       const isModalOpen = document.querySelector("dialog[open]") !== null;
       if (shortcut === "close") {
         // Escape is left unclaimed wherever something else owns it: a modal
         // closes on Escape as its default action, which preventDefault would
         // cancel, and single-line fields (card title, column and board names,
-        // including those on the board) use it to cancel their own edit. The
-        // Markdown textarea has no Escape behaviour, so it still closes here.
+        // including those on the board) use it to cancel their own edit.
+        // In the Markdown textarea, close find before closing the viewer.
         if (isModalOpen || isEscapeOwnedByField(event.target)) return;
         event.preventDefault();
+        if (
+          viewerMode === "edit" && find.isOpen &&
+          event.target instanceof Element &&
+          event.target.hasAttribute("data-markdown-editor")
+        ) {
+          closeFind({ restoreSelection: false });
+          return;
+        }
         close();
         return;
       }
@@ -234,7 +246,7 @@ export function MarkdownViewer() {
       if (isModalOpen) return;
       switch (shortcut) {
         case "find":
-          if (canFind) openFind();
+          if (canToggleMode) openFind();
           return;
         case "find-next":
           nextFind();
@@ -261,9 +273,10 @@ export function MarkdownViewer() {
     board,
     canSave,
     canToggleMode,
-    canFind,
     find.isOpen,
     openFind,
+    closeFind,
+    viewerMode,
     nextFind,
     previousFind,
     close,
@@ -533,8 +546,9 @@ export function MarkdownViewer() {
                 Preview
               </button>
             </div>
-            {canFind && find.isOpen && (
+            {find.isOpen && (
               <FindBar
+                mode={viewerMode}
                 query={find.query}
                 count={find.ranges.length}
                 activeIndex={find.activeIndex}
@@ -543,18 +557,21 @@ export function MarkdownViewer() {
                 onQueryChange={find.setQuery}
                 onNext={find.next}
                 onPrevious={find.previous}
-                onClose={find.close}
+                onClose={() => find.close({ restoreSelection: true })}
               />
             )}
             {viewerMode === "edit"
               ? (
                 <MarkdownEditor
+                  key={selectedPath}
                   value={draft}
                   onChange={updateDraft}
                   board={board}
                   fromPath={selectedPath}
                   autoFocus={focusEditorOnMount}
                   readOnly={isRefreshing}
+                  find={find.presentation}
+                  onFindTextChange={find.onFindTextChange}
                 />
               )
               : (
@@ -571,7 +588,7 @@ export function MarkdownViewer() {
                     resolveLink={resolveLink}
                     onOpenCard={openCard}
                     onCopyCode={copyCode}
-                    find={find.previewFind}
+                    find={find.presentation}
                     onFindTextChange={find.onFindTextChange}
                   />
                 </Suspense>

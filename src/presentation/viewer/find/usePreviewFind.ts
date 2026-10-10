@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
 } from "react";
-import type { TextRange } from "../../../domain/textMatch.ts";
 import { collectPreviewText } from "./collectPreviewText.ts";
 import {
   clearFindHighlights,
@@ -14,14 +13,7 @@ import {
   setFindHighlights,
   visiblePreviewOffset,
 } from "./findHighlights.ts";
-import type { FindText } from "./markdownFindState.ts";
-
-export interface FindPresentation {
-  source: FindText | undefined;
-  ranges: readonly TextRange[];
-  activeIndex: number | undefined;
-  revealToken: number;
-}
+import type { FindPresentation, FindText } from "./findPresentation.ts";
 
 export function usePreviewFind(
   rootRef: RefObject<HTMLDivElement | null>,
@@ -43,7 +35,7 @@ export function usePreviewFind(
       const index = collectPreviewText(root);
       const source: FindText = {
         text: index.text,
-        getVisibleOffset: () => {
+        getAnchorOffset: () => {
           flushMutations.current();
           return currentSource.current === source
             ? visiblePreviewOffset(root, index)

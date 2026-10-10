@@ -12,6 +12,9 @@ import {
 } from "./cardLinkInsertion.ts";
 import { resolveEditorShortcut } from "./editorShortcut.ts";
 import { InsertCardLinkDialog } from "./InsertCardLinkDialog.tsx";
+import type { FindPresentation, FindText } from "../find/findPresentation.ts";
+import { EditorFindBackdrop } from "./EditorFindBackdrop.tsx";
+import { useEditorFind } from "./useEditorFind.ts";
 
 interface MarkdownEditorProps {
   value: string;
@@ -21,6 +24,8 @@ interface MarkdownEditorProps {
   // Read on mount only, as the native attribute is.
   autoFocus?: boolean;
   readOnly?: boolean;
+  find?: FindPresentation;
+  onFindTextChange?: (source: FindText) => void;
 }
 
 export function MarkdownEditor(
@@ -31,9 +36,21 @@ export function MarkdownEditor(
     fromPath,
     autoFocus = false,
     readOnly = false,
+    find,
+    onFindTextChange,
   }: MarkdownEditorProps,
 ) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const { text, syncScroll } = useEditorFind(
+    value,
+    textareaRef,
+    backdropRef,
+    textRef,
+    find,
+    onFindTextChange,
+  );
   const insertionTargetRef = useRef<LinkInsertionTarget | undefined>(
     undefined,
   );
@@ -76,28 +93,37 @@ export function MarkdownEditor(
 
   return (
     <>
-      <textarea
-        ref={textareaRef}
-        className="markdown-editor"
-        value={value}
-        readOnly={readOnly}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (!resolveEditorShortcut(event.nativeEvent)) return;
-          // Claim the app shortcut once recognised, even when this card's
-          // path cannot produce a link and the palette therefore stays shut.
-          event.preventDefault();
-          if (readOnly || !isLinkableCardPath(fromPath)) return;
-          insertionTargetRef.current = resolveLinkInsertionTarget(
-            value,
-            event.currentTarget.selectionStart,
-            event.currentTarget.selectionEnd,
-          );
-          setIsDialogOpen(true);
-        }}
-        spellCheck={false}
-        autoFocus={autoFocus}
-      />
+      <div className="markdown-editor-frame">
+        <EditorFindBackdrop
+          text={text}
+          backdropRef={backdropRef}
+          textRef={textRef}
+        />
+        <textarea
+          ref={textareaRef}
+          className="markdown-editor"
+          data-markdown-editor
+          value={value}
+          readOnly={readOnly}
+          onChange={(event) => onChange(event.target.value)}
+          onScroll={syncScroll}
+          onKeyDown={(event) => {
+            if (!resolveEditorShortcut(event.nativeEvent)) return;
+            // Claim the app shortcut once recognised, even when this card's
+            // path cannot produce a link and the palette therefore stays shut.
+            event.preventDefault();
+            if (readOnly || !isLinkableCardPath(fromPath)) return;
+            insertionTargetRef.current = resolveLinkInsertionTarget(
+              value,
+              event.currentTarget.selectionStart,
+              event.currentTarget.selectionEnd,
+            );
+            setIsDialogOpen(true);
+          }}
+          spellCheck={false}
+          autoFocus={autoFocus}
+        />
+      </div>
       <InsertCardLinkDialog
         board={board}
         fromPath={fromPath}

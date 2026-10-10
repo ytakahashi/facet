@@ -6,11 +6,8 @@ import { codeBlockText } from "./codeBlockText.ts";
 import { isMermaidCodeBlock } from "./isMermaidCodeBlock.ts";
 import { MarkdownCodeBlock } from "./MarkdownCodeBlock.tsx";
 import { MermaidDiagram } from "./MermaidDiagram.tsx";
-import type { FindText } from "../find/markdownFindState.ts";
-import {
-  type FindPresentation,
-  usePreviewFind,
-} from "../find/usePreviewFind.ts";
+import type { FindPresentation, FindText } from "../find/findPresentation.ts";
+import { usePreviewFind } from "../find/usePreviewFind.ts";
 
 interface MarkdownPreviewProps {
   markdown: string;
