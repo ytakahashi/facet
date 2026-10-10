@@ -2,9 +2,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { FindBar } from "./FindBar.tsx";
 
-function render(query: string, count: number, activeIndex: number | undefined) {
+function render(
+  query: string,
+  count: number,
+  activeIndex: number | undefined,
+  mode: "edit" | "preview" = "preview",
+) {
   return renderToStaticMarkup(
     <FindBar
+      mode={mode}
       query={query}
       count={count}
       activeIndex={activeIndex}
@@ -19,6 +25,12 @@ function render(query: string, count: number, activeIndex: number | undefined) {
 }
 
 describe("FindBar", () => {
+  it("labels the shared search bar for the editor", () => {
+    const output = render("draft", 1, 0, "edit");
+    expect(output).toContain('aria-label="Find in Markdown editor"');
+    expect(output).toContain('aria-label="Find in editor"');
+    expect(output).toContain('placeholder="Find in editor"');
+  });
   it("renders the current position and labelled controls", () => {
     const output = render("word", 12, 2);
     expect(output).toContain("3 / 12");

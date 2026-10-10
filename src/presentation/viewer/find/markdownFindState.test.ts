@@ -1,15 +1,80 @@
 import { describe, expect, it } from "vitest";
 import {
-  type FindText,
   initialMarkdownFindState,
   reduceMarkdownFind,
 } from "./markdownFindState.ts";
+import type { FindText } from "./findPresentation.ts";
 
 function source(text: string, offset = 0): FindText {
-  return { text, getVisibleOffset: () => offset };
+  return { text, getAnchorOffset: () => offset };
 }
 
 describe("Markdown find state", () => {
+  it("replaces the query with the selected text and anchors at that selection", () => {
+    let state = reduceMarkdownFind(initialMarkdownFindState, {
+      type: "source",
+      source: source("one two one two"),
+      offset: 0,
+    });
+    state = reduceMarkdownFind(state, { type: "query", query: "two" });
+    state = reduceMarkdownFind(state, { type: "move", direction: 1 });
+    state = reduceMarkdownFind(state, {
+      type: "open",
+      query: "one",
+      offset: 8,
+    });
+    expect(state.isOpen).toBe(true);
+    expect(state.query).toBe("one");
+    expect(state.activeIndex).toBe(1);
+    expect(state.ranges[state.activeIndex!]).toEqual({ start: 8, end: 11 });
+    expect(state.focusToken).toBe(1);
+    expect(state.revealToken).toBe(3);
+  });
+
+  it("retains the query and current match when opening without selected text", () => {
+    let state = reduceMarkdownFind(initialMarkdownFindState, { type: "open" });
+    state = reduceMarkdownFind(state, {
+      type: "source",
+      source: source("one one"),
+      offset: 0,
+    });
+    state = reduceMarkdownFind(state, { type: "query", query: "one" });
+    state = reduceMarkdownFind(state, { type: "move", direction: 1 });
+    const revealToken = state.revealToken;
+    state = reduceMarkdownFind(state, { type: "open" });
+    expect(state.query).toBe("one");
+    expect(state.activeIndex).toBe(1);
+    expect(state.revealToken).toBe(revealToken);
+  });
+
+  it("discards offsets from the previous mode and starts at the new caret", () => {
+    let state = reduceMarkdownFind(initialMarkdownFindState, { type: "open" });
+    state = reduceMarkdownFind(state, {
+      type: "source",
+      source: source("one one"),
+      offset: 0,
+    });
+    state = reduceMarkdownFind(state, { type: "query", query: "one" });
+    const focusToken = state.focusToken;
+    const revealToken = state.revealToken;
+    state = reduceMarkdownFind(state, {
+      type: "context",
+      context: { cardPath: undefined, enabled: true, mode: "edit" },
+    });
+    expect(state.source).toBeUndefined();
+    expect(state.ranges).toEqual([]);
+    state = reduceMarkdownFind(state, {
+      type: "source",
+      source: source("**one** one"),
+      offset: 8,
+    });
+    expect(state.isOpen).toBe(true);
+    expect(state.query).toBe("one");
+    expect(state.activeIndex).toBe(1);
+    expect(state.focusToken).toBe(focusToken);
+    expect(state.revealToken).toBe(revealToken);
+  });
+
   it("keeps the current match when refining a query even if earlier matches are visible", () => {
     let state = reduceMarkdownFind(initialMarkdownFindState, {
       type: "source",
@@ -96,7 +161,8 @@ describe("Markdown find state", () => {
     expect(state.revealToken).toBe(2);
   });
   it("keeps the closest match across DOM changes without scrolling", () => {
-    let state = reduceMarkdownFind(initialMarkdownFindState, {
+    let state = reduceMarkdownFind(initialMarkdownFindState, { type: "open" });
+    state = reduceMarkdownFind(state, {
       type: "source",
       source: source("a   a"),
       offset: 0,
@@ -106,6 +172,7 @@ describe("Markdown find state", () => {
       query: "a",
       visibleOffset: 4,
     });
+    const revealToken = state.revealToken;
     const replacement = source("a    a");
     state = reduceMarkdownFind(state, {
       type: "source",
@@ -114,7 +181,7 @@ describe("Markdown find state", () => {
     });
     expect(state.source).toBe(replacement);
     expect(state.activeIndex).toBe(1);
-    expect(state.revealToken).toBe(1);
+    expect(state.revealToken).toBe(revealToken);
     state = reduceMarkdownFind(state, {
       type: "source",
       source: source("nothing"),
@@ -129,7 +196,14 @@ describe("Markdown find state", () => {
       query: "a",
       visibleOffset: 0,
     });
-    state = reduceMarkdownFind(state, { type: "reset", position: "first" });
+    state = reduceMarkdownFind(state, {
+      type: "context",
+      context: { cardPath: "next.md", enabled: false, mode: "preview" },
+    });
+    state = reduceMarkdownFind(state, {
+      type: "context",
+      context: { cardPath: "next.md", enabled: true, mode: "preview" },
+    });
     state = reduceMarkdownFind(state, {
       type: "source",
       source: source("a a a", 4),
@@ -140,7 +214,8 @@ describe("Markdown find state", () => {
     expect(state.activeIndex).toBe(0);
   });
   it("uses the visible position when a pending query gains its first DOM snapshot", () => {
-    let state = reduceMarkdownFind(initialMarkdownFindState, {
+    let state = reduceMarkdownFind(initialMarkdownFindState, { type: "open" });
+    state = reduceMarkdownFind(state, {
       type: "query",
       query: "a",
       visibleOffset: 0,
@@ -164,5 +239,69 @@ describe("Markdown find state", () => {
     state = reduceMarkdownFind(state, { type: "close" });
     expect(state.isOpen).toBe(false);
     expect(state.query).toBe("word");
+  });
+
+  it("does not read source text for matching while the bar is closed", () => {
+    let state = reduceMarkdownFind(initialMarkdownFindState, {
+      type: "query",
+      query: "word",
+    });
+    const unreadable: FindText = {
+      get text(): string {
+        throw new Error("Closed find must not inspect text for matching");
+      },
+      getAnchorOffset: () => 0,
+    };
+    state = reduceMarkdownFind(state, { type: "open" });
+    state = reduceMarkdownFind(state, { type: "close" });
+    state = reduceMarkdownFind(state, {
+      type: "source",
+      source: unreadable,
+      offset: 0,
+    });
+    expect(state.source).toBe(unreadable);
+    expect(state.query).toBe("word");
+    expect(state.ranges).toEqual([]);
+    expect(state.activeIndex).toBeUndefined();
+  });
+
+  it("matches the latest closed draft when reopened and uses the live caret", () => {
+    let state = reduceMarkdownFind(initialMarkdownFindState, { type: "open" });
+    state = reduceMarkdownFind(state, {
+      type: "source",
+      source: source("word"),
+      offset: 0,
+    });
+    state = reduceMarkdownFind(state, { type: "query", query: "word" });
+    state = reduceMarkdownFind(state, { type: "close" });
+    const revealToken = state.revealToken;
+    const replacement = source("new word word", 9);
+    state = reduceMarkdownFind(state, {
+      type: "source",
+      source: replacement,
+      offset: 9,
+    });
+    expect(state.ranges).toEqual([]);
+    expect(state.revealToken).toBe(revealToken);
+    state = reduceMarkdownFind(state, { type: "open", offset: 9 });
+    expect(state.ranges).toEqual([{ start: 4, end: 8 }, { start: 9, end: 13 }]);
+    expect(state.activeIndex).toBe(1);
+    expect(state.source).toBe(replacement);
+  });
+
+  it("keeps a fresh source across an enabled context update", () => {
+    let state = reduceMarkdownFind(initialMarkdownFindState, { type: "open" });
+    state = reduceMarkdownFind(state, {
+      type: "source",
+      source: source("word word"),
+      offset: 0,
+    });
+    state = reduceMarkdownFind(state, { type: "query", query: "word" });
+    state = reduceMarkdownFind(state, {
+      type: "context",
+      context: { cardPath: undefined, enabled: true, mode: "preview" },
+    });
+    expect(state.source?.text).toBe("word word");
+    expect(state.ranges).toHaveLength(2);
   });
 });

@@ -5,12 +5,16 @@ import {
   nearestFindIndex,
 } from "./findNavigation.ts";
 
-export interface FindText {
-  text: string;
-  getVisibleOffset: () => number;
+import type { FindText } from "./findPresentation.ts";
+
+export interface MarkdownFindContext {
+  cardPath: string | undefined;
+  enabled: boolean;
+  mode: "edit" | "preview";
 }
 
 export interface MarkdownFindState {
+  context: MarkdownFindContext;
   isOpen: boolean;
   query: string;
   source: FindText | undefined;
@@ -22,6 +26,7 @@ export interface MarkdownFindState {
 }
 
 export const initialMarkdownFindState: MarkdownFindState = {
+  context: { cardPath: undefined, enabled: false, mode: "preview" },
   isOpen: false,
   query: "",
   source: undefined,
@@ -33,11 +38,11 @@ export const initialMarkdownFindState: MarkdownFindState = {
 };
 
 export type MarkdownFindAction =
-  | { type: "open" }
+  | { type: "open"; query?: string; offset?: number }
   | { type: "close" }
   | { type: "query"; query: string; visibleOffset?: number }
   | { type: "source"; source: FindText; offset: number }
-  | { type: "reset"; position: "first" | "visible" }
+  | { type: "context"; context: MarkdownFindContext }
   | { type: "move"; direction: 1 | -1 };
 
 export function reduceMarkdownFind(
@@ -45,8 +50,27 @@ export function reduceMarkdownFind(
   action: MarkdownFindAction,
 ): MarkdownFindState {
   switch (action.type) {
-    case "open":
-      return { ...state, isOpen: true, focusToken: state.focusToken + 1 };
+    case "open": {
+      if (state.isOpen && action.query === undefined) {
+        return { ...state, isOpen: true, focusToken: state.focusToken + 1 };
+      }
+      const query = action.query ?? state.query;
+      const ranges = findTextMatches(state.source?.text ?? "", query);
+      const offset =
+        action.query === undefined && state.activeIndex !== undefined
+          ? state.ranges[state.activeIndex].start
+          : action.offset ?? 0;
+      return {
+        ...state,
+        isOpen: true,
+        query,
+        ranges,
+        activeIndex: findIndexFromOffset(ranges, offset),
+        initialPosition: "visible",
+        focusToken: state.focusToken + 1,
+        revealToken: state.revealToken + 1,
+      };
+    }
     case "close":
       return { ...state, isOpen: false };
     case "query": {
@@ -66,6 +90,16 @@ export function reduceMarkdownFind(
       };
     }
     case "source": {
+      // Keep the live selection port available while closed, but avoid the
+      // grapheme segmentation and matching cost on every editor keystroke.
+      if (!state.isOpen) {
+        return {
+          ...state,
+          source: action.source,
+          ranges: [],
+          activeIndex: undefined,
+        };
+      }
       const ranges = findTextMatches(action.source.text, state.query);
       const previousStart = state.activeIndex === undefined
         ? 0
@@ -78,14 +112,21 @@ export function reduceMarkdownFind(
         );
       return { ...state, source: action.source, ranges, activeIndex };
     }
-    case "reset":
+    case "context": {
+      const cardChanged = state.context.cardPath !== action.context.cardPath;
+      if (
+        !cardChanged && state.context.mode === action.context.mode &&
+        action.context.enabled
+      ) return { ...state, context: action.context };
       return {
         ...state,
+        context: action.context,
         source: undefined,
         ranges: [],
         activeIndex: undefined,
-        initialPosition: action.position,
+        initialPosition: cardChanged ? "first" : "visible",
       };
+    }
     case "move":
       return {
         ...state,

@@ -35,6 +35,16 @@ export function setFindHighlights(
   matches: readonly TextRange[],
   activeIndex: number | undefined,
 ) {
+  registerFindHighlights(
+    matches.map((match) => previewDomRange(index, match)),
+    activeIndex,
+  );
+}
+
+export function registerFindHighlights(
+  ranges: readonly (Range | undefined)[],
+  activeIndex: number | undefined,
+) {
   clearFindHighlights();
   if (
     typeof CSS === "undefined" || !CSS.highlights ||
@@ -43,8 +53,7 @@ export function setFindHighlights(
   const all = new Highlight();
   const active = new Highlight();
   active.priority = 1;
-  matches.forEach((match, matchIndex) => {
-    const range = previewDomRange(index, match);
+  ranges.forEach((range, matchIndex) => {
     if (!range) return;
     all.add(range);
     if (matchIndex === activeIndex) active.add(range);
