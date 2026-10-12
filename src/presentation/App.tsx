@@ -10,6 +10,8 @@ import { MarkdownViewer } from "./viewer/MarkdownViewer.tsx";
 import { NewBoardDialog } from "./shell/NewBoardDialog.tsx";
 import { StartScreen } from "./shell/StartScreen.tsx";
 import { TabBar } from "./shell/TabBar.tsx";
+import { ShortcutHelpButton } from "./shell/ShortcutHelpButton.tsx";
+import { ShortcutHelpDialog } from "./shell/ShortcutHelpDialog.tsx";
 import "./App.css";
 
 function BoardView() {
@@ -46,7 +48,10 @@ function App() {
 
   return (
     <>
-      <TabBar />
+      <div className="app-header">
+        <TabBar />
+        <ShortcutHelpButton />
+      </div>
       <div
         id="workspace-panel"
         role="tabpanel"
@@ -67,6 +72,7 @@ function App() {
           before the submit handler finishes. */
       }
       <NewBoardDialog />
+      <ShortcutHelpDialog />
     </>
   );
 }

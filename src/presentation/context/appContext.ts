@@ -10,6 +10,7 @@ import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import type { NewBoardDialogState } from "../store/newBoardDialogStore.ts";
 import type { PaneLayoutState } from "../store/paneLayoutStore.ts";
 import type { RecentBoardsState } from "../store/recentBoardsStore.ts";
+import type { ShortcutHelpState } from "../store/shortcutHelpStore.ts";
 import type { WorkspaceState } from "../store/workspaceStore.ts";
 
 export interface DirectoryBrowsing {
@@ -57,6 +58,7 @@ export interface AppDependencies {
   newBoardDialog: UseBoundStore<StoreApi<NewBoardDialogState>>;
   paneLayout: UseBoundStore<StoreApi<PaneLayoutState>>;
   recentBoards: UseBoundStore<StoreApi<RecentBoardsState>>;
+  shortcutHelp: UseBoundStore<StoreApi<ShortcutHelpState>>;
   showAlert: (message: string) => void;
   workspace: UseBoundStore<StoreApi<WorkspaceState>>;
 }
@@ -148,6 +150,12 @@ export function useRecentBoards<T>(
 
 export function useShowAlert(): (message: string) => void {
   return useAppDependencies().showAlert;
+}
+
+export function useShortcutHelp<T>(
+  selector: (state: ShortcutHelpState) => T,
+): T {
+  return useAppDependencies().shortcutHelp(selector);
 }
 
 export function useWorkspace<T>(selector: (state: WorkspaceState) => T): T {
