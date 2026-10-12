@@ -10,7 +10,7 @@ import {
   type LinkInsertionTarget,
   resolveLinkInsertionTarget,
 } from "./cardLinkInsertion.ts";
-import { resolveEditorShortcut } from "./editorShortcut.ts";
+import { resolveEditorShortcut } from "../../shared/shortcuts/editorShortcut.ts";
 import { InsertCardLinkDialog } from "./InsertCardLinkDialog.tsx";
 import type { FindPresentation, FindText } from "../find/findPresentation.ts";
 import { EditorFindBackdrop } from "./EditorFindBackdrop.tsx";

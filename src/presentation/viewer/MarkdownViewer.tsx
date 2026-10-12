@@ -51,7 +51,7 @@ import {
   getAvailableViewerWidth,
   VIEWER_WIDTH_STEP,
 } from "./viewerWidth.ts";
-import { resolveViewerShortcut } from "./viewerShortcut.ts";
+import { resolveViewerShortcut } from "../shared/shortcuts/viewerShortcut.ts";
 import { buildViewerContextMenu } from "./viewerContextMenu.ts";
 import { FindBar } from "./find/FindBar.tsx";
 import { useMarkdownFind } from "./find/useMarkdownFind.ts";
