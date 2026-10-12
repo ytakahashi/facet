@@ -5,6 +5,7 @@ import { useBoardStore, useFilterStore } from "../context/appContext.ts";
 import { ColumnFilterList } from "./ColumnFilterList.tsx";
 import { LabelFilterList } from "../labels/LabelFilterList.tsx";
 import { ManageLabelsDialog } from "../labels/ManageLabelsDialog.tsx";
+import { resolveFilterSidebarShortcut } from "../shared/shortcuts/filterSidebarShortcut.ts";
 
 export function FilterSidebar({ board }: { board: Board }) {
   const [isManageLabelsOpen, setIsManageLabelsOpen] = useState(false);
@@ -35,6 +36,22 @@ export function FilterSidebar({ board }: { board: Board }) {
   useEffect(() => {
     syncLabels(new Set(board.labels.map((label) => label.name)));
   }, [board.labels, syncLabels]);
+
+  // Mounted only for the active, loaded board, so the shortcut always targets
+  // the visible sidebar.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!resolveFilterSidebarShortcut(event)) return;
+      // Claimed before deciding whether to act, so the key never falls
+      // through to a default action while a modal makes it decline.
+      event.preventDefault();
+      // Leave the layout behind an open modal unchanged.
+      if (document.querySelector("dialog[open]")) return;
+      toggleSidebar();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [toggleSidebar]);
 
   if (!isSidebarOpen) {
     return (
