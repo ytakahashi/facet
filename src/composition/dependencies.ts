@@ -35,6 +35,7 @@ import { createMarkdownViewerStore } from "../presentation/store/markdownViewerS
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
 import { createPaneLayoutStore } from "../presentation/store/paneLayoutStore.ts";
 import { createRecentBoardsStore } from "../presentation/store/recentBoardsStore.ts";
+import { createShortcutHelpStore } from "../presentation/store/shortcutHelpStore.ts";
 import { createWorkspaceStore } from "../presentation/store/workspaceStore.ts";
 
 const fileSystem = new DenoFileSystemAdapter();
@@ -124,6 +125,7 @@ export const appDependencies: AppDependencies = {
     reveal: (path) => revealInFinder(path, { finder }),
   },
   newBoardDialog: createNewBoardDialogStore(),
+  shortcutHelp: createShortcutHelpStore(),
   paneLayout: createPaneLayoutStore(),
   recentBoards: createRecentBoardsStore({
     list: () => listRecentBoardEntries({ configRepository, boardRepository }),
