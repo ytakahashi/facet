@@ -1,4 +1,5 @@
 import type { Card } from "./card.ts";
+import { retitleCard } from "./card.ts";
 import type { LabelColor, LabelDefinition } from "./label.ts";
 import { isSameCardPath, normalizeCardPath } from "./boardPath.ts";
 
@@ -172,6 +173,31 @@ export function replaceCard(board: Board, cardPath: string, card: Card): Board {
     throw new Error(`Unknown card: ${cardPath}`);
   }
   return { ...board, columns };
+}
+
+// Unlike other card operations, an unknown path is not an invariant violation.
+// Returns the same board when the card is absent or its title does not change.
+export function retitleCardOnBoard(
+  board: Board,
+  cardPath: string,
+  content: string,
+): Board {
+  const card = findCardByPath(board, cardPath);
+  if (!card) return board;
+  const retitled = retitleCard(card, content);
+  return retitled.displayTitle === card.displayTitle
+    ? board
+    : replaceCard(board, cardPath, retitled);
+}
+
+export function retitleCardsOnBoard(
+  board: Board,
+  markdownByCardPath: ReadonlyMap<string, string>,
+): Board {
+  for (const [cardPath, content] of markdownByCardPath) {
+    board = retitleCardOnBoard(board, cardPath, content);
+  }
+  return board;
 }
 
 // Expects a trimmed, non-empty title; the blank-title check is an invariant

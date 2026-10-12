@@ -5,6 +5,7 @@ import {
   isCardFileBroken,
   relocateCardReference,
   resolveCardTitle,
+  retitleCard,
 } from "./card.ts";
 
 describe("resolveCardTitle", () => {
@@ -38,6 +39,110 @@ describe("resolveCardTitle", () => {
     const title = resolveCardTitle(undefined, undefined, "improve-search.md");
 
     expect(title).toBe("improve-search");
+  });
+
+  it("skips headings inside fenced code blocks", () => {
+    const markdown = [
+      "```bash",
+      "# install deps",
+      "```",
+      "~~~",
+      "# not a heading",
+      "~~~",
+      "# Improve search",
+    ].join("\n");
+
+    const title = resolveCardTitle(undefined, markdown, "improve-search.md");
+
+    expect(title).toBe("Improve search");
+  });
+
+  it("keeps a fence open until a closing run as long as the opening one", () => {
+    const markdown = [
+      "````md",
+      "```",
+      "# inside the outer fence",
+      "```",
+      "````",
+      "# Improve search",
+    ].join("\n");
+
+    const title = resolveCardTitle(undefined, markdown, "improve-search.md");
+
+    expect(title).toBe("Improve search");
+  });
+
+  it("does not close a fence on the other fence character", () => {
+    const markdown = ["```", "~~~", "# inside", "```", "# Outside"].join("\n");
+
+    const title = resolveCardTitle(undefined, markdown, "improve-search.md");
+
+    expect(title).toBe("Outside");
+  });
+
+  it("does not close a fence on a line with text after the run", () => {
+    const markdown = ["```", "``` not a close", "# inside", "```", "# Outside"]
+      .join("\n");
+
+    const title = resolveCardTitle(undefined, markdown, "improve-search.md");
+
+    expect(title).toBe("Outside");
+  });
+
+  it("treats an unclosed fence as running to the end of the document", () => {
+    const markdown = "```\n# inside\n";
+
+    const title = resolveCardTitle(undefined, markdown, "improve-search.md");
+
+    expect(title).toBe("improve-search");
+  });
+
+  it("does not treat inline code with backticks as a fence", () => {
+    const markdown = "```inline``` code\n# Improve search";
+
+    const title = resolveCardTitle(undefined, markdown, "improve-search.md");
+
+    expect(title).toBe("Improve search");
+  });
+
+  it("treats a fence indented by four spaces as indented code, not a fence", () => {
+    const markdown = "    ```\n# Improve search";
+
+    const title = resolveCardTitle(undefined, markdown, "improve-search.md");
+
+    expect(title).toBe("Improve search");
+  });
+});
+
+describe("retitleCard", () => {
+  it("re-derives the title from the new Markdown", () => {
+    const card: Card = {
+      path: "notes.md",
+      absolutePath: "/board/notes.md",
+      fileState: "available",
+      labels: ["search"],
+      displayTitle: "Old heading",
+    };
+
+    expect(retitleCard(card, "# New heading")).toEqual({
+      ...card,
+      displayTitle: "New heading",
+    });
+  });
+
+  it("keeps a title override over the new heading", () => {
+    const card: Card = {
+      path: "notes.md",
+      absolutePath: "/board/notes.md",
+      fileState: "available",
+      titleOverride: "Custom title",
+      labels: [],
+      displayTitle: "Custom title",
+    };
+
+    expect(retitleCard(card, "# New heading").displayTitle).toBe(
+      "Custom title",
+    );
   });
 });
 

@@ -80,8 +80,47 @@ export function relocateCardReference(
   };
 }
 
+// Re-derives the title from the file's current text, for a card whose Markdown
+// was just written. Only displayTitle changes: the title is not part of what
+// the board file stores unless it is an override, which still wins here.
+export function retitleCard(card: Card, markdownText: string): Card {
+  return {
+    ...card,
+    displayTitle: resolveCardTitle(card.titleOverride, markdownText, card.path),
+  };
+}
+
+// An opening code fence: up to three spaces of indentation, then a run of at
+// least three backticks or tildes (CommonMark).
+const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})/;
+
 function findFirstH1(markdown: string): string | undefined {
+  // Lines inside a fenced code block are code, not headings: a shell comment
+  // such as `# install deps` must not become the card's title. A fence closes
+  // only on a run of the same character at least as long as the one that
+  // opened it, and an unclosed fence runs to the end of the document.
+  let fence: string | undefined;
   for (const line of markdown.split("\n")) {
+    if (fence !== undefined) {
+      const close = FENCE_OPEN.exec(line);
+      if (
+        close && close[1][0] === fence[0] &&
+        close[1].length >= fence.length &&
+        line.slice(close[0].length).trim() === ""
+      ) {
+        fence = undefined;
+      }
+      continue;
+    }
+    const open = FENCE_OPEN.exec(line);
+    // A backtick fence's info string may not contain a backtick; such a line
+    // is inline code, not a fence.
+    if (
+      open && !(open[1][0] === "`" && line.slice(open[0].length).includes("`"))
+    ) {
+      fence = open[1];
+      continue;
+    }
     const match = /^#\s+(.+)$/.exec(line.trim());
     if (match) {
       return match[1].trim();

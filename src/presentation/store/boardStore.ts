@@ -23,6 +23,8 @@ import {
   renameColumn as renameColumnDomain,
   renameLabelDefinition as renameLabelDefinitionDomain,
   replaceCard as replaceCardDomain,
+  retitleCardOnBoard,
+  retitleCardsOnBoard,
   setCardTitle as setCardTitleDomain,
   setLabelColor as setLabelColorDomain,
 } from "../../domain/board.ts";
@@ -73,6 +75,9 @@ export interface BoardState {
   renameColumn: (columnId: string, name: string) => void;
   removeColumn: (columnId: string) => void;
   renameCard: (path: string, title: string) => void;
+  // Follows a card's Markdown that was just written, so its title tracks the
+  // file's H1 without reopening the board.
+  syncCardTitle: (path: string, markdownText: string) => void;
   addCardLabel: (path: string, labelName: string) => void;
   removeCardLabel: (path: string, labelName: string) => void;
   createLabel: (name: string, color: LabelColor) => void;
@@ -194,6 +199,12 @@ export function createBoardStore({
     let activeSavePath: string | undefined;
     let activeSaveIsOverwrite = false;
     let loadGeneration = 0;
+    // Counts edits made to the board file's content. A refresh compares this
+    // rather than the board's identity: a title re-derived from a Markdown
+    // write replaces the board too, but leaves nothing to save that the disk
+    // board would discard.
+    let boardEditCount = 0;
+    let activeMarkdownSavedDuringLoad: Map<string, string> | undefined;
 
     const saveQueue = createBoardSaveQueue(async (path, board) => {
       activeSavePath = path;
@@ -261,6 +272,7 @@ export function createBoardStore({
     });
 
     function queueSave(path: string, board: Board): void {
+      boardEditCount++;
       if (conflictedPaths.has(path)) return;
       saveQueue.save(path, board);
     }
@@ -268,9 +280,14 @@ export function createBoardStore({
     async function loadBoard(
       path: string,
       mode: "open" | "reload" | "refresh",
-      expectedBoard?: Board,
+      expectedEditCount?: number,
     ): Promise<void> {
       const request = ++loadGeneration;
+      // A newly opened session has no viewer yet, so no Markdown saves to track.
+      const markdownSavedDuringLoad = mode === "open"
+        ? undefined
+        : new Map<string, string>();
+      activeMarkdownSavedDuringLoad = markdownSavedDuringLoad;
       if (mode === "open") {
         set({
           status: "loading",
@@ -289,12 +306,12 @@ export function createBoardStore({
         set({ isRefreshing: true, refreshError: undefined });
       }
       try {
-        const { board, revision } = await openBoard(path);
+        const { board: diskBoard, revision } = await openBoard(path);
         if (request !== loadGeneration) return;
         // An edit during refresh may already be queued for saving. Discard
         // both the disk board and its revision so that save keeps the revision
         // it started with and the local edit remains visible.
-        if (mode === "refresh" && get().board !== expectedBoard) {
+        if (mode === "refresh" && boardEditCount !== expectedEditCount) {
           set({
             isRefreshing: false,
             refreshError: toUiError(
@@ -303,6 +320,12 @@ export function createBoardStore({
           });
           return;
         }
+        // The load may have read a card before its Markdown write landed.
+        // Reapply those writes to the loaded cards so disk-side board edits
+        // (including title overrides and removals) still take precedence.
+        const board = markdownSavedDuringLoad
+          ? retitleCardsOnBoard(diskBoard, markdownSavedDuringLoad)
+          : diskBoard;
         revisions.set(path, revision);
         conflictedPaths.delete(path);
         set({
@@ -331,6 +354,11 @@ export function createBoardStore({
             conflictResolutionError: toUiError(error).message,
             conflictResolution: undefined,
           });
+        }
+      } finally {
+        // A superseded load must not clear the newer load's notifications.
+        if (activeMarkdownSavedDuringLoad === markdownSavedDuringLoad) {
+          activeMarkdownSavedDuringLoad = undefined;
         }
       }
     }
@@ -515,6 +543,22 @@ export function createBoardStore({
         const nextBoard = setCardTitleDomain(board, cardPath, trimmedTitle);
         set({ board: nextBoard });
         queueSave(path, nextBoard);
+      },
+      syncCardTitle: (cardPath: string, markdownText: string) => {
+        // Record even unchanged titles: the loaded board may have a different
+        // override, or may have read an older version of this file.
+        activeMarkdownSavedDuringLoad?.set(cardPath, markdownText);
+        const { board } = get();
+        if (!board) return;
+        const nextBoard = retitleCardOnBoard(
+          board,
+          cardPath,
+          markdownText,
+        );
+        if (nextBoard === board) return;
+        // Not queued for saving: displayTitle is derived from the file and
+        // never written to the board file.
+        set({ board: nextBoard });
       },
       addCardLabel: (cardPath: string, labelName: string) => {
         const { board, path } = get();
@@ -869,13 +913,13 @@ export function createBoardStore({
       refreshBoard: async () => {
         const current = get();
         if (!canRefreshBoard(current)) return;
-        const { board, path, saveConflict, saveError } = current;
+        const { path, saveConflict, saveError } = current;
         if (saveConflict) {
           await get().reloadBoard();
           return;
         }
         if (saveError && !confirmDiscardBoard("refresh")) return;
-        await loadBoard(path, "refresh", board);
+        await loadBoard(path, "refresh", boardEditCount);
       },
       reloadBoard: async () => {
         const {

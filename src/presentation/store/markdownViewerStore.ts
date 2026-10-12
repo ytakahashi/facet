@@ -80,6 +80,10 @@ export type SaveMarkdown = (
   expectedRevision: FileRevision | undefined,
 ) => Promise<FileRevision>;
 export type ConfirmDiscard = () => boolean;
+// Told about every write that landed, including one the viewer has since
+// moved away from: the file changed either way, and whatever is derived from
+// it - the card's title on the board - has to follow.
+export type MarkdownSaved = (cardPath: string, content: string) => void;
 export type ConfirmOverwrite = (conflict: MarkdownConflict) => boolean;
 
 // Exported because "has the draft diverged from what is on disk" is asked
@@ -139,6 +143,7 @@ export function createMarkdownViewerStore(
   saveMarkdown: SaveMarkdown,
   confirmDiscard: ConfirmDiscard,
   confirmOverwrite: ConfirmOverwrite,
+  onSaved: MarkdownSaved = () => {},
 ): UseBoundStore<StoreApi<MarkdownViewerState>> {
   // Identifies which selection/save the viewer is currently showing. Every
   // async result checks it before writing state back, so a load or save that
@@ -257,6 +262,7 @@ export function createMarkdownViewerStore(
           draft,
           expectedRevision,
         );
+        onSaved(selectedPath, draft);
         if (request !== generation) return;
         set({
           content: draft,

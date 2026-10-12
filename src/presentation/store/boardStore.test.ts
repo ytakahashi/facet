@@ -641,6 +641,22 @@ describe("createBoardStore", () => {
     expect(saveBoard).not.toHaveBeenCalled();
   });
 
+  it("re-derives a card's title from written Markdown without saving the board", async () => {
+    const saveBoard = vi.fn();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: () => Promise.resolve(loaded(makeBoard())),
+      saveBoard,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    useBoardStore.getState().syncCardTitle("a.md", "# Renamed in the editor");
+
+    const card = useBoardStore.getState().board?.columns[0].cards[0];
+    expect(card?.displayTitle).toBe("Renamed in the editor");
+    expect(card?.titleOverride).toBeUndefined();
+    expect(saveBoard).not.toHaveBeenCalled();
+  });
+
   it("creates a label and saves the board", async () => {
     const board = makeBoard();
     const saveBoard = vi.fn().mockResolvedValue("revision-2");
@@ -2187,6 +2203,126 @@ describe("createBoardStore", () => {
       expect.objectContaining({ name: "Next edit" }),
       "revision-2",
     );
+  });
+
+  it("keeps a saved title and disk-side board edits when a refresh read older Markdown", async () => {
+    const refreshing = deferred<ReturnType<typeof loaded>>();
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockReturnValueOnce(refreshing.promise);
+    const saveBoard = vi.fn().mockResolvedValue("next-revision");
+    const useBoardStore = createBoardStore(makeDeps({ openBoard, saveBoard }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const refresh = useBoardStore.getState().refreshBoard();
+    useBoardStore.getState().syncCardTitle("a.md", "# Synced title");
+    const diskBoard = makeBoard({ name: "From disk" });
+    refreshing.resolve(loaded(diskBoard, "disk-revision"));
+    await refresh;
+
+    expect(useBoardStore.getState().board?.name).toBe("From disk");
+    expect(useBoardStore.getState().board?.columns[0].cards[0].displayTitle)
+      .toBe("Synced title");
+    expect(useBoardStore.getState().refreshError).toBeUndefined();
+    expect(saveBoard).not.toHaveBeenCalled();
+
+    useBoardStore.getState().renameBoard("Next edit");
+    expect(saveBoard).toHaveBeenLastCalledWith(
+      "/board/development.board.yaml",
+      expect.objectContaining({ name: "Next edit" }),
+      "disk-revision",
+    );
+  });
+
+  it("records saves even when the current override hides title changes", async () => {
+    const initialBoard = makeBoard();
+    initialBoard.columns[0].cards[0].titleOverride = "Local override";
+    initialBoard.columns[0].cards[0].displayTitle = "Local override";
+    const diskBoard = makeBoard();
+    diskBoard.columns[0].cards[0].displayTitle = "Old heading";
+    const refreshing = deferred<ReturnType<typeof loaded>>();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: vi.fn().mockResolvedValueOnce(loaded(initialBoard))
+        .mockReturnValueOnce(refreshing.promise),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const refresh = useBoardStore.getState().refreshBoard();
+    useBoardStore.getState().syncCardTitle("a.md", "# First heading");
+    useBoardStore.getState().syncCardTitle("a.md", "# Latest heading");
+    expect(useBoardStore.getState().board).toBe(initialBoard);
+    refreshing.resolve(loaded(diskBoard));
+    await refresh;
+
+    expect(useBoardStore.getState().board?.columns[0].cards[0].displayTitle)
+      .toBe("Latest heading");
+  });
+
+  it("does not restore a card removed on disk when its Markdown was saved during refresh", async () => {
+    const refreshing = deferred<ReturnType<typeof loaded>>();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: vi.fn().mockResolvedValueOnce(loaded(makeBoard()))
+        .mockReturnValueOnce(refreshing.promise),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+    const refresh = useBoardStore.getState().refreshBoard();
+    useBoardStore.getState().syncCardTitle("a.md", "# Saved heading");
+    const diskBoard = makeBoard();
+    diskBoard.columns[0].cards = [];
+    refreshing.resolve(loaded(diskBoard));
+    await refresh;
+
+    expect(useBoardStore.getState().board).toBe(diskBoard);
+    expect(useBoardStore.getState().refreshError).toBeUndefined();
+  });
+
+  it.each([false, true])(
+    "does not replay saved Markdown into a later refresh (failed: %s)",
+    async (failed) => {
+      const refreshing = deferred<ReturnType<typeof loaded>>();
+      const nextDiskBoard = makeBoard();
+      nextDiskBoard.columns[0].cards[0].displayTitle = "Later external heading";
+      const useBoardStore = createBoardStore(makeDeps({
+        openBoard: vi.fn().mockResolvedValueOnce(loaded(makeBoard()))
+          .mockReturnValueOnce(refreshing.promise)
+          .mockResolvedValueOnce(loaded(nextDiskBoard)),
+      }));
+      await useBoardStore.getState().openBoard("/board/development.board.yaml");
+
+      const refresh = useBoardStore.getState().refreshBoard();
+      useBoardStore.getState().syncCardTitle("a.md", "# Saved heading");
+      if (failed) refreshing.reject(new UseCaseError("board.open-failed"));
+      else refreshing.resolve(loaded(makeBoard()));
+      await refresh;
+      await useBoardStore.getState().refreshBoard();
+
+      expect(useBoardStore.getState().board).toBe(nextDiskBoard);
+    },
+  );
+
+  it("keeps Markdown saved while reloading a conflicted board", async () => {
+    const reloading = deferred<ReturnType<typeof loaded>>();
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard: vi.fn().mockResolvedValueOnce(loaded(makeBoard()))
+        .mockReturnValueOnce(reloading.promise),
+      saveBoard: vi.fn().mockRejectedValue(new UseCaseError("board.conflict")),
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    const reload = useBoardStore.getState().reloadBoard();
+    useBoardStore.getState().syncCardTitle("a.md", "# Saved during reload");
+    reloading.resolve(loaded(makeBoard({ name: "From disk" })));
+    await reload;
+
+    expect(useBoardStore.getState().board?.name).toBe("From disk");
+    expect(useBoardStore.getState().board?.columns[0].cards[0].displayTitle)
+      .toBe("Saved during reload");
+    expect(useBoardStore.getState().saveConflict).toBe(false);
   });
 
   it("does not start another reload while conflict resolution is in progress", async () => {

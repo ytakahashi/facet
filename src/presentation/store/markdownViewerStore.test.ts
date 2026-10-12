@@ -24,6 +24,7 @@ function createMarkdownViewerStore(
   confirmOverwrite: Parameters<
     typeof createMarkdownViewerStoreImplementation
   >[3] = alwaysOverwrite,
+  onSaved?: Parameters<typeof createMarkdownViewerStoreImplementation>[4],
 ) {
   return createMarkdownViewerStoreImplementation(
     async (path) => {
@@ -36,6 +37,7 @@ function createMarkdownViewerStore(
       (await saveMarkdown(path, content, expectedRevision)) ?? "revision-2",
     confirmDiscard,
     confirmOverwrite,
+    onSaved,
   );
 }
 
@@ -214,21 +216,75 @@ describe("createMarkdownViewerStore", () => {
     expect(useMarkdownViewer.getState().revision).toBe("revision-3");
   });
 
+  it("reports a landed write with the card path and the written content", async () => {
+    const card = makeCard();
+    const onSaved = vi.fn();
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      vi.fn(),
+      alwaysDiscard,
+      alwaysOverwrite,
+      onSaved,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
+
+    await useMarkdownViewer.getState().save();
+
+    expect(onSaved).toHaveBeenCalledExactlyOnceWith(
+      "improve-search.md",
+      "# Improve search (edited)",
+    );
+  });
+
+  it("reports a landed write even after the viewer moved off the card", async () => {
+    const card = makeCard();
+    const onSaved = vi.fn();
+    let finishSave!: () => void;
+    const saving = new Promise<void>((resolve) => {
+      finishSave = resolve;
+    });
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      vi.fn().mockReturnValue(saving),
+      alwaysDiscard,
+      alwaysOverwrite,
+      onSaved,
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
+
+    const savingCall = useMarkdownViewer.getState().save();
+    useMarkdownViewer.getState().close();
+    finishSave();
+    await savingCall;
+
+    expect(onSaved).toHaveBeenCalledExactlyOnceWith(
+      "improve-search.md",
+      "# Improve search (edited)",
+    );
+  });
+
   it("keeps the draft and reports an error when saving fails", async () => {
     const card = makeCard();
     const saveFailedError = new UseCaseError("markdown.save-failed", {
       path: "/board/improve-search.md",
     });
     const saveMarkdown = vi.fn().mockRejectedValue(saveFailedError);
+    const onSaved = vi.fn();
     const useMarkdownViewer = createMarkdownViewerStore(
       () => Promise.resolve("# Improve search"),
       saveMarkdown,
       alwaysDiscard,
+      alwaysOverwrite,
+      onSaved,
     );
     await useMarkdownViewer.getState().selectCard(card);
     useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
 
     await useMarkdownViewer.getState().save();
+
+    expect(onSaved).not.toHaveBeenCalled();
 
     expect(useMarkdownViewer.getState().saveError).toBe(
       toUiError(saveFailedError).message,
