@@ -3,6 +3,7 @@ export type ShortcutId =
   | "show-help"
   | "search-titles"
   | "search-contents"
+  | "toggle-filters"
   | "close-viewer"
   | "go-back"
   | "toggle-mode"
@@ -65,6 +66,11 @@ export const shortcutGroups: readonly ShortcutGroup[] = [
         id: "search-contents",
         description: "Search card contents",
         combos: [{ key: "f", shift: true, command: true }],
+      },
+      {
+        id: "toggle-filters",
+        description: "Toggle filters",
+        combos: [{ key: "b", command: true }],
       },
     ],
   },

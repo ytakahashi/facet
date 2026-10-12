@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveBoardSearchShortcut } from "./boardSearchShortcut.ts";
 import { resolveEditorShortcut } from "./editorShortcut.ts";
+import { resolveFilterSidebarShortcut } from "./filterSidebarShortcut.ts";
 import { resolveFindShortcut } from "./findShortcut.ts";
 import { resolveHelpShortcut } from "./helpShortcut.ts";
 import { formatKeyCombo, shortcutGroups } from "./shortcutCatalog.ts";
@@ -34,6 +35,7 @@ const expectations: Record<ShortcutId, readonly Expectation[]> = {
     resolve: resolveBoardSearchShortcut,
     result: "content",
   }],
+  "toggle-filters": [{ resolve: resolveFilterSidebarShortcut, result: true }],
   "close-viewer": [{ resolve: resolveViewerShortcut, result: "close" }],
   "go-back": [{ resolve: resolveViewerShortcut, result: "back" }],
   "toggle-mode": [{ resolve: resolveViewerShortcut, result: "toggle-mode" }],
