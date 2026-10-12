@@ -24,7 +24,7 @@ import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { KanbanBoard } from "../kanban/KanbanBoard.tsx";
 import { MissingCardDialog } from "./MissingCardDialog.tsx";
 import { ViewSwitcher } from "./ViewSwitcher.tsx";
-import { resolveBoardSearchShortcut } from "./boardSearchShortcut.ts";
+import { resolveBoardSearchShortcut } from "../shared/shortcuts/boardSearchShortcut.ts";
 import {
   EXTERNAL_CHANGE_CONFLICT_DETAIL,
   SaveErrorBanner,

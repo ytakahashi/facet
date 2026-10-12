@@ -1,5 +1,5 @@
 import { type RefObject, useEffect, useRef } from "react";
-import { resolveFindShortcut } from "./findShortcut.ts";
+import { resolveFindShortcut } from "../../shared/shortcuts/findShortcut.ts";
 
 interface FindBarProps {
   mode: "edit" | "preview";

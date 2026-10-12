@@ -1,4 +1,4 @@
-import { isImeProcessing } from "../../shared/isImeProcessing.ts";
+import { isImeProcessing } from "../isImeProcessing.ts";
 
 export function resolveFindShortcut(
   event: Pick<

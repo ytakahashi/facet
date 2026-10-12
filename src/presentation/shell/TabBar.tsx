@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useWorkspace } from "../context/appContext.ts";
 import type { BoardTab } from "../store/workspaceStore.ts";
-import { resolveTabShortcut } from "./tabShortcut.ts";
+import { resolveTabShortcut } from "../shared/shortcuts/tabShortcut.ts";
 
 function basenameOf(path: string): string {
   return path.slice(path.lastIndexOf("/") + 1);

@@ -1,4 +1,4 @@
-import { isImeProcessing } from "../../shared/isImeProcessing.ts";
+import { isImeProcessing } from "../isImeProcessing.ts";
 
 type ShortcutEvent = Pick<
   KeyboardEvent,
