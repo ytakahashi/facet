@@ -25,6 +25,8 @@ import {
   renameColumn,
   renameLabelDefinition,
   replaceCard,
+  retitleCardOnBoard,
+  retitleCardsOnBoard,
   setCardTitle,
   setLabelColor,
 } from "./board.ts";
@@ -377,6 +379,71 @@ describe("findCardByPath", () => {
 
     expect(result).toBeUndefined();
   });
+});
+
+describe("retitleCardOnBoard", () => {
+  it("updates only the matching card without mutating the board", () => {
+    const card = makeCard({ labels: ["ui"] });
+    const otherCard = makeCard({ path: "other.md" });
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [card, otherCard] })],
+    });
+
+    const result = retitleCardOnBoard(board, "./card.md", "# Updated");
+
+    expect(result.columns[0].cards[0]).toEqual({
+      ...card,
+      displayTitle: "Updated",
+    });
+    expect(result.columns[0].cards[1]).toBe(otherCard);
+    expect(board.columns[0].cards[0]).toBe(card);
+    expect(card.displayTitle).toBe("Card");
+  });
+
+  it.each(["card.md", "missing.md"])(
+    "returns the same board when %s needs no update",
+    (path) => {
+      const board = makeBoard({
+        columns: [makeColumn({ cards: [makeCard()] })],
+      });
+
+      expect(retitleCardOnBoard(board, path, "# Card")).toBe(board);
+    },
+  );
+});
+
+describe("retitleCardsOnBoard", () => {
+  it("retitles multiple cards without adding absent cards", () => {
+    const board = makeBoard({
+      columns: [makeColumn({
+        cards: [makeCard(), makeCard({ path: "second.md" })],
+      })],
+    });
+    const markdownByCardPath = new Map([
+      ["card.md", "# Updated"],
+      ["second.md", "# Second"],
+      ["removed.md", "# Removed"],
+    ]);
+
+    const result = retitleCardsOnBoard(board, markdownByCardPath);
+
+    expect(result.columns[0].cards.map((card) => card.displayTitle)).toEqual([
+      "Updated",
+      "Second",
+    ]);
+    expect(board.columns[0].cards[0].displayTitle).toBe("Card");
+  });
+
+  it.each([new Map(), new Map([["card.md", "# Card"]])])(
+    "returns the same board when no titles change (%s)",
+    (markdownByCardPath) => {
+      const board = makeBoard({
+        columns: [makeColumn({ cards: [makeCard()] })],
+      });
+
+      expect(retitleCardsOnBoard(board, markdownByCardPath)).toBe(board);
+    },
+  );
 });
 
 describe("setCardTitle", () => {

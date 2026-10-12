@@ -57,40 +57,40 @@ async function refreshRecentMenu(): Promise<void> {
 }
 
 function createBoardSession(): BoardSession {
+  const boardStore = createBoardStore({
+    openBoard: async (path) => {
+      const loadedBoard = await openBoardUseCase(path, {
+        boardRepository,
+        configRepository,
+      });
+      // Best-effort: the menu rebuild must never block opening the board.
+      void refreshRecentMenu();
+      return loadedBoard;
+    },
+    saveBoard: (path, board, expectedRevision) =>
+      saveBoard(path, board, expectedRevision, { boardRepository }),
+    createMarkdownCard: (input) => createMarkdownCard(input, { fileSystem }),
+    addExistingMarkdownCard: (input) =>
+      addExistingMarkdownCard(input, { fileSystem }),
+    relocateMarkdownCard: (input) =>
+      relocateMarkdownCard(input, { fileSystem }),
+    recreateMarkdownCard: (input) =>
+      recreateMarkdownCard(input, { fileSystem }),
+    renameMarkdownCard: (input) => renameMarkdownCard(input, { fileSystem }),
+    createBoard: (input) => createBoard(input, { fileSystem, boardRepository }),
+    deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
+    confirmDiscardBoard: () =>
+      confirm(
+        "Discard changes made in Facet and reload the board from disk?",
+      ),
+    confirmOverwriteBoard: () =>
+      confirm(
+        "Overwrite changes made outside Facet? The board shown in Facet will replace them.",
+      ),
+  });
   return {
     boardView: createBoardViewStore(),
-    boardStore: createBoardStore({
-      openBoard: async (path) => {
-        const loadedBoard = await openBoardUseCase(path, {
-          boardRepository,
-          configRepository,
-        });
-        // Best-effort: the menu rebuild must never block opening the board.
-        void refreshRecentMenu();
-        return loadedBoard;
-      },
-      saveBoard: (path, board, expectedRevision) =>
-        saveBoard(path, board, expectedRevision, { boardRepository }),
-      createMarkdownCard: (input) => createMarkdownCard(input, { fileSystem }),
-      addExistingMarkdownCard: (input) =>
-        addExistingMarkdownCard(input, { fileSystem }),
-      relocateMarkdownCard: (input) =>
-        relocateMarkdownCard(input, { fileSystem }),
-      recreateMarkdownCard: (input) =>
-        recreateMarkdownCard(input, { fileSystem }),
-      renameMarkdownCard: (input) => renameMarkdownCard(input, { fileSystem }),
-      createBoard: (input) =>
-        createBoard(input, { fileSystem, boardRepository }),
-      deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
-      confirmDiscardBoard: () =>
-        confirm(
-          "Discard changes made in Facet and reload the board from disk?",
-        ),
-      confirmOverwriteBoard: () =>
-        confirm(
-          "Overwrite changes made outside Facet? The board shown in Facet will replace them.",
-        ),
-    }),
+    boardStore,
     filterStore: createFilterStore(),
     markdownViewer: createMarkdownViewerStore(
       (path) => viewMarkdown(path, { fileSystem }),
@@ -103,6 +103,10 @@ function createBoardSession(): BoardSession {
             ? "Recreate this Markdown file at its previous path? The draft shown in Facet will be written there."
             : "Overwrite changes made outside Facet? The draft shown in Facet will replace them.",
         ),
+      // Only this session's board follows. Another tab showing the same file
+      // keeps its title until that board is refreshed.
+      (cardPath, content) =>
+        boardStore.getState().syncCardTitle(cardPath, content),
     ),
   };
 }

@@ -11,14 +11,20 @@ stores that file's board-relative path.
 Facet resolves the displayed title in this order:
 
 1. The Card's optional `title` field in the board
-2. The first trimmed line containing `#`, whitespace, and non-empty text
+2. The first trimmed line containing `#`, whitespace, and non-empty text,
+   outside fenced code blocks
 3. The Markdown filename without its `.md` suffix
 
-The title scan is line-based rather than a full Markdown parse, so a matching
-line inside a fenced code block also counts. When Facet creates a Markdown file,
-it puts a level-one heading first. Other tools should likewise put the intended
-`# Title` at the beginning, before any other line with that form, unless the
-board's explicit `title` is intentionally authoritative.
+The title scan is line-based rather than a full Markdown parse. It skips lines
+inside a fenced code block (a run of three or more backticks or tildes indented
+by at most three spaces, closed by a run of the same character at least as long,
+or by the end of the file), but other Markdown constructs are not recognised: a
+matching line in an HTML block or front matter still counts. After a Markdown
+file is saved in Facet, the title on that board follows the new content. When
+Facet creates a Markdown file, it puts a level-one heading first. Other tools
+should likewise put the intended `# Title` at the beginning, before any other
+line with that form, unless the board's explicit `title` is intentionally
+authoritative.
 
 Use the lowercase `.md` suffix for generated files. Facet accepts an uppercase
 variant when adding or linking a Markdown file, but the filename fallback
