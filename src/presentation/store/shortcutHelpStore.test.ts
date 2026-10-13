@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { createShortcutHelpStore } from "./shortcutHelpStore.ts";
 
 describe("createShortcutHelpStore", () => {

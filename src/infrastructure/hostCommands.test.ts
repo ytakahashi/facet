@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import * as hostCommands from "./hostCommands.ts";
 
 vi.mock("@tauri-apps/api/core");

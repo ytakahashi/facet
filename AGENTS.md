@@ -8,15 +8,16 @@ first.
 
 ## Before finishing
 
-Run `deno task lint`, `deno fmt`, `deno task test` and `deno task build`, then
-report what actually happened rather than describing the change as complete.
+Run `vp run check`, `vp run fmt`, `vp run test` and `vp run build`, then report
+what actually happened rather than describing the change as complete.
 
-- Run package scripts through `deno task`; do not invoke via node (e.g., `npm`).
-- `deno task build` type-checks `src/` only.
-- When `src-tauri/**` change, run `deno task fmt:rust`, `deno task lint:rust`
-  and `deno task test:rust`, then `deno task desktop`. `deno fmt` does not
-  format Rust, and only `deno task desktop` builds the app with the real
-  frontend.
+- Run package scripts through `vp run`; do not invoke them via `npm` or `pnpm`
+  directly, and do not call the tools they wrap (`vitest`, `oxlint`) yourself.
+- `vp run check` lints; `vp run build` type-checks `src/` and `vite.config.ts`
+  (`tsc -b`) and builds.
+- When `src-tauri/**` change, run `vp run fmt:rust`, `vp run lint:rust` and
+  `vp run test:rust`, then `vp run desktop`. `vp run fmt` does not format Rust,
+  and only `vp run desktop` builds the app with the real frontend.
 - When a change affects Facet's externally observable behavior, board file
   format, Markdown card handling, path or link semantics, or concurrent-edit
   behavior, review `.agents/skills/manage-facet-board/` for consistency and
@@ -52,12 +53,12 @@ src-tauri/src/<module>.rs → commands.rs → lib.rs
 ## Tests
 
 - `src/**` runs under Vitest against fake ports and fake dependencies.
-- `src-tauri/**` runs under `cargo test` (`deno task test:rust`) against a real
+- `src-tauri/**` runs under `cargo test` (`vp run test:rust`) against a real
   temporary directory, and only on macOS.
   - The `tauri` crate checks at compile time that `dist/` exists, so the Rust
     tasks create an empty one first; the tests never read it.
 - `.agents/skills/manage-facet-board/scripts/` runs under `deno test`.
-- `deno task test` runs Vitest and `deno test`.
+- `vp run test` runs Vitest and `deno test`.
 
 The split is about what the code needs to be true. The host-side rules are facts
 about the file system rather than about this app, and a stubbed test would only
@@ -84,6 +85,10 @@ Plain CSS with custom properties (`src/index.css`).
 
 - `package.json` pins exact versions and the project deliberately carries very
   few dependencies; adding one is worth justifying.
+  - Vite and Vitest come with `vite-plus`, whose version is pinned in the
+    `pnpm-workspace.yaml` catalog; `package.json` refers to it as `catalog:`.
+  - pnpm installs only releases at least a day old (`minimumReleaseAge`), and
+    refuses a dependency's build script until it is approved in `allowBuilds`.
 - `src-tauri/Cargo.toml` pins its direct dependencies the same way (`=x.y.z`).
   `Cargo.lock` is committed and pins everything beneath them; the Rust tasks run
   with `--locked`, so a lockfile that no longer matches fails instead of being

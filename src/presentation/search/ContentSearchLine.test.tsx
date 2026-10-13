@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { ContentLineHit } from "../../domain/cardContentSearch.ts";
 import { ContentSearchLine } from "./ContentSearchLine.tsx";
 

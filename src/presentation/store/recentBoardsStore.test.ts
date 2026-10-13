@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { RecentBoardEntry } from "../../usecase/listRecentBoardEntries.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { createRecentBoardsStore } from "./recentBoardsStore.ts";

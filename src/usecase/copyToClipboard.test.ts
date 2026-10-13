@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { ClipboardPort } from "../domain/clipboardPort.ts";
 import { copyToClipboard } from "./copyToClipboard.ts";
 import { UseCaseError } from "./useCaseError.ts";

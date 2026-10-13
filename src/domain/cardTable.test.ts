@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { Board } from "./board.ts";
 import type { Card } from "./card.ts";
 import { EMPTY_CARD_FILTER } from "./cardFilter.ts";

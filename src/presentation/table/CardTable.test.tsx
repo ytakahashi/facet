@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { create } from "zustand";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { Board } from "../../domain/board.ts";
 import { BoardSessionProvider } from "../context/appContext.ts";
 import type { BoardSession } from "../context/appContext.ts";

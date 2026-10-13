@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { findTextMatches } from "../../../domain/textMatch.ts";
 import { editorFindText, selectedFindQuery } from "./editorFindText.ts";
 

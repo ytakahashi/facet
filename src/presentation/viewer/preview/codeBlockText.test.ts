@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { type CodeBlockNode, codeBlockText } from "./codeBlockText.ts";
 
 function pre(...children: CodeBlockNode[]): CodeBlockNode {

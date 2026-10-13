@@ -1,5 +1,5 @@
 import { Menu } from "@tauri-apps/api/menu";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import {
   buildContextMenu,
   type ContextMenuEntry,
