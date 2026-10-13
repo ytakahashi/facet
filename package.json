@@ -1,14 +1,14 @@
 {
   "name": "facet",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vp dev",
     "build": "tsc -b && vp build",
     "preview": "vp preview",
-    "check": "vp check --no-fmt",
-    "fmt": "deno fmt",
+    "check": "vp check",
+    "fmt": "vp fmt",
     "test": "vp test run && deno test --allow-read --allow-write --allow-run",
     "desktop": "tauri build",
     "desktop:dev": "tauri dev",
@@ -41,14 +41,14 @@
     "vite-plus": "catalog:"
   },
   "devEngines": {
-    "runtime": {
-      "name": "node",
-      "version": "24.11.0",
-      "onFail": "download"
-    },
     "packageManager": {
       "name": "pnpm",
       "version": "12.11.2",
+      "onFail": "download"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "24.11.0",
       "onFail": "download"
     }
   }

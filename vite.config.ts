@@ -3,6 +3,13 @@ import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
 export default defineConfig({
+  fmt: {
+    // The width this codebase is written to; oxfmt defaults to 100.
+    printWidth: 80,
+    // The Markdown here is hard-wrapped at printWidth. oxfmt otherwise keeps
+    // whatever wrapping a file already has, so edited paragraphs drift.
+    proseWrap: "always",
+  },
   lint: {
     plugins: ["react", "typescript", "oxc"],
     rules: {
@@ -22,49 +29,58 @@ export default defineConfig({
       {
         files: ["src/domain/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/usecase/**",
-              "**/infrastructure/**",
-              "**/presentation/**",
-              "**/composition/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/usecase/**",
+                "**/infrastructure/**",
+                "**/presentation/**",
+                "**/composition/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/usecase/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/presentation/**",
-              "**/composition/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/presentation/**",
+                "**/composition/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/infrastructure/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/usecase/**",
-              "**/presentation/**",
-              "**/composition/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/usecase/**",
+                "**/presentation/**",
+                "**/composition/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: ["**/infrastructure/**", "**/composition/**"],
+            },
+          ],
         },
       },
       // Keep these after src/presentation/**: the last matching override wins.
@@ -73,147 +89,174 @@ export default defineConfig({
       {
         files: ["src/presentation/shared/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/labels/**",
-              "**/kanban/**",
-              "**/table/**",
-              "**/search/**",
-              "**/filter/**",
-              "**/viewer/**",
-              "**/board/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/labels/**",
+                "**/kanban/**",
+                "**/table/**",
+                "**/search/**",
+                "**/filter/**",
+                "**/viewer/**",
+                "**/board/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/labels/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/kanban/**",
-              "**/table/**",
-              "**/search/**",
-              "**/filter/**",
-              "**/viewer/**",
-              "**/board/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/kanban/**",
+                "**/table/**",
+                "**/search/**",
+                "**/filter/**",
+                "**/viewer/**",
+                "**/board/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/kanban/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/table/**",
-              "**/search/**",
-              "**/filter/**",
-              "**/viewer/**",
-              "**/board/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/table/**",
+                "**/search/**",
+                "**/filter/**",
+                "**/viewer/**",
+                "**/board/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/table/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/kanban/**",
-              "**/search/**",
-              "**/filter/**",
-              "**/viewer/**",
-              "**/board/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/kanban/**",
+                "**/search/**",
+                "**/filter/**",
+                "**/viewer/**",
+                "**/board/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/search/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/kanban/**",
-              "**/table/**",
-              "**/filter/**",
-              "**/viewer/**",
-              "**/board/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/kanban/**",
+                "**/table/**",
+                "**/filter/**",
+                "**/viewer/**",
+                "**/board/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/filter/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/kanban/**",
-              "**/table/**",
-              "**/search/**",
-              "**/viewer/**",
-              "**/board/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/kanban/**",
+                "**/table/**",
+                "**/search/**",
+                "**/viewer/**",
+                "**/board/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/viewer/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/kanban/**",
-              "**/table/**",
-              "**/search/**",
-              "**/filter/**",
-              "**/board/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/kanban/**",
+                "**/table/**",
+                "**/search/**",
+                "**/filter/**",
+                "**/board/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/board/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
       {
         files: ["src/presentation/shell/**"],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/board/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/board/**",
+              ],
+            },
+          ],
         },
       },
       {
@@ -223,21 +266,24 @@ export default defineConfig({
           "src/presentation/store/**",
         ],
         rules: {
-          "no-restricted-imports": ["error", {
-            patterns: [
-              "**/infrastructure/**",
-              "**/composition/**",
-              "**/shared/**",
-              "**/labels/**",
-              "**/kanban/**",
-              "**/table/**",
-              "**/search/**",
-              "**/filter/**",
-              "**/viewer/**",
-              "**/board/**",
-              "**/shell/**",
-            ],
-          }],
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                "**/infrastructure/**",
+                "**/composition/**",
+                "**/shared/**",
+                "**/labels/**",
+                "**/kanban/**",
+                "**/table/**",
+                "**/search/**",
+                "**/filter/**",
+                "**/viewer/**",
+                "**/board/**",
+                "**/shell/**",
+              ],
+            },
+          ],
         },
       },
     ],

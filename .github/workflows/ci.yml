@@ -30,7 +30,7 @@ jobs:
           cache: true
           run-install: true
 
-      # Still needed for formatting and the board-validation skill's tests.
+      # Still needed for the board-validation skill's tests.
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
@@ -39,9 +39,6 @@ jobs:
 
       - name: Check
         run: vp run check
-
-      - name: Check code format
-        run: deno fmt --check
 
       - name: Run Tests
         run: vp run test

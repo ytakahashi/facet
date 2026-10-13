@@ -3,13 +3,6 @@
     "@std/assert": "jsr:@std/assert@^1"
   },
   "test": {
-    "include": [
-      ".agents/skills/manage-facet-board/scripts/"
-    ]
-  },
-  "fmt": {
-    "exclude": [
-      "pnpm-lock.yaml"
-    ]
+    "include": [".agents/skills/manage-facet-board/scripts/"]
   }
 }
