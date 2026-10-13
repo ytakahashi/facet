@@ -1,7 +1,10 @@
 # Working on Facet
 
 Facet is a local-first Markdown kanban desktop app for macOS built on
-[Deno Desktop](https://docs.deno.com/runtime/desktop/).
+[Tauri](https://tauri.app/). It is moving off
+[Deno Desktop](https://docs.deno.com/runtime/desktop/): the native menus are not
+wired to Tauri yet and do not appear, and `desktop/` stays in the tree, unused,
+until they are.
 
 `ARCHITECTURE.md` describes the structure most of this follows from; read it
 first.
@@ -13,10 +16,10 @@ report what actually happened rather than describing the change as complete.
 
 - Run package scripts through `deno task`; do not invoke via node (e.g., `npm`).
 - `deno task build` type-checks `src/` only.
-- When `desktop/**` change, run `deno task desktop`. The regular build does not
-  check `desktop/`, and `deno check` cannot see Deno Desktop's types.
 - When `src-tauri/**` change, run `deno task fmt:rust`, `deno task lint:rust`
-  and `deno task test:rust`. `deno fmt` does not format Rust.
+  and `deno task test:rust`, then `deno task desktop`. `deno fmt` does not
+  format Rust, and only `deno task desktop` builds the app with the real
+  frontend.
 - When a change affects Facet's externally observable behavior, board file
   format, Markdown card handling, path or link semantics, or concurrent-edit
   behavior, review `.agents/skills/manage-facet-board/` for consistency and
@@ -34,25 +37,27 @@ report what actually happened rather than describing the change as complete.
 ## Adding a file-system capability
 
 ```text
-desktop/fileSystem.ts → desktop/bindings.ts → desktop/main.ts
-  → src/infrastructure/bindings.d.ts → fileSystemPort.ts
-  → denoFileSystemAdapter.ts → usecase → store → component
+src-tauri/src/<module>.rs → commands.rs → lib.rs
+  → src/infrastructure/hostCommands.ts → fileSystemPort.ts
+  → hostFileSystemAdapter.ts → usecase → store → component
 ```
 
-- The binding reports a failure as data (`{ renamed: false, reason }`), the
+- The command reports a failure as data (`{ renamed: false, reason }`), the
   adapter raises a typed `FileSystemError`, the use case raises a
   `UseCaseError`, and `toUiError.ts` is where the wording for it is added.
-- `HostBindings` and `bindings.d.ts` declare the same contract on either side of
-  the process boundary and have to be kept in step by hand.
-- The Tauri host in `src-tauri/` is replacing `desktop/` and is not wired to the
-  view yet. Until it is, add the capability there too: the module under
-  `src-tauri/src/` with its tests, then a command in `commands.rs` registered in
-  `lib.rs`, returning the same JSON shape.
+- The serde types in `src-tauri/src/` and the result types in `hostCommands.ts`
+  declare the same contract on either side of the process boundary and have to
+  be kept in step by hand. The Rust tests pin each JSON shape, and
+  `hostCommands.test.ts` pins each command and argument name.
+- A command only a plugin provides needs its permission in
+  `src-tauri/capabilities/default.json`; the app's own commands do not.
+- Nothing new goes into `desktop/`.
 
 ## Tests
 
 - `src/**` runs under Vitest against fake ports and fake dependencies.
-- `desktop/**` runs under `deno test` against a real temporary directory.
+- `desktop/**` runs under `deno test` against a real temporary directory. The
+  app no longer runs it.
 - `deno task test` runs both.
 - `src-tauri/**` runs under `cargo test` (`deno task test:rust`), also against a
   real temporary directory, and only on macOS.

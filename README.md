@@ -66,21 +66,23 @@ tools that modify Facet files directly, see the
 
 ## Status
 
-Facet targets **macOS only** and is built on
-[Deno Desktop](https://docs.deno.com/runtime/desktop/), so it renders in the
-system WebView rather than shipping a browser of its own.
+Facet targets **macOS only** and is built on [Tauri](https://tauri.app/), so it
+renders in the system WebView rather than shipping a browser of its own.
 
 ## Getting started
 
-Requires macOS and [Deno](https://deno.com/) 2.9.7 or newer.
+Requires macOS, [Deno](https://deno.com/) 2.9.7 or newer, and
+[rustup](https://rustup.rs/). The Rust version is pinned in
+`rust-toolchain.toml`, and rustup installs it on first use.
 
 ```sh
 deno install          # install the dependencies
 deno task desktop     # build the app bundle
-open Facet.app        # launch it
+open src-tauri/target/release/bundle/macos/Facet.app   # launch it
 ```
 
 `deno task desktop` only builds `Facet.app`; it does not start the app.
+`deno task desktop:dev` starts it against the Vite dev server instead.
 
 Recently opened boards are remembered in
 `~/Library/Application Support/Facet/config.yaml`.

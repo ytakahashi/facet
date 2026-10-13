@@ -1,52 +1,14 @@
-import type { DirEntry, FileRevision } from "../domain/fileSystemPort.ts";
 import type { MenuItem } from "./denoMenuItem.ts";
 
-export type ReadTextFileResult =
-  | { read: true; content: string; revision: FileRevision }
-  | { read: false; reason: "not-found" };
-
-export type WriteTextFileResult =
-  | { written: true; revision: FileRevision }
-  | { written: false; reason: "revision-mismatch" | "not-found" };
-
-export type CreateTextFileResult =
-  | { created: true }
-  | { created: false; reason: "already-exists" };
-
-export type RemoveFileResult =
-  | { removed: true }
-  | { removed: false; reason: "not-found" | "is-a-directory" };
-
-export type RenameFileResult =
-  | { renamed: true }
-  | {
-    renamed: false;
-    reason: "not-found" | "already-exists" | "is-a-directory";
-  };
-
-export type RevealInFinderResult =
-  | { revealed: true }
-  | { revealed: false; reason: "not-found" | "failed" };
-
+// What is left of the Deno Desktop bindings: the native menus, which the view
+// still asks the Deno host for. File-system and Finder access go through
+// hostCommands.ts. Under Tauri this global does not exist, so these calls
+// fail and the menus simply do not appear.
 export interface Bindings {
-  readTextFile(path: string): Promise<ReadTextFileResult>;
-  writeTextFile(
-    path: string,
-    content: string,
-    expectedRevision?: FileRevision,
-  ): Promise<WriteTextFileResult>;
-  createTextFile(path: string, content: string): Promise<CreateTextFileResult>;
-  removeFile(path: string): Promise<RemoveFileResult>;
-  renameFile(fromPath: string, toPath: string): Promise<RenameFileResult>;
-  readDir(path: string): Promise<DirEntry[]>;
-  homeDirectory(): Promise<string>;
-  exists(path: string): Promise<boolean>;
-  mkdir(path: string): Promise<void>;
   setApplicationMenu(menu: MenuItem[]): Promise<void>;
   nextMenuClick(): Promise<string>;
   showContextMenu(x: number, y: number, menu: MenuItem[]): Promise<void>;
   nextContextMenuClick(): Promise<string>;
-  revealInFinder(path: string): Promise<RevealInFinderResult>;
 }
 
 declare global {

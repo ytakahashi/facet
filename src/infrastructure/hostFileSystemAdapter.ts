@@ -5,6 +5,7 @@ import {
   type FileSystemOperation,
   type FileSystemPort,
 } from "../domain/fileSystemPort.ts";
+import * as hostCommands from "./hostCommands.ts";
 
 async function runFileSystemOperation<T>(
   operation: FileSystemOperation,
@@ -19,7 +20,7 @@ async function runFileSystemOperation<T>(
   }
 }
 
-export class DenoFileSystemAdapter implements FileSystemPort {
+export class HostFileSystemAdapter implements FileSystemPort {
   async readTextFile(path: string): Promise<string> {
     return (await this.readTextFileWithRevision(path)).content;
   }
@@ -28,7 +29,7 @@ export class DenoFileSystemAdapter implements FileSystemPort {
     path: string,
   ): Promise<{ content: string; revision: FileRevision }> {
     return runFileSystemOperation("read-file", path, async () => {
-      const result = await bindings.readTextFile(path);
+      const result = await hostCommands.readTextFile(path);
       if (!result.read) {
         throw new FileSystemError(result.reason, "read-file", path);
       }
@@ -46,8 +47,8 @@ export class DenoFileSystemAdapter implements FileSystemPort {
       path,
       async () => {
         const result = expectedRevision === undefined
-          ? await bindings.writeTextFile(path, content)
-          : await bindings.writeTextFile(path, content, expectedRevision);
+          ? await hostCommands.writeTextFile(path, content)
+          : await hostCommands.writeTextFile(path, content, expectedRevision);
         if (!result.written) {
           throw new FileSystemError(result.reason, "write-file", path);
         }
@@ -58,7 +59,7 @@ export class DenoFileSystemAdapter implements FileSystemPort {
 
   async createTextFile(path: string, content: string): Promise<void> {
     return runFileSystemOperation("create-file", path, async () => {
-      const result = await bindings.createTextFile(path, content);
+      const result = await hostCommands.createTextFile(path, content);
       if (!result.created) {
         throw new FileSystemError("already-exists", "create-file", path);
       }
@@ -67,7 +68,7 @@ export class DenoFileSystemAdapter implements FileSystemPort {
 
   async removeFile(path: string): Promise<void> {
     return runFileSystemOperation("remove-file", path, async () => {
-      const result = await bindings.removeFile(path);
+      const result = await hostCommands.removeFile(path);
       if (!result.removed) {
         throw new FileSystemError(result.reason, "remove-file", path);
       }
@@ -76,7 +77,7 @@ export class DenoFileSystemAdapter implements FileSystemPort {
 
   async renameFile(fromPath: string, toPath: string): Promise<void> {
     return runFileSystemOperation("rename-file", fromPath, async () => {
-      const result = await bindings.renameFile(fromPath, toPath);
+      const result = await hostCommands.renameFile(fromPath, toPath);
       if (!result.renamed) {
         // Reported against the path the reason is about: something in the way
         // is about where the file was going, a missing file about where it
@@ -94,7 +95,7 @@ export class DenoFileSystemAdapter implements FileSystemPort {
     return runFileSystemOperation(
       "read-directory",
       path,
-      () => bindings.readDir(path),
+      () => hostCommands.readDir(path),
     );
   }
 
@@ -102,7 +103,7 @@ export class DenoFileSystemAdapter implements FileSystemPort {
     return runFileSystemOperation(
       "get-home-directory",
       undefined,
-      () => bindings.homeDirectory(),
+      () => hostCommands.homeDirectory(),
     );
   }
 
@@ -110,7 +111,7 @@ export class DenoFileSystemAdapter implements FileSystemPort {
     return runFileSystemOperation(
       "check-existence",
       path,
-      () => bindings.exists(path),
+      () => hostCommands.exists(path),
     );
   }
 
@@ -118,7 +119,7 @@ export class DenoFileSystemAdapter implements FileSystemPort {
     return runFileSystemOperation(
       "create-directory",
       path,
-      () => bindings.mkdir(path),
+      () => hostCommands.mkdir(path),
     );
   }
 }

@@ -1,19 +1,30 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DenoFileSystemAdapter } from "./denoFileSystemAdapter.ts";
+import * as hostCommands from "./hostCommands.ts";
+import { HostFileSystemAdapter } from "./hostFileSystemAdapter.ts";
+
+vi.mock("./hostCommands.ts");
 
 afterEach(() => {
-  vi.unstubAllGlobals();
+  vi.resetAllMocks();
 });
 
-describe("DenoFileSystemAdapter", () => {
+// Each test supplies the commands it exercises; the rest stay bare mocks.
+function stubHostCommands(commands: Partial<typeof hostCommands>): void {
+  for (const [name, command] of Object.entries(commands)) {
+    vi.mocked(hostCommands[name as keyof typeof hostCommands])
+      .mockImplementation(command as never);
+  }
+}
+
+describe("HostFileSystemAdapter", () => {
   it("maps an exclusive-create collision to a typed file-system error", async () => {
-    vi.stubGlobal("bindings", {
+    stubHostCommands({
       createTextFile: vi.fn().mockResolvedValue({
         created: false,
         reason: "already-exists",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () => fileSystem.createTextFile("/board/card.md", "# Card\n");
 
@@ -25,14 +36,14 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
-  it("maps a missing file reported by the remove binding to a typed file-system error", async () => {
-    vi.stubGlobal("bindings", {
+  it("maps a missing file reported by the remove command to a typed file-system error", async () => {
+    stubHostCommands({
       removeFile: vi.fn().mockResolvedValue({
         removed: false,
         reason: "not-found",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () => fileSystem.removeFile("/board/card.md");
 
@@ -44,14 +55,14 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
-  it("maps a directory reported by the remove binding to a typed file-system error", async () => {
-    vi.stubGlobal("bindings", {
+  it("maps a directory reported by the remove command to a typed file-system error", async () => {
+    stubHostCommands({
       removeFile: vi.fn().mockResolvedValue({
         removed: false,
         reason: "is-a-directory",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () => fileSystem.removeFile("/board/notes.md");
 
@@ -63,12 +74,12 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
-  it("wraps a failing remove binding with operation context", async () => {
+  it("wraps a failing remove command with operation context", async () => {
     const cause = new Error("Permission denied");
-    vi.stubGlobal("bindings", {
+    stubHostCommands({
       removeFile: vi.fn().mockRejectedValue(cause),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () => fileSystem.removeFile("/board/card.md");
 
@@ -81,10 +92,10 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
-  it("resolves when the rename binding reports the file was moved", async () => {
+  it("resolves when the rename command reports the file was moved", async () => {
     const renameFile = vi.fn().mockResolvedValue({ renamed: true });
-    vi.stubGlobal("bindings", { renameFile });
-    const fileSystem = new DenoFileSystemAdapter();
+    stubHostCommands({ renameFile });
+    const fileSystem = new HostFileSystemAdapter();
 
     await expect(
       fileSystem.renameFile("/board/card.md", "/board/ideas/card.md"),
@@ -96,13 +107,13 @@ describe("DenoFileSystemAdapter", () => {
   });
 
   it("reports an occupied rename destination against the destination path", async () => {
-    vi.stubGlobal("bindings", {
+    stubHostCommands({
       renameFile: vi.fn().mockResolvedValue({
         renamed: false,
         reason: "already-exists",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () =>
       fileSystem.renameFile("/board/card.md", "/board/ideas/card.md");
@@ -116,13 +127,13 @@ describe("DenoFileSystemAdapter", () => {
   });
 
   it("reports a directory at the rename destination against the destination path", async () => {
-    vi.stubGlobal("bindings", {
+    stubHostCommands({
       renameFile: vi.fn().mockResolvedValue({
         renamed: false,
         reason: "is-a-directory",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () =>
       fileSystem.renameFile("/board/card.md", "/board/ideas.md");
@@ -136,13 +147,13 @@ describe("DenoFileSystemAdapter", () => {
   });
 
   it("reports a missing rename source against the source path", async () => {
-    vi.stubGlobal("bindings", {
+    stubHostCommands({
       renameFile: vi.fn().mockResolvedValue({
         renamed: false,
         reason: "not-found",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () =>
       fileSystem.renameFile("/board/card.md", "/board/ideas/card.md");
@@ -155,12 +166,12 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
-  it("wraps a failing rename binding with operation context", async () => {
+  it("wraps a failing rename command with operation context", async () => {
     const cause = new Error("Permission denied");
-    vi.stubGlobal("bindings", {
+    stubHostCommands({
       renameFile: vi.fn().mockRejectedValue(cause),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () =>
       fileSystem.renameFile("/board/card.md", "/board/ideas/card.md");
@@ -174,44 +185,44 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
-  it("returns the content reported by the read binding", async () => {
-    vi.stubGlobal("bindings", {
+  it("returns the content reported by the read command", async () => {
+    stubHostCommands({
       readTextFile: vi.fn().mockResolvedValue({
         read: true,
         content: "# Card\n",
         revision: "revision-1",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     await expect(fileSystem.readTextFile("/board/card.md")).resolves.toBe(
       "# Card\n",
     );
   });
 
-  it("returns content and revision reported by the read binding", async () => {
-    vi.stubGlobal("bindings", {
+  it("returns content and revision reported by the read command", async () => {
+    stubHostCommands({
       readTextFile: vi.fn().mockResolvedValue({
         read: true,
         content: "# Card\n",
         revision: "revision-1",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     await expect(
       fileSystem.readTextFileWithRevision("/board/card.md"),
     ).resolves.toEqual({ content: "# Card\n", revision: "revision-1" });
   });
 
-  it("maps a missing file reported by the read binding to a typed file-system error", async () => {
-    vi.stubGlobal("bindings", {
+  it("maps a missing file reported by the read command to a typed file-system error", async () => {
+    stubHostCommands({
       readTextFile: vi.fn().mockResolvedValue({
         read: false,
         reason: "not-found",
       }),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () => fileSystem.readTextFile("/board/card.md");
 
@@ -223,12 +234,12 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
-  it("wraps raw binding failures with operation context", async () => {
+  it("wraps raw command failures with operation context", async () => {
     const cause = new Error("Permission denied");
-    vi.stubGlobal("bindings", {
+    stubHostCommands({
       readTextFile: vi.fn().mockRejectedValue(cause),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () => fileSystem.readTextFile("/board/card.md");
 
@@ -241,13 +252,13 @@ describe("DenoFileSystemAdapter", () => {
     });
   });
 
-  it("passes the expected revision to the write binding and returns the next one", async () => {
+  it("passes the expected revision to the write command and returns the next one", async () => {
     const writeTextFile = vi.fn().mockResolvedValue({
       written: true,
       revision: "revision-2",
     });
-    vi.stubGlobal("bindings", { writeTextFile });
-    const fileSystem = new DenoFileSystemAdapter();
+    stubHostCommands({ writeTextFile });
+    const fileSystem = new HostFileSystemAdapter();
 
     await expect(
       fileSystem.writeTextFile("/board/card.md", "# Card\n", "revision-1"),
@@ -259,13 +270,13 @@ describe("DenoFileSystemAdapter", () => {
     );
   });
 
-  it("omits the optional binding argument when no revision is expected", async () => {
+  it("omits the optional command argument when no revision is expected", async () => {
     const writeTextFile = vi.fn().mockResolvedValue({
       written: true,
       revision: "revision-1",
     });
-    vi.stubGlobal("bindings", { writeTextFile });
-    const fileSystem = new DenoFileSystemAdapter();
+    stubHostCommands({ writeTextFile });
+    const fileSystem = new HostFileSystemAdapter();
 
     await fileSystem.writeTextFile("/board/card.md", "# Card\n");
 
@@ -278,10 +289,10 @@ describe("DenoFileSystemAdapter", () => {
   it.each(["revision-mismatch", "not-found"] as const)(
     "maps a %s write result to a typed file-system error",
     async (reason) => {
-      vi.stubGlobal("bindings", {
+      stubHostCommands({
         writeTextFile: vi.fn().mockResolvedValue({ written: false, reason }),
       });
-      const fileSystem = new DenoFileSystemAdapter();
+      const fileSystem = new HostFileSystemAdapter();
 
       const act = () =>
         fileSystem.writeTextFile(
@@ -299,12 +310,12 @@ describe("DenoFileSystemAdapter", () => {
     },
   );
 
-  it("wraps a failing write binding with operation context", async () => {
+  it("wraps a failing write command with operation context", async () => {
     const cause = new Error("Permission denied");
-    vi.stubGlobal("bindings", {
+    stubHostCommands({
       writeTextFile: vi.fn().mockRejectedValue(cause),
     });
-    const fileSystem = new DenoFileSystemAdapter();
+    const fileSystem = new HostFileSystemAdapter();
 
     const act = () => fileSystem.writeTextFile("/board/card.md", "# Card\n");
 

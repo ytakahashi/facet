@@ -1,11 +1,12 @@
 import { FinderError, type FinderPort } from "../domain/finderPort.ts";
-import type { RevealInFinderResult } from "./bindings.d.ts";
+import * as hostCommands from "./hostCommands.ts";
+import type { RevealInFinderResult } from "./hostCommands.ts";
 
-export class DenoFinder implements FinderPort {
+export class HostFinder implements FinderPort {
   async reveal(path: string): Promise<void> {
     let result: RevealInFinderResult;
     try {
-      result = await bindings.revealInFinder(path);
+      result = await hostCommands.revealInFinder(path);
     } catch (cause) {
       throw new FinderError("failed", { cause });
     }
