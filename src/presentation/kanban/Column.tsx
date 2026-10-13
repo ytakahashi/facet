@@ -38,20 +38,18 @@ interface ColumnProps {
   onRemove: (columnId: string) => void;
 }
 
-export function Column(
-  {
-    column,
-    criteria,
-    index,
-    labelDisplay,
-    onAddCard,
-    onDeleteCard,
-    onRepairCard,
-    onCardContextMenu,
-    onRename,
-    onRemove,
-  }: ColumnProps,
-) {
+export function Column({
+  column,
+  criteria,
+  index,
+  labelDisplay,
+  onAddCard,
+  onDeleteCard,
+  onRepairCard,
+  onCardContextMenu,
+  onRename,
+  onRemove,
+}: ColumnProps) {
   const cardsRef = useRef<HTMLDivElement>(null);
   const columnRef = useRef<HTMLDivElement>(null);
   const dragHandleRef = useRef<HTMLSpanElement>(null);
@@ -67,13 +65,17 @@ export function Column(
     "column__cards",
     areCardsHidden ? "column__cards--hidden" : "",
     isDraggedOver ? "column__cards--dragged-over" : "",
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
   const className = [
     "column",
     isDragging ? "column--dragging" : "",
     closestEdge === "left" ? "column--drop-before" : "",
     closestEdge === "right" ? "column--drop-after" : "",
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   useEffect(() => {
     const element = cardsRef.current;
@@ -177,28 +179,27 @@ export function Column(
             onCardContextMenu={onCardContextMenu}
           />
         ))}
-        {
-          /* A card dropped into a hidden column vanishes on the spot, so the
+        {/* A card dropped into a hidden column vanishes on the spot, so the
             note carries the count: watching it grow is the only feedback
             that the drop landed. Cards can still only disappear here through
-            an active filter, which is why neither branch re-checks that. */
-        }
+            an active filter, which is why neither branch re-checks that. */}
         {areCardsHidden
           ? cardCount > 0 && (
-            <p className="column__hidden-note">
-              {cardCount === 1 ? "1 card hidden" : `${cardCount} cards hidden`}
-            </p>
-          )
-          : visibleCards.length === 0 && cardCount > 0 && (
-            <p className="column__empty-filter-note">
-              No cards match the filter
-            </p>
-          )}
+              <p className="column__hidden-note">
+                {cardCount === 1
+                  ? "1 card hidden"
+                  : `${cardCount} cards hidden`}
+              </p>
+            )
+          : visibleCards.length === 0 &&
+            cardCount > 0 && (
+              <p className="column__empty-filter-note">
+                No cards match the filter
+              </p>
+            )}
       </div>
-      {
-        /* Below the cards rather than in the header: new cards are appended to
-          the end of the column, and the header needs its width for the name. */
-      }
+      {/* Below the cards rather than in the header: new cards are appended to
+          the end of the column, and the header needs its width for the name. */}
       <button
         type="button"
         className="column__add-card"

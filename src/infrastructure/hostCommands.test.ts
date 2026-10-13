@@ -13,9 +13,13 @@ afterEach(() => {
 // command in src-tauri/src/commands.rs.
 describe("hostCommands", () => {
   it.each([
-    ["read_text_file", () => hostCommands.readTextFile("/a.md"), {
-      path: "/a.md",
-    }],
+    [
+      "read_text_file",
+      () => hostCommands.readTextFile("/a.md"),
+      {
+        path: "/a.md",
+      },
+    ],
     [
       "write_text_file",
       () => hostCommands.writeTextFile("/a.md", "# A", "rev"),
@@ -26,9 +30,13 @@ describe("hostCommands", () => {
       () => hostCommands.createTextFile("/a.md", "# A"),
       { path: "/a.md", content: "# A" },
     ],
-    ["remove_file", () => hostCommands.removeFile("/a.md"), {
-      path: "/a.md",
-    }],
+    [
+      "remove_file",
+      () => hostCommands.removeFile("/a.md"),
+      {
+        path: "/a.md",
+      },
+    ],
     [
       "rename_file",
       () => hostCommands.renameFile("/a.md", "/b.md"),
@@ -37,9 +45,13 @@ describe("hostCommands", () => {
     ["read_dir", () => hostCommands.readDir("/board"), { path: "/board" }],
     ["exists", () => hostCommands.exists("/a.md"), { path: "/a.md" }],
     ["mkdir", () => hostCommands.mkdir("/board"), { path: "/board" }],
-    ["reveal_in_finder", () => hostCommands.revealInFinder("/a.md"), {
-      path: "/a.md",
-    }],
+    [
+      "reveal_in_finder",
+      () => hostCommands.revealInFinder("/a.md"),
+      {
+        path: "/a.md",
+      },
+    ],
   ])("calls %s with its arguments", async (command, call, args) => {
     await call();
 

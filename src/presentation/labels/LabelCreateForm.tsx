@@ -3,12 +3,13 @@ import type { LabelColor } from "../../domain/label.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import { LabelColorSwatchGrid } from "./LabelColorSwatchGrid.tsx";
 
-export function LabelCreateForm(
-  { onCreateLabel, open }: {
-    onCreateLabel: (name: string, color: LabelColor) => void;
-    open: boolean;
-  },
-) {
+export function LabelCreateForm({
+  onCreateLabel,
+  open,
+}: {
+  onCreateLabel: (name: string, color: LabelColor) => void;
+  open: boolean;
+}) {
   const [name, setName] = useState("");
   const [color, setColor] = useState<LabelColor>("ruby");
   const [error, setError] = useState<string>();
@@ -48,9 +49,14 @@ export function LabelCreateForm(
         }}
       />
       <LabelColorSwatchGrid value={color} onChange={setColor} />
-      {error && <p className="label-create-form__error" role="alert">{error}
-      </p>}
-      <button type="submit" disabled={name.trim() === ""}>Add</button>
+      {error && (
+        <p className="label-create-form__error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" disabled={name.trim() === ""}>
+        Add
+      </button>
     </form>
   );
 }

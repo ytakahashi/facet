@@ -11,9 +11,12 @@ interface LabelFilterListProps {
 // .card__label--{color} badge as Card/MarkdownViewer so a label always
 // looks the same everywhere. Registry management stays with the dialog;
 // this list only exposes a callback for its empty-state entry.
-export function LabelFilterList(
-  { labels, selected, onToggle, onManageLabels }: LabelFilterListProps,
-) {
+export function LabelFilterList({
+  labels,
+  selected,
+  onToggle,
+  onManageLabels,
+}: LabelFilterListProps) {
   if (labels.length === 0) {
     return (
       <button
@@ -33,8 +36,7 @@ export function LabelFilterList(
           <input
             type="checkbox"
             checked={selected.has(label.name)}
-            onChange={() =>
-              onToggle(label.name)}
+            onChange={() => onToggle(label.name)}
           />
           <span className={`card__label card__label--${label.color}`}>
             {label.name}

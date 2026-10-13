@@ -13,12 +13,14 @@ import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import type { CardTableSort } from "../../domain/cardTable.ts";
 import { CardTable } from "./CardTable.tsx";
 
-function makeSession(options: {
-  sort?: CardTableSort;
-  hiddenColumnIds?: ReadonlySet<string>;
-} = {}): BoardSession {
+function makeSession(
+  options: {
+    sort?: CardTableSort;
+    hiddenColumnIds?: ReadonlySet<string>;
+  } = {},
+): BoardSession {
   return {
-    boardStore: create<BoardState>(() => ({ status: "loaded" } as BoardState)),
+    boardStore: create<BoardState>(() => ({ status: "loaded" }) as BoardState),
     boardView: create<BoardViewState>(() => ({
       ...createBoardViewStore().getState(),
       tableSort: options.sort,
@@ -30,10 +32,13 @@ function makeSession(options: {
         hiddenColumnIds: options.hiddenColumnIds ?? new Set(),
       },
     })),
-    markdownViewer: create<MarkdownViewerState>(() => ({
-      selectedPath: "missing.md",
-      selectCard: vi.fn(),
-    } as unknown as MarkdownViewerState)),
+    markdownViewer: create<MarkdownViewerState>(
+      () =>
+        ({
+          selectedPath: "missing.md",
+          selectCard: vi.fn(),
+        }) as unknown as MarkdownViewerState,
+    ),
   };
 }
 
@@ -54,24 +59,26 @@ const board: Board = {
   version: 1,
   name: "Test",
   labels: [{ name: "bug", color: "ruby" }],
-  columns: [{
-    id: "todo",
-    name: "To do",
-    cards: [
-      {
-        path: "missing.md",
-        displayTitle: "Zeta",
-        fileState: "missing",
-        labels: ["bug"],
-      },
-      {
-        path: "available.md",
-        displayTitle: "Alpha",
-        fileState: "available",
-        labels: [],
-      },
-    ],
-  }],
+  columns: [
+    {
+      id: "todo",
+      name: "To do",
+      cards: [
+        {
+          path: "missing.md",
+          displayTitle: "Zeta",
+          fileState: "missing",
+          labels: ["bug"],
+        },
+        {
+          path: "available.md",
+          displayTitle: "Alpha",
+          fileState: "available",
+          labels: [],
+        },
+      ],
+    },
+  ],
 };
 
 describe("CardTable", () => {

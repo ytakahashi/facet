@@ -74,12 +74,11 @@ export function toRelativeCardPath(
   if (fileSegments.length <= boardSegments.length) {
     return {
       ok: false,
-      reason: fileSegments.length === boardSegments.length &&
-          fileSegments.every((segment, index) =>
-            segment === boardSegments[index]
-          )
-        ? "not-a-file"
-        : "outside-board-directory",
+      reason:
+        fileSegments.length === boardSegments.length &&
+        fileSegments.every((segment, index) => segment === boardSegments[index])
+          ? "not-a-file"
+          : "outside-board-directory",
     };
   }
   if (

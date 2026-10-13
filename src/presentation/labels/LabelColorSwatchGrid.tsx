@@ -29,9 +29,10 @@ interface LabelColorSwatchGridProps {
 // Display-only picker shared by the label create form and each registry
 // entry's edit row. Selection commits immediately (no local form state):
 // the current value always comes from the caller.
-export function LabelColorSwatchGrid(
-  { value, onChange }: LabelColorSwatchGridProps,
-) {
+export function LabelColorSwatchGrid({
+  value,
+  onChange,
+}: LabelColorSwatchGridProps) {
   return (
     <div
       className="label-color-swatch-grid"

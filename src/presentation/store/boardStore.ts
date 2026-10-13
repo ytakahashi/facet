@@ -110,17 +110,27 @@ export interface BoardState {
 export function canRefreshBoard(
   state: BoardState,
 ): state is BoardState & { board: Board; path: string } {
-  return state.status === "loaded" && state.board !== undefined &&
-    !!state.path && !state.isSaving && !state.isRefreshing &&
-    state.conflictResolution === undefined;
+  return (
+    state.status === "loaded" &&
+    state.board !== undefined &&
+    !!state.path &&
+    !state.isSaving &&
+    !state.isRefreshing &&
+    state.conflictResolution === undefined
+  );
 }
 
 // Reload and overwrite are offered only while a conflict is waiting and
 // nothing else is resolving it. Checked again once the confirmation is
 // answered, against the board the question was asked about.
 function canResolveConflict(state: BoardState, path: string): boolean {
-  return state.path === path && state.saveConflict && !state.isSaving &&
-    !state.isRefreshing && state.conflictResolution === undefined;
+  return (
+    state.path === path &&
+    state.saveConflict &&
+    !state.isSaving &&
+    !state.isRefreshing &&
+    state.conflictResolution === undefined
+  );
 }
 
 export interface NewCardInput {
@@ -220,70 +230,73 @@ export function createBoardStore({
     let activeMarkdownSavedDuringLoad: Map<string, string> | undefined;
     const confirmation = createConfirmationGate();
 
-    const saveQueue = createBoardSaveQueue(async (path, board) => {
-      activeSavePath = path;
-      activeSaveIsOverwrite = overwritingPaths.has(path);
-      if (conflictedPaths.has(path)) return;
-      try {
-        const revision = await saveBoard(path, board, revisions.get(path));
-        revisions.set(path, revision);
-        if (activeSaveIsOverwrite) {
-          overwritingPaths.delete(path);
-          if (get().path === path) {
+    const saveQueue = createBoardSaveQueue(
+      async (path, board) => {
+        activeSavePath = path;
+        activeSaveIsOverwrite = overwritingPaths.has(path);
+        if (conflictedPaths.has(path)) return;
+        try {
+          const revision = await saveBoard(path, board, revisions.get(path));
+          revisions.set(path, revision);
+          if (activeSaveIsOverwrite) {
+            overwritingPaths.delete(path);
+            if (get().path === path) {
+              set({
+                saveConflict: false,
+                saveError: undefined,
+                conflictResolutionError: undefined,
+                conflictResolution: undefined,
+              });
+            }
+          }
+        } catch (error) {
+          // A failed unconditional overwrite has not resolved the conflict, so
+          // later optimistic edits must remain blocked from automatic saving.
+          if (
+            activeSaveIsOverwrite ||
+            (error instanceof UseCaseError && error.code === "board.conflict")
+          ) {
+            conflictedPaths.add(path);
+          }
+          if (activeSaveIsOverwrite) overwritingPaths.delete(path);
+          throw error;
+        }
+      },
+      {
+        onSaving: () =>
+          set((state) => ({
+            isSaving: true,
+            saveError: state.saveConflict ? state.saveError : undefined,
+            conflictResolutionError: state.saveConflict
+              ? state.conflictResolutionError
+              : undefined,
+          })),
+        onSaved: () => set({ isSaving: false }),
+        onError: (error) => {
+          if (get().path !== activeSavePath) {
+            set({ isSaving: false });
+            return;
+          }
+          if (activeSaveIsOverwrite) {
             set({
-              saveConflict: false,
-              saveError: undefined,
-              conflictResolutionError: undefined,
+              isSaving: false,
+              saveConflict: true,
+              conflictResolutionError: toUiError(error).message,
               conflictResolution: undefined,
             });
+            return;
           }
-        }
-      } catch (error) {
-        // A failed unconditional overwrite has not resolved the conflict, so
-        // later optimistic edits must remain blocked from automatic saving.
-        if (
-          activeSaveIsOverwrite ||
-          (error instanceof UseCaseError && error.code === "board.conflict")
-        ) {
-          conflictedPaths.add(path);
-        }
-        if (activeSaveIsOverwrite) overwritingPaths.delete(path);
-        throw error;
-      }
-    }, {
-      onSaving: () =>
-        set((state) => ({
-          isSaving: true,
-          saveError: state.saveConflict ? state.saveError : undefined,
-          conflictResolutionError: state.saveConflict
-            ? state.conflictResolutionError
-            : undefined,
-        })),
-      onSaved: () => set({ isSaving: false }),
-      onError: (error) => {
-        if (get().path !== activeSavePath) {
-          set({ isSaving: false });
-          return;
-        }
-        if (activeSaveIsOverwrite) {
           set({
             isSaving: false,
-            saveConflict: true,
-            conflictResolutionError: toUiError(error).message,
+            saveError: toUiError(error).message,
+            saveConflict:
+              error instanceof UseCaseError && error.code === "board.conflict",
+            conflictResolutionError: undefined,
             conflictResolution: undefined,
           });
-          return;
-        }
-        set({
-          isSaving: false,
-          saveError: toUiError(error).message,
-          saveConflict: error instanceof UseCaseError &&
-            error.code === "board.conflict",
-          conflictResolutionError: undefined,
-          conflictResolution: undefined,
-        });
+        },
       },
-    });
+    );
 
     function queueSave(path: string, board: Board): void {
       boardEditCount++;
@@ -298,9 +311,8 @@ export function createBoardStore({
     ): Promise<void> {
       const request = ++loadGeneration;
       // A newly opened session has no viewer yet, so no Markdown saves to track.
-      const markdownSavedDuringLoad = mode === "open"
-        ? undefined
-        : new Map<string, string>();
+      const markdownSavedDuringLoad =
+        mode === "open" ? undefined : new Map<string, string>();
       activeMarkdownSavedDuringLoad = markdownSavedDuringLoad;
       if (mode === "open") {
         set({
@@ -377,11 +389,7 @@ export function createBoardStore({
       }
     }
 
-    function appendCard(
-      boardPath: string,
-      columnId: string,
-      card: Card,
-    ): Card {
+    function appendCard(boardPath: string, columnId: string, card: Card): Card {
       const current = get();
       if (!current.board || current.path !== boardPath) {
         throw new UseCaseError("card.board-changed");
@@ -478,8 +486,8 @@ export function createBoardStore({
         const nextBoard = moveColumnDomain(board, columnId, toIndex);
         // Dropping a column back into its own slot leaves the row untouched;
         // don't rewrite the board file for it.
-        const isUnchanged = nextBoard.columns.every((column, index) =>
-          column === board.columns[index]
+        const isUnchanged = nextBoard.columns.every(
+          (column, index) => column === board.columns[index],
         );
         if (isUnchanged) return;
         set({ board: nextBoard });
@@ -564,11 +572,7 @@ export function createBoardStore({
         activeMarkdownSavedDuringLoad?.set(cardPath, markdownText);
         const { board } = get();
         if (!board) return;
-        const nextBoard = retitleCardOnBoard(
-          board,
-          cardPath,
-          markdownText,
-        );
+        const nextBoard = retitleCardOnBoard(board, cardPath, markdownText);
         if (nextBoard === board) return;
         // Not queued for saving: displayTitle is derived from the file and
         // never written to the board file.
@@ -593,11 +597,7 @@ export function createBoardStore({
         if (!board || !path) return;
         const card = findCardByPath(board, cardPath);
         if (!card || !card.labels.includes(labelName)) return;
-        const nextBoard = removeLabelFromCardDomain(
-          board,
-          cardPath,
-          labelName,
-        );
+        const nextBoard = removeLabelFromCardDomain(board, cardPath, labelName);
         set({ board: nextBoard });
         queueSave(path, nextBoard);
       },
@@ -636,11 +636,7 @@ export function createBoardStore({
         if (trimmedNextName === "" || trimmedNextName === name) return;
         let nextBoard: Board;
         try {
-          nextBoard = renameLabelDefinitionDomain(
-            board,
-            name,
-            trimmedNextName,
-          );
+          nextBoard = renameLabelDefinitionDomain(board, name, trimmedNextName);
         } catch (cause) {
           if (cause instanceof LabelAlreadyExistsError) {
             throw new UseCaseError(
@@ -676,10 +672,11 @@ export function createBoardStore({
         if (!board.labels.some((label) => label.name === name)) return;
         const nextBoard = moveLabelDefinition(board, name, toIndex);
         if (
-          nextBoard.labels.every((label, index) =>
-            label === board.labels[index]
+          nextBoard.labels.every(
+            (label, index) => label === board.labels[index],
           )
-        ) return;
+        )
+          return;
         set({ board: nextBoard });
         queueSave(path, nextBoard);
       },
@@ -851,7 +848,7 @@ export function createBoardStore({
         // of letter case is not the same path - it goes on and is renamed.
         if (
           normalizeCardPath(target.relativePath) ===
-            normalizeCardPath(card.path)
+          normalizeCardPath(card.path)
         ) {
           return card;
         }
@@ -933,9 +930,8 @@ export function createBoardStore({
           return;
         }
         if (saveError) {
-          if (
-            !await confirmation.ask(() => confirmDiscardBoard("refresh"))
-          ) return;
+          if (!(await confirmation.ask(() => confirmDiscardBoard("refresh"))))
+            return;
           const answered = get();
           if (!canRefreshBoard(answered) || answered.path !== path) return;
         }
@@ -944,7 +940,7 @@ export function createBoardStore({
       reloadBoard: async () => {
         const { path } = get();
         if (!path || !canResolveConflict(get(), path)) return;
-        if (!await confirmation.ask(() => confirmDiscardBoard("reload"))) {
+        if (!(await confirmation.ask(() => confirmDiscardBoard("reload")))) {
           return;
         }
         if (!canResolveConflict(get(), path)) return;
@@ -953,7 +949,7 @@ export function createBoardStore({
       overwriteBoard: async () => {
         const { board, path } = get();
         if (!board || !path || !canResolveConflict(get(), path)) return;
-        if (!await confirmation.ask(confirmOverwriteBoard)) return;
+        if (!(await confirmation.ask(confirmOverwriteBoard))) return;
         // Whatever the board became while the question was open is what gets
         // written: it is what the user was looking at when they said yes.
         const answered = get();

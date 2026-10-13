@@ -58,11 +58,15 @@ describe("applyLinkInsertion", () => {
 
   it("replaces the target and reports the resulting caret", () => {
     expect(
-      applyLinkInsertion("before selected after", {
-        start: 7,
-        end: 15,
-        linkText: "selected",
-      }, "[selected](./target.md)"),
+      applyLinkInsertion(
+        "before selected after",
+        {
+          start: 7,
+          end: 15,
+          linkText: "selected",
+        },
+        "[selected](./target.md)",
+      ),
     ).toEqual({
       value: "before [selected](./target.md) after",
       caret: 30,

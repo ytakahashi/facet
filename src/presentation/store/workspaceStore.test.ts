@@ -14,25 +14,35 @@ const input: CreateBoardInput = {
   name: "New",
 };
 
-function makeSession(overrides: {
-  openBoard?: BoardState["openBoard"];
-  createBoard?: BoardState["createBoard"];
-  close?: MarkdownViewerState["close"];
-} = {}): BoardSession {
+function makeSession(
+  overrides: {
+    openBoard?: BoardState["openBoard"];
+    createBoard?: BoardState["createBoard"];
+    close?: MarkdownViewerState["close"];
+  } = {},
+): BoardSession {
   return {
     boardView: createBoardViewStore(),
-    boardStore: create<BoardState>(() => ({
-      status: "empty",
-      isSaving: false,
-      saveConflict: false,
-      openBoard: overrides.openBoard ?? vi.fn().mockResolvedValue(undefined),
-      createBoard: overrides.createBoard ??
-        vi.fn().mockResolvedValue("/boards/new.board.yaml"),
-    } as BoardState)),
-    markdownViewer: create<MarkdownViewerState>(() => ({
-      status: "idle",
-      close: overrides.close ?? vi.fn(() => Promise.resolve(true)),
-    } as MarkdownViewerState)),
+    boardStore: create<BoardState>(
+      () =>
+        ({
+          status: "empty",
+          isSaving: false,
+          saveConflict: false,
+          openBoard:
+            overrides.openBoard ?? vi.fn().mockResolvedValue(undefined),
+          createBoard:
+            overrides.createBoard ??
+            vi.fn().mockResolvedValue("/boards/new.board.yaml"),
+        }) as BoardState,
+    ),
+    markdownViewer: create<MarkdownViewerState>(
+      () =>
+        ({
+          status: "idle",
+          close: overrides.close ?? vi.fn(() => Promise.resolve(true)),
+        }) as MarkdownViewerState,
+    ),
     filterStore: createFilterStore(),
   };
 }
@@ -73,7 +83,7 @@ describe("createWorkspaceStore", () => {
 
     workspace.getState().openBoard("/boards/missing.board.yaml");
     await vi.waitFor(() =>
-      expect(session.boardStore.getState().status).toBe("error")
+      expect(session.boardStore.getState().status).toBe("error"),
     );
     expect(workspace.getState().tabs).toHaveLength(1);
   });
@@ -162,10 +172,9 @@ describe("createWorkspaceStore", () => {
     workspace.getState().openBoard("/boards/a.board.yaml");
     session.boardStore.setState({ isSaving: true });
 
-    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
-      .resolves.toBe(
-        false,
-      );
+    await expect(
+      workspace.getState().closeTab(workspace.getState().tabs[0].id),
+    ).resolves.toBe(false);
     expect(confirmCloseBoard).toHaveBeenCalledOnce();
     expect(close).not.toHaveBeenCalled();
     expect(workspace.getState().tabs).toHaveLength(1);
@@ -179,10 +188,9 @@ describe("createWorkspaceStore", () => {
     });
     workspace.getState().openBoard("/boards/a.board.yaml");
 
-    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
-      .resolves.toBe(
-        true,
-      );
+    await expect(
+      workspace.getState().closeTab(workspace.getState().tabs[0].id),
+    ).resolves.toBe(true);
     expect(confirmCloseBoard).not.toHaveBeenCalled();
   });
 
@@ -206,10 +214,9 @@ describe("createWorkspaceStore", () => {
       isSaving: true,
     });
 
-    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
-      .resolves.toBe(
-        true,
-      );
+    await expect(
+      workspace.getState().closeTab(workspace.getState().tabs[0].id),
+    ).resolves.toBe(true);
     expect(order).toEqual(["board", "viewer"]);
   });
 
@@ -226,10 +233,9 @@ describe("createWorkspaceStore", () => {
     workspace.getState().openBoard("/boards/a.board.yaml");
     session.boardStore.setState(state);
 
-    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
-      .resolves.toBe(
-        false,
-      );
+    await expect(
+      workspace.getState().closeTab(workspace.getState().tabs[0].id),
+    ).resolves.toBe(false);
     expect(confirmCloseBoard).toHaveBeenCalledOnce();
   });
 
@@ -266,10 +272,9 @@ describe("createWorkspaceStore", () => {
     });
     workspace.getState().openBoard("/boards/a.board.yaml");
 
-    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
-      .resolves.toBe(
-        false,
-      );
+    await expect(
+      workspace.getState().closeTab(workspace.getState().tabs[0].id),
+    ).resolves.toBe(false);
     expect(workspace.getState().tabs).toHaveLength(1);
   });
 

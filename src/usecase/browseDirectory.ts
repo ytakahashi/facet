@@ -16,9 +16,9 @@ export async function listDirectory(
   }
 }
 
-export async function getHomeDirectory(
-  { fileSystem }: BrowseDirectoryDeps,
-): Promise<string> {
+export async function getHomeDirectory({
+  fileSystem,
+}: BrowseDirectoryDeps): Promise<string> {
   try {
     return await fileSystem.homeDirectory();
   } catch (cause) {

@@ -14,7 +14,10 @@ describe("ContentSearchLine", () => {
       snippet: "aXXbXXc",
       truncatedStart: false,
       truncatedEnd: false,
-      ranges: [{ start: 1, end: 3 }, { start: 4, end: 6 }],
+      ranges: [
+        { start: 1, end: 3 },
+        { start: 4, end: 6 },
+      ],
     });
 
     expect(output).toContain(">12:</span>");

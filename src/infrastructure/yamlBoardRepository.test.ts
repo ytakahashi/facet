@@ -255,8 +255,9 @@ columns:
 
   it("distinguishes an unreadable markdown from a missing one", async () => {
     const unreadablePath = "/board/private.md";
-    const fileSystem = new FakeFileSystemPort({
-      "/board/development.board.yaml": `
+    const fileSystem = new FakeFileSystemPort(
+      {
+        "/board/development.board.yaml": `
 version: 1
 name: Development
 columns:
@@ -266,13 +267,15 @@ columns:
       - path: private.md
         labels: []
 `,
-    }, {
-      [unreadablePath]: new FileSystemError(
-        "operation-failed",
-        "read-file",
-        unreadablePath,
-      ),
-    });
+      },
+      {
+        [unreadablePath]: new FileSystemError(
+          "operation-failed",
+          "read-file",
+          unreadablePath,
+        ),
+      },
+    );
     const repository = new YamlBoardRepository(fileSystem);
 
     const { board } = await repository.load("/board/development.board.yaml");

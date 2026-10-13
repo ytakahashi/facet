@@ -88,9 +88,11 @@ describe("createMarkdownCard", () => {
   });
 
   it("reports an exclusive-create race as an already-exists error", async () => {
-    const createTextFile = vi.fn().mockRejectedValue(
-      new FileSystemError("already-exists", "create-file", "/board/card.md"),
-    );
+    const createTextFile = vi
+      .fn()
+      .mockRejectedValue(
+        new FileSystemError("already-exists", "create-file", "/board/card.md"),
+      );
     const fileSystem = makeFileSystem({ createTextFile });
     const input = {
       boardPath: "/board/development.board.yaml",
@@ -108,9 +110,9 @@ describe("createMarkdownCard", () => {
   });
 
   it("preserves a create failure that is not an already-exists race", async () => {
-    const createTextFile = vi.fn().mockRejectedValue(
-      new Error("Permission denied"),
-    );
+    const createTextFile = vi
+      .fn()
+      .mockRejectedValue(new Error("Permission denied"));
     const fileSystem = makeFileSystem({ createTextFile });
     const input = {
       boardPath: "/board/development.board.yaml",

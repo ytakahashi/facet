@@ -19,9 +19,10 @@ function RecentBoardEntryRow({ entry }: { entry: RecentBoardEntry }) {
   const fileName = basenameOf(entry.path);
   // A hand-edited board can carry a blank name; the file name stands in so the
   // entry never renders without a heading.
-  const name = entry.status === "available" && entry.name.trim() !== ""
-    ? entry.name
-    : undefined;
+  const name =
+    entry.status === "available" && entry.name.trim() !== ""
+      ? entry.name
+      : undefined;
   const title = name ?? fileName;
   const badge = STATUS_BADGES[entry.status];
 
@@ -31,10 +32,8 @@ function RecentBoardEntryRow({ entry }: { entry: RecentBoardEntry }) {
         entry.status === "available" ? "" : " recent-board-list__item--missing"
       }`}
     >
-      {
-        /* Still opens when the file cannot be read, so the user gets the
-          reason from the open failure rather than a dead entry. */
-      }
+      {/* Still opens when the file cannot be read, so the user gets the
+          reason from the open failure rather than a dead entry. */}
       <button
         type="button"
         className="recent-board-list__entry"

@@ -10,7 +10,9 @@ describe("SaveErrorBanner", () => {
         detail="Choose which version to keep."
         resolutionError="Reload failed."
       >
-        <button type="button" disabled>Reloading…</button>
+        <button type="button" disabled>
+          Reloading…
+        </button>
       </SaveErrorBanner>,
     );
 

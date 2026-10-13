@@ -33,7 +33,8 @@ describe("resolveBoardSearchShortcut", () => {
   it("rejects shortcuts without Command or with Control or Option", () => {
     expect(shortcut({ key: "p", metaKey: false })).toBeUndefined();
     expect(shortcut({ key: "p", ctrlKey: true })).toBeUndefined();
-    expect(shortcut({ key: "F", shiftKey: true, altKey: true }))
-      .toBeUndefined();
+    expect(
+      shortcut({ key: "F", shiftKey: true, altKey: true }),
+    ).toBeUndefined();
   });
 });

@@ -56,9 +56,7 @@ describe("hasTrailingPathSeparator", () => {
 
 describe("directoryOf", () => {
   it("returns the parent directory of a file path", () => {
-    const directory = directoryOf(
-      "/boards/my-project/development.board.yaml",
-    );
+    const directory = directoryOf("/boards/my-project/development.board.yaml");
 
     expect(directory).toBe("/boards/my-project");
   });

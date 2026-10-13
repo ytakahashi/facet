@@ -40,8 +40,9 @@ describe("resolveCardLink", () => {
     expect(resolveCardLink(board, "notes/source.md", "child/target.md")).toBe(
       child,
     );
-    expect(resolveCardLink(board, "notes/source.md", "../other/target.md"))
-      .toBe(sibling);
+    expect(
+      resolveCardLink(board, "notes/source.md", "../other/target.md"),
+    ).toBe(sibling);
   });
 
   it("normalizes redundant path segments", () => {
@@ -91,9 +92,9 @@ describe("resolveCardLink", () => {
     const uppercaseExtension = makeCard({ path: "target.md" });
     const board = makeBoard([target, uppercaseExtension]);
 
-    expect(
-      resolveCardLink(board, "source.md", "notes/cafe%CC%81.md"),
-    ).toBe(target);
+    expect(resolveCardLink(board, "source.md", "notes/cafe%CC%81.md")).toBe(
+      target,
+    );
     expect(resolveCardLink(board, "source.md", "target.MD")).toBe(
       uppercaseExtension,
     );
@@ -102,8 +103,9 @@ describe("resolveCardLink", () => {
   it("can resolve a card whose file was missing at the last read", () => {
     const missing = makeCard({ path: "missing.md", fileState: "missing" });
 
-    expect(resolveCardLink(makeBoard([missing]), "source.md", "missing.md"))
-      .toBe(missing);
+    expect(
+      resolveCardLink(makeBoard([missing]), "source.md", "missing.md"),
+    ).toBe(missing);
   });
 
   it.each([
@@ -129,8 +131,9 @@ describe("resolveCardLink", () => {
   });
 
   it("returns undefined when no card has the resolved Markdown path", () => {
-    expect(resolveCardLink(makeBoard([]), "source.md", "target.md"))
-      .toBeUndefined();
+    expect(
+      resolveCardLink(makeBoard([]), "source.md", "target.md"),
+    ).toBeUndefined();
   });
 });
 
@@ -153,23 +156,16 @@ describe("cardLinkHref", () => {
     expect(cardLinkHref("Notes/source.md", "notes/Target.md")).toBe(
       "./Target.md",
     );
-    expect(
-      cardLinkHref("caf\u00e9/source.md", "cafe\u0301/Target.md"),
-    ).toBe("./Target.md");
+    expect(cardLinkHref("caf\u00e9/source.md", "cafe\u0301/Target.md")).toBe(
+      "./Target.md",
+    );
   });
 
   it("encodes characters that would break a Markdown destination", () => {
     expect(
-      cardLinkHref(
-        "source.md",
-        "日本語 note\t(1)#draft?50%\\copy<old>.md",
-      ),
-    ).toBe(
-      "./日本語%20note%09%281%29%23draft%3F50%25%5Ccopy%3Cold%3E.md",
-    );
-    expect(cardLinkHref("source.md", "note:memo.md")).toBe(
-      "./note:memo.md",
-    );
+      cardLinkHref("source.md", "日本語 note\t(1)#draft?50%\\copy<old>.md"),
+    ).toBe("./日本語%20note%09%281%29%23draft%3F50%25%5Ccopy%3Cold%3E.md");
+    expect(cardLinkHref("source.md", "note:memo.md")).toBe("./note:memo.md");
   });
 
   it.each([
@@ -204,13 +200,12 @@ describe("cardLinkHref", () => {
 });
 
 describe("isLinkableCardPath", () => {
-  it.each([
-    "target.md",
-    "notes/target.MD",
-    "notes/../target.md",
-  ])("accepts Markdown paths within the board: %s", (path) => {
-    expect(isLinkableCardPath(path)).toBe(true);
-  });
+  it.each(["target.md", "notes/target.MD", "notes/../target.md"])(
+    "accepts Markdown paths within the board: %s",
+    (path) => {
+      expect(isLinkableCardPath(path)).toBe(true);
+    },
+  );
 
   it.each([
     "",

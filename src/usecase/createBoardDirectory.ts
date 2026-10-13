@@ -15,8 +15,11 @@ export async function createBoardDirectory(
     throw new UseCaseError("directory.name-required");
   }
   if (
-    name === "." || name === ".." || name.includes("/") ||
-    name.includes(":") || name.includes("\0")
+    name === "." ||
+    name === ".." ||
+    name.includes("/") ||
+    name.includes(":") ||
+    name.includes("\0")
   ) {
     throw new UseCaseError("directory.invalid-name");
   }

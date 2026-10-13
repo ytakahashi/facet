@@ -22,9 +22,12 @@ export function buildPreviewTextIndex<Node>(
     }
     if (part.text === "") continue;
     if (
-      boundary && text !== "" && !text.endsWith("\n") &&
+      boundary &&
+      text !== "" &&
+      !text.endsWith("\n") &&
       !part.text.startsWith("\n")
-    ) text += "\n";
+    )
+      text += "\n";
     boundary = false;
     const start = text.length;
     text += part.text;
@@ -36,13 +39,18 @@ export function buildPreviewTextIndex<Node>(
 export function locatePreviewRange<Node>(
   index: PreviewTextIndex<Node>,
   range: TextRange,
-): {
-  start: { node: Node; offset: number };
-  end: { node: Node; offset: number };
-} | undefined {
+):
+  | {
+      start: { node: Node; offset: number };
+      end: { node: Node; offset: number };
+    }
+  | undefined {
   if (
-    range.start < 0 || range.end > index.text.length || range.start >= range.end
-  ) return undefined;
+    range.start < 0 ||
+    range.end > index.text.length ||
+    range.start >= range.end
+  )
+    return undefined;
   // A document can have many nodes and many matches. Binary searches avoid
   // walking the entire node list again for each highlight.
   const first = nodeEndingAfter(index.nodes, range.start);

@@ -5,8 +5,8 @@ import type { Card } from "../../domain/card.ts";
 import { buildCardContextMenu } from "./cardContextMenu.ts";
 
 function select(entries: ContextMenuEntry[], label: string): void {
-  const entry = entries.find((candidate) =>
-    candidate.kind === "item" && candidate.label === label
+  const entry = entries.find(
+    (candidate) => candidate.kind === "item" && candidate.label === label,
   );
   if (entry?.kind !== "item") throw new Error(`no item labelled ${label}`);
   entry.onSelect();
@@ -58,8 +58,9 @@ describe("buildCardContextMenu", () => {
     expect(reveal).toHaveBeenCalledWith("/board/notes/card.md");
     const move = entries[5];
     if (move.kind !== "submenu") throw new Error("no Move to submenu");
-    expect(move.entries.map((entry) => entry.kind === "item" && entry.label))
-      .toEqual(["Doing", "Done"]);
+    expect(
+      move.entries.map((entry) => entry.kind === "item" && entry.label),
+    ).toEqual(["Doing", "Done"]);
     const destination = move.entries[1];
     if (destination.kind !== "item") throw new Error("no destination");
     destination.onSelect();

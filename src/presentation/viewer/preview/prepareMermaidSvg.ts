@@ -4,7 +4,10 @@ export function viewBoxSize(
   viewBox: string | null,
 ): { width: number; height: number } | undefined {
   if (!viewBox?.trim()) return undefined;
-  const values = viewBox.trim().split(/[\s,]+/).map(Number);
+  const values = viewBox
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number);
   if (values.length !== 4 || !values.every(Number.isFinite)) return undefined;
   const [, , width, height] = values;
   if (width <= 0 || height <= 0) return undefined;

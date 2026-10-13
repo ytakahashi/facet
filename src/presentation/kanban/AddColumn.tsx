@@ -70,18 +70,20 @@ export function AddColumn() {
           onChange={(event) => setName(event.target.value)}
           autoFocus
         />
-        {
-          /* WebKit does not focus a button on click, so without this the
+        {/* WebKit does not focus a button on click, so without this the
             input's blur would see relatedTarget: null and close the form
             before the button's click is dispatched. Keeping focus on the
-            input sidesteps that; the buttons still receive the click. */
-        }
+            input sidesteps that; the buttons still receive the click. */}
         <div
           className="add-column__actions"
           onMouseDown={(event) => event.preventDefault()}
         >
-          <button type="submit" disabled={name.trim() === ""}>Add</button>
-          <button type="button" onClick={closeForm}>Cancel</button>
+          <button type="submit" disabled={name.trim() === ""}>
+            Add
+          </button>
+          <button type="button" onClick={closeForm}>
+            Cancel
+          </button>
         </div>
       </form>
     </div>

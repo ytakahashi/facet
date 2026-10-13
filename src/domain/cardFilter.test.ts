@@ -62,17 +62,20 @@ describe("card filters", () => {
   });
 
   it("matches every card without a selected label", () => {
-    expect(cardMatchesFilter(makeCard("unlabeled.md"), EMPTY_CARD_FILTER))
-      .toBe(true);
-    expect(cardMatchesFilter(makeCard("bug.md", ["bug"]), EMPTY_CARD_FILTER))
-      .toBe(true);
+    expect(cardMatchesFilter(makeCard("unlabeled.md"), EMPTY_CARD_FILTER)).toBe(
+      true,
+    );
+    expect(
+      cardMatchesFilter(makeCard("bug.md", ["bug"]), EMPTY_CARD_FILTER),
+    ).toBe(true);
   });
 
   it("matches only cards carrying every selected label (AND)", () => {
     const criteria = makeCriteria({ labels: new Set(["bug", "urgent"]) });
 
-    expect(cardMatchesFilter(makeCard("both.md", ["bug", "urgent"]), criteria))
-      .toBe(true);
+    expect(
+      cardMatchesFilter(makeCard("both.md", ["bug", "urgent"]), criteria),
+    ).toBe(true);
     expect(cardMatchesFilter(makeCard("one.md", ["bug"]), criteria)).toBe(
       false,
     );

@@ -59,7 +59,7 @@ export function reduceMarkdownFind(
       const offset =
         action.query === undefined && state.activeIndex !== undefined
           ? state.ranges[state.activeIndex].start
-          : action.offset ?? 0;
+          : (action.offset ?? 0);
       return {
         ...state,
         isOpen: true,
@@ -77,9 +77,10 @@ export function reduceMarkdownFind(
       const ranges = findTextMatches(state.source?.text ?? "", action.query);
       // Navigation places the match below the viewport's top. Refining a
       // query must preserve that match rather than jump to an earlier one.
-      const offset = state.activeIndex === undefined
-        ? action.visibleOffset ?? 0
-        : state.ranges[state.activeIndex].start;
+      const offset =
+        state.activeIndex === undefined
+          ? (action.visibleOffset ?? 0)
+          : state.ranges[state.activeIndex].start;
       return {
         ...state,
         query: action.query,
@@ -101,23 +102,26 @@ export function reduceMarkdownFind(
         };
       }
       const ranges = findTextMatches(action.source.text, state.query);
-      const previousStart = state.activeIndex === undefined
-        ? 0
-        : state.ranges[state.activeIndex].start;
+      const previousStart =
+        state.activeIndex === undefined
+          ? 0
+          : state.ranges[state.activeIndex].start;
       const activeIndex = state.source
         ? nearestFindIndex(ranges, previousStart)
         : findIndexFromOffset(
-          ranges,
-          state.initialPosition === "first" ? 0 : action.offset,
-        );
+            ranges,
+            state.initialPosition === "first" ? 0 : action.offset,
+          );
       return { ...state, source: action.source, ranges, activeIndex };
     }
     case "context": {
       const cardChanged = state.context.cardPath !== action.context.cardPath;
       if (
-        !cardChanged && state.context.mode === action.context.mode &&
+        !cardChanged &&
+        state.context.mode === action.context.mode &&
         action.context.enabled
-      ) return { ...state, context: action.context };
+      )
+        return { ...state, context: action.context };
       return {
         ...state,
         context: action.context,

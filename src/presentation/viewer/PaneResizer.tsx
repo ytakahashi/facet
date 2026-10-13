@@ -24,19 +24,28 @@ const RESIZING_CLASS = "is-pane-resizing";
 // A drag handle sitting between two flex panes. It widens the pane on its
 // right, so dragging left grows that pane. Nothing here knows what the pane
 // contains: the bounds arrive as clamp().
-export function PaneResizer(
-  { width, handleRef, availableWidth, clamp, step, label, onResize, onReset }:
-    PaneResizerProps,
-) {
+export function PaneResizer({
+  width,
+  handleRef,
+  availableWidth,
+  clamp,
+  step,
+  label,
+  onResize,
+  onReset,
+}: PaneResizerProps) {
   const drag = useRef<DragOrigin | undefined>(undefined);
 
   // The resize cursor and the selection lock have to hold while the pointer
   // is outside this element, which is most of a drag, so they go on <body>.
   // Also cleared on unmount: the viewer can be closed from elsewhere
   // mid-drag, and then no pointer event ever arrives to end it.
-  useEffect(() => () => {
-    document.body.classList.remove(RESIZING_CLASS);
-  }, []);
+  useEffect(
+    () => () => {
+      document.body.classList.remove(RESIZING_CLASS);
+    },
+    [],
+  );
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
@@ -68,11 +77,8 @@ export function PaneResizer(
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    const direction = event.key === "ArrowLeft"
-      ? 1
-      : event.key === "ArrowRight"
-      ? -1
-      : 0;
+    const direction =
+      event.key === "ArrowLeft" ? 1 : event.key === "ArrowRight" ? -1 : 0;
     if (direction === 0) return;
     event.preventDefault();
     onResize(clamp(width + direction * step, availableWidth));

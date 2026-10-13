@@ -58,11 +58,13 @@ describe("CardBoardPosition", () => {
   it("finds the same card through case and Unicode-equivalent path spelling", () => {
     const equivalentBoard: Board = {
       ...board,
-      columns: [{
-        id: "todo",
-        name: "To do",
-        cards: [card("first.md"), card("Notes/caf\u00e9.md")],
-      }],
+      columns: [
+        {
+          id: "todo",
+          name: "To do",
+          cards: [card("first.md"), card("Notes/caf\u00e9.md")],
+        },
+      ],
     };
 
     const output = visibleText(equivalentBoard, "notes/./cafe\u0301.md");

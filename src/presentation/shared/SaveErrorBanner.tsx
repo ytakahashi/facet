@@ -23,9 +23,7 @@ export function SaveErrorBanner({
       <p className="save-error-banner__message">{message}</p>
       {detail && <p className="save-error-banner__detail">{detail}</p>}
       {resolutionError && (
-        <p className="save-error-banner__resolution-error">
-          {resolutionError}
-        </p>
+        <p className="save-error-banner__resolution-error">{resolutionError}</p>
       )}
       {children && <div className="save-error-banner__actions">{children}</div>}
     </div>

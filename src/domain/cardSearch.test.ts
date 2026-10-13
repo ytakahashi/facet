@@ -41,9 +41,7 @@ describe("searchCardsByTitle", () => {
 
     const result = searchCardsByTitle(board, "DESIGN");
 
-    expect(result).toEqual([
-      { card, columnId: "doing", columnName: "doing" },
-    ]);
+    expect(result).toEqual([{ card, columnId: "doing", columnName: "doing" }]);
   });
 
   it("matches a decomposed title against a composed query", () => {
@@ -64,9 +62,7 @@ describe("searchCardsByTitle", () => {
     const padded = searchCardsByTitle(board, "  design review  ");
     const withInnerSpace = searchCardsByTitle(board, "design  review");
 
-    expect(padded).toEqual([
-      { card, columnId: "doing", columnName: "doing" },
-    ]);
+    expect(padded).toEqual([{ card, columnId: "doing", columnName: "doing" }]);
     expect(withInnerSpace).toEqual([]);
   });
 

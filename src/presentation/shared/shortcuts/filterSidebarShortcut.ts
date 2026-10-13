@@ -17,8 +17,11 @@ export function resolveFilterSidebarShortcut(
   >,
 ): boolean {
   if (
-    isImeProcessing(event) || !event.metaKey || event.ctrlKey ||
-    event.altKey || event.shiftKey
+    isImeProcessing(event) ||
+    !event.metaKey ||
+    event.ctrlKey ||
+    event.altKey ||
+    event.shiftKey
   ) {
     return false;
   }

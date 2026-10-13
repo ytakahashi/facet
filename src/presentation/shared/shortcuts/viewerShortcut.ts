@@ -25,8 +25,8 @@ export function resolveViewerShortcut(
 ): ViewerShortcut | undefined {
   if (isImeProcessing(event)) return undefined;
   if (event.key === "Escape") {
-    const hasModifier = event.metaKey || event.ctrlKey || event.altKey ||
-      event.shiftKey;
+    const hasModifier =
+      event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
     return hasModifier ? undefined : "close";
   }
   if (!event.metaKey || event.ctrlKey || event.altKey) {

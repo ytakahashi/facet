@@ -18,13 +18,13 @@ function makeSession(label: string): BoardSession {
   return {
     boardView: createBoardViewStore(),
     boardStore: create<BoardState>(
-      () => ({ status: "empty", path: label } as BoardState),
+      () => ({ status: "empty", path: label }) as BoardState,
     ),
     markdownViewer: create<MarkdownViewerState>(
-      () => ({ status: "idle", selectedPath: label } as MarkdownViewerState),
+      () => ({ status: "idle", selectedPath: label }) as MarkdownViewerState,
     ),
     filterStore: create<FilterState>(
-      () => ({ isSidebarOpen: label === "first" } as FilterState),
+      () => ({ isSidebarOpen: label === "first" }) as FilterState,
     ),
   };
 }

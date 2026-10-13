@@ -4,23 +4,28 @@ import { toUiError } from "./toUiError.ts";
 
 describe("toUiError", () => {
   it("explains why a reload result was discarded", () => {
-    expect(toUiError(new UseCaseError("board.changed-during-refresh")))
-      .toEqual({ message: "Board was edited during reload. Reload again." });
+    expect(toUiError(new UseCaseError("board.changed-during-refresh"))).toEqual(
+      { message: "Board was edited during reload. Reload again." },
+    );
   });
 
   it("maps Finder failures to messages about the selected path", () => {
-    expect(toUiError(
-      new UseCaseError("finder.not-found", {
-        path: "/board/card.md",
-      }),
-    )).toEqual({
+    expect(
+      toUiError(
+        new UseCaseError("finder.not-found", {
+          path: "/board/card.md",
+        }),
+      ),
+    ).toEqual({
       message: "The file and its folder could not be found at /board/card.md.",
     });
-    expect(toUiError(
-      new UseCaseError("finder.reveal-failed", {
-        path: "/board/card.md",
-      }),
-    )).toEqual({
+    expect(
+      toUiError(
+        new UseCaseError("finder.reveal-failed", {
+          path: "/board/card.md",
+        }),
+      ),
+    ).toEqual({
       message: "Failed to reveal /board/card.md in Finder.",
     });
     expect(toUiError(new UseCaseError("finder.reveal-failed"))).toEqual({
@@ -247,9 +252,9 @@ describe("toUiError", () => {
   });
 
   it("hides unexpected error details and logs the original error", () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(
-      () => {},
-    );
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     const error = new Error("sensitive internal detail");
 
     const result = toUiError(error);

@@ -68,12 +68,13 @@ export function AddCardDialog({
     setIsSubmitting(true);
     setError(undefined);
     try {
-      const card = mode === "new"
-        ? await addNewCard({ columnId, directory, fileName, title })
-        : await addExistingCard({
-          columnId,
-          absolutePath: existingPath!,
-        });
+      const card =
+        mode === "new"
+          ? await addNewCard({ columnId, directory, fileName, title })
+          : await addExistingCard({
+              columnId,
+              absolutePath: existingPath!,
+            });
       setIsSubmitting(false);
       onClose();
       void selectCard(card);
@@ -122,78 +123,78 @@ export function AddCardDialog({
           </button>
         </div>
         {error && (!error.field || mode === "existing") && (
-          <p className="add-card-dialog__error" role="alert">{error.message}</p>
+          <p className="add-card-dialog__error" role="alert">
+            {error.message}
+          </p>
         )}
-        {mode === "new"
-          ? (
-            <>
-              <label>
-                <span>Title</span>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(event) => handleTitleChange(event.target.value)}
-                  disabled={isSubmitting}
-                  autoFocus
-                  required
-                />
-                {error?.field === "title" && (
-                  <span className="add-card-dialog__error" role="alert">
-                    {error.message}
-                  </span>
-                )}
-              </label>
-              <label>
-                <span>File name</span>
-                <input
-                  type="text"
-                  value={fileName}
-                  onChange={(event) => {
-                    setFileNameEdited(true);
-                    setFileName(event.target.value);
-                    if (error?.field === "fileName") setError(undefined);
-                  }}
-                  disabled={isSubmitting}
-                  required
-                />
-                {error?.field === "fileName" && (
-                  <span className="add-card-dialog__error" role="alert">
-                    {error.message}
-                  </span>
-                )}
-              </label>
-              <fieldset disabled={isSubmitting}>
-                <legend>Directory</legend>
-                <BoardDirectoryPicker
-                  root={boardDirectory}
-                  value={directory}
-                  onChange={(path) => {
-                    setDirectory(path);
-                    if (error?.field === "directory") setError(undefined);
-                  }}
-                />
-                {error?.field === "directory" && (
-                  <p className="add-card-dialog__error" role="alert">
-                    {error.message}
-                  </p>
-                )}
-              </fieldset>
-            </>
-          )
-          : (
-            <fieldset disabled={isSubmitting}>
-              <legend>Markdown file</legend>
-              <MarkdownFileBrowser
-                root={boardDirectory}
-                selectedPath={selectedPath}
-                onSelect={(path) => {
-                  setSelectedPath(path);
-                  setError(undefined);
+        {mode === "new" ? (
+          <>
+            <label>
+              <span>Title</span>
+              <input
+                type="text"
+                value={title}
+                onChange={(event) => handleTitleChange(event.target.value)}
+                disabled={isSubmitting}
+                autoFocus
+                required
+              />
+              {error?.field === "title" && (
+                <span className="add-card-dialog__error" role="alert">
+                  {error.message}
+                </span>
+              )}
+            </label>
+            <label>
+              <span>File name</span>
+              <input
+                type="text"
+                value={fileName}
+                onChange={(event) => {
+                  setFileNameEdited(true);
+                  setFileName(event.target.value);
+                  if (error?.field === "fileName") setError(undefined);
                 }}
                 disabled={isSubmitting}
+                required
               />
+              {error?.field === "fileName" && (
+                <span className="add-card-dialog__error" role="alert">
+                  {error.message}
+                </span>
+              )}
+            </label>
+            <fieldset disabled={isSubmitting}>
+              <legend>Directory</legend>
+              <BoardDirectoryPicker
+                root={boardDirectory}
+                value={directory}
+                onChange={(path) => {
+                  setDirectory(path);
+                  if (error?.field === "directory") setError(undefined);
+                }}
+              />
+              {error?.field === "directory" && (
+                <p className="add-card-dialog__error" role="alert">
+                  {error.message}
+                </p>
+              )}
             </fieldset>
-          )}
+          </>
+        ) : (
+          <fieldset disabled={isSubmitting}>
+            <legend>Markdown file</legend>
+            <MarkdownFileBrowser
+              root={boardDirectory}
+              selectedPath={selectedPath}
+              onSelect={(path) => {
+                setSelectedPath(path);
+                setError(undefined);
+              }}
+              disabled={isSubmitting}
+            />
+          </fieldset>
+        )}
         <div className="add-card-dialog__actions">
           <button type="button" onClick={onClose} disabled={isSubmitting}>
             Cancel

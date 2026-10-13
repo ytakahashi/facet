@@ -28,19 +28,17 @@ interface CardProps {
   onCardContextMenu: (card: CardModel, event: MouseEvent<HTMLElement>) => void;
 }
 
-export function Card(
-  {
-    card,
-    columnId,
-    index,
-    labelDisplay,
-    onDelete,
-    onRepair,
-    onCardContextMenu,
-  }: CardProps,
-) {
-  const isSelected = useMarkdownViewer((state) =>
-    state.selectedPath === card.path
+export function Card({
+  card,
+  columnId,
+  index,
+  labelDisplay,
+  onDelete,
+  onRepair,
+  onCardContextMenu,
+}: CardProps) {
+  const isSelected = useMarkdownViewer(
+    (state) => state.selectedPath === card.path,
   );
   const selectCard = useMarkdownViewer((state) => state.selectCard);
 
@@ -95,15 +93,13 @@ export function Card(
       className={classNames.join(" ")}
       // A broken card has nothing to show in the viewer, so its click goes to
       // the repair dialog instead of a load error the user cannot act on.
-      onClick={() => isBroken ? onRepair(card) : void selectCard(card)}
+      onClick={() => (isBroken ? onRepair(card) : void selectCard(card))}
       onContextMenu={(event) => onCardContextMenu(card, event)}
     >
-      {
-        /* Revealed on hover/focus-within (see App.css) rather than shown on
+      {/* Revealed on hover/focus-within (see App.css) rather than shown on
           every card, which would put a row of × down each column. It stays in
           the DOM either way, so it is still reachable by keyboard. Starting a
-          drag from it just drags the card, which is harmless. */
-      }
+          drag from it just drags the card, which is harmless. */}
       <button
         type="button"
         className="card__delete"
@@ -117,10 +113,8 @@ export function Card(
       >
         ×
       </button>
-      {
-        /* Not a button: the badge only states what the board observed when it
-          loaded this card, so it carries no action of its own. */
-      }
+      {/* Not a button: the badge only states what the board observed when it
+          loaded this card, so it carries no action of its own. */}
       {isBroken && (
         <span className="card__missing" title={missingHint(card.fileState)}>
           Missing

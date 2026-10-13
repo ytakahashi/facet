@@ -22,19 +22,23 @@ function eventFor(combo: KeyCombo) {
 }
 
 type ShortcutEvent = ReturnType<typeof eventFor>;
-type Expectation = "handled-inline" | {
-  resolve: (event: ShortcutEvent) => unknown;
-  result: string | number | boolean;
-};
+type Expectation =
+  | "handled-inline"
+  | {
+      resolve: (event: ShortcutEvent) => unknown;
+      result: string | number | boolean;
+    };
 
 const expectations: Record<ShortcutId, readonly Expectation[]> = {
   "switch-tab": [{ resolve: resolveTabShortcut, result: 0 }],
   "show-help": [{ resolve: resolveHelpShortcut, result: true }],
   "search-titles": [{ resolve: resolveBoardSearchShortcut, result: "title" }],
-  "search-contents": [{
-    resolve: resolveBoardSearchShortcut,
-    result: "content",
-  }],
+  "search-contents": [
+    {
+      resolve: resolveBoardSearchShortcut,
+      result: "content",
+    },
+  ],
   "toggle-filters": [{ resolve: resolveFilterSidebarShortcut, result: true }],
   "close-viewer": [{ resolve: resolveViewerShortcut, result: "close" }],
   "go-back": [{ resolve: resolveViewerShortcut, result: "back" }],
@@ -95,8 +99,9 @@ describe("formatKeyCombo", () => {
     expect(formatKeyCombo({ key })).toEqual([symbol]);
   });
   it("leaves context out of the keys", () => {
-    expect(formatKeyCombo({ key: "Enter", context: "in find field" }))
-      .toEqual(["↩"]);
+    expect(formatKeyCombo({ key: "Enter", context: "in find field" })).toEqual([
+      "↩",
+    ]);
   });
   it("uses a label only for the key, leaving modifiers intact", () => {
     expect(formatKeyCombo({ key: "1", command: true, label: "1–9" })).toEqual([

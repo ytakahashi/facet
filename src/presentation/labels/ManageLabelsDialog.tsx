@@ -44,7 +44,7 @@ export function ManageLabelsDialog(props: Props) {
   // Both the sidebar and the viewer keep this dialog mounted, so counting
   // only while open avoids re-scanning every card on each board change.
   const counts = useMemo(
-    () => open ? countCardsByLabel(board) : NO_COUNTS,
+    () => (open ? countCardsByLabel(board) : NO_COUNTS),
     [open, board],
   );
 
@@ -105,7 +105,8 @@ export function ManageLabelsDialog(props: Props) {
             count={counts.get(label.name) ?? 0}
             mode={active?.name === label.name ? active.mode : undefined}
             onModeChange={(mode) =>
-              setActive(mode && { name: label.name, mode })}
+              setActive(mode && { name: label.name, mode })
+            }
             onRename={props.onRenameLabel}
             onColor={props.onSetLabelColor}
             onRemove={props.onRemoveLabel}
@@ -114,7 +115,9 @@ export function ManageLabelsDialog(props: Props) {
       </ul>
       <LabelCreateForm open={open} onCreateLabel={props.onCreateLabel} />
       <div className="manage-labels-dialog__actions">
-        <button type="button" onClick={onClose}>Close</button>
+        <button type="button" onClick={onClose}>
+          Close
+        </button>
       </div>
     </dialog>
   );
@@ -197,16 +200,14 @@ function ManageLabelRow({
         edge === "top"
           ? " manage-labels-dialog__item--drop-before"
           : edge === "bottom"
-          ? " manage-labels-dialog__item--drop-after"
-          : ""
+            ? " manage-labels-dialog__item--drop-after"
+            : ""
       }`}
     >
-      {
-        /* Deliberately not a button, as in ColumnHeader: reordering is
+      {/* Deliberately not a button, as in ColumnHeader: reordering is
           pointer-only, and WebKit neither focuses a button on click nor tabs
           to one by default, so a focusable handle would promise a keyboard
-          interaction that users cannot reach. */
-      }
+          interaction that users cannot reach. */}
       <span
         ref={handleRef}
         className="manage-labels-dialog__handle"
@@ -216,114 +217,107 @@ function ManageLabelRow({
         ⋮⋮
       </span>
       <span className={`label-dot label-dot--${label.color}`} />
-      {mode === "confirm-delete"
-        ? (
-          <div className="manage-labels-dialog__confirm">
-            <span>
-              Delete "{label.name}"?{count > 0 &&
-                ` It is removed from ${count} ${
-                  count === 1 ? "card" : "cards"
-                }.`}
-            </span>
+      {mode === "confirm-delete" ? (
+        <div className="manage-labels-dialog__confirm">
+          <span>
+            Delete "{label.name}"?
+            {count > 0 &&
+              ` It is removed from ${count} ${count === 1 ? "card" : "cards"}.`}
+          </span>
+          <button
+            type="button"
+            className="manage-labels-dialog__button"
+            onClick={() => {
+              onRemove(label.name);
+              onModeChange(undefined);
+            }}
+          >
+            Delete
+          </button>
+          <button
+            type="button"
+            className="manage-labels-dialog__button"
+            onClick={() => {
+              skipBlurRename.current = false;
+              onModeChange("edit");
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      ) : mode === "edit" ? (
+        <div className="manage-labels-dialog__edit">
+          <input
+            type="text"
+            className="manage-labels-dialog__name-input"
+            value={draft}
+            aria-label="Label name"
+            autoFocus
+            onFocus={(event) => event.currentTarget.select()}
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={() => {
+              if (!skipBlurRename.current) commitRename();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") commitRename();
+              if (event.key === "Escape") {
+                // Cancels the rename only; the dialog stays open.
+                event.preventDefault();
+                event.stopPropagation();
+                skipBlurRename.current = true;
+                onModeChange(undefined);
+              }
+            }}
+          />
+          {/* WebKit does not focus a button on click, so without
+                suppressing mousedown the name input's blur would commit and
+                leave edit mode before the swatch/Delete click is dispatched
+                (same WebKit quirk noted for AddColumn). */}
+          <div
+            className="manage-labels-dialog__edit-actions"
+            onMouseDown={(event) => event.preventDefault()}
+          >
+            <LabelColorSwatchGrid
+              value={label.color}
+              onChange={(color) => onColor(label.name, color)}
+            />
             <button
               type="button"
               className="manage-labels-dialog__button"
               onClick={() => {
-                onRemove(label.name);
-                onModeChange(undefined);
+                skipBlurRename.current = true;
+                onModeChange("confirm-delete");
               }}
             >
               Delete
             </button>
-            <button
-              type="button"
-              className="manage-labels-dialog__button"
-              onClick={() => {
-                skipBlurRename.current = false;
-                onModeChange("edit");
-              }}
-            >
-              Cancel
-            </button>
           </div>
-        )
-        : mode === "edit"
-        ? (
-          <div className="manage-labels-dialog__edit">
-            <input
-              type="text"
-              className="manage-labels-dialog__name-input"
-              value={draft}
-              aria-label="Label name"
-              autoFocus
-              onFocus={(event) => event.currentTarget.select()}
-              onChange={(event) => setDraft(event.target.value)}
-              onBlur={() => {
-                if (!skipBlurRename.current) commitRename();
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") commitRename();
-                if (event.key === "Escape") {
-                  // Cancels the rename only; the dialog stays open.
-                  event.preventDefault();
-                  event.stopPropagation();
-                  skipBlurRename.current = true;
-                  onModeChange(undefined);
-                }
-              }}
-            />
-            {
-              /* WebKit does not focus a button on click, so without
-                suppressing mousedown the name input's blur would commit and
-                leave edit mode before the swatch/Delete click is dispatched
-                (same WebKit quirk noted for AddColumn). */
-            }
-            <div
-              className="manage-labels-dialog__edit-actions"
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              <LabelColorSwatchGrid
-                value={label.color}
-                onChange={(color) => onColor(label.name, color)}
-              />
-              <button
-                type="button"
-                className="manage-labels-dialog__button"
-                onClick={() => {
-                  skipBlurRename.current = true;
-                  onModeChange("confirm-delete");
-                }}
-              >
-                Delete
-              </button>
-            </div>
-            {error && (
-              <p className="manage-labels-dialog__error" role="alert">
-                {error}
-              </p>
-            )}
-          </div>
-        )
-        : (
-          <>
-            <span className="manage-labels-dialog__name">{label.name}</span>
-            <span className="manage-labels-dialog__count">
-              {count} {count === 1 ? "card" : "cards"}
-            </span>
-            <button
-              type="button"
-              className="manage-labels-dialog__button"
-              onClick={() => {
-                setDraft(label.name);
-                setError(undefined);
-                skipBlurRename.current = false;
-                onModeChange("edit");
-              }}
-            >
-              Edit
-            </button>
-          </>
-        )}
+          {error && (
+            <p className="manage-labels-dialog__error" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+      ) : (
+        <>
+          <span className="manage-labels-dialog__name">{label.name}</span>
+          <span className="manage-labels-dialog__count">
+            {count} {count === 1 ? "card" : "cards"}
+          </span>
+          <button
+            type="button"
+            className="manage-labels-dialog__button"
+            onClick={() => {
+              setDraft(label.name);
+              setError(undefined);
+              skipBlurRename.current = false;
+              onModeChange("edit");
+            }}
+          >
+            Edit
+          </button>
+        </>
+      )}
     </li>
   );
 }

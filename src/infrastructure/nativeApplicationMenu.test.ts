@@ -25,9 +25,7 @@ function fileMenuItems(menu: ApplicationMenuItem[]): ApplicationMenuItem[] {
   return submenuItems(menu[1]);
 }
 
-function recentBoardItems(
-  menu: ApplicationMenuItem[],
-): ApplicationMenuItem[] {
+function recentBoardItems(menu: ApplicationMenuItem[]): ApplicationMenuItem[] {
   return submenuItems(fileMenuItems(menu)[2]);
 }
 
@@ -167,12 +165,15 @@ describe("NativeApplicationMenu", () => {
     await applicationMenu.setRecentBoards(["/Users/me/a.board.yaml"]);
     await applicationMenu.setRecentBoards(["/Users/me/b.board.yaml"]);
 
-    expect(created.map((menu) => menu.setAsAppMenu.mock.calls.length))
-      .toEqual([1, 1, 1]);
-    expect(replaced.every((handle) => handle.close.mock.calls.length === 1))
-      .toBe(true);
-    expect(created.map((menu) => menu.close.mock.calls.length))
-      .toEqual([1, 1, 0]);
+    expect(created.map((menu) => menu.setAsAppMenu.mock.calls.length)).toEqual([
+      1, 1, 1,
+    ]);
+    expect(
+      replaced.every((handle) => handle.close.mock.calls.length === 1),
+    ).toBe(true);
+    expect(created.map((menu) => menu.close.mock.calls.length)).toEqual([
+      1, 1, 0,
+    ]);
   });
 
   it("routes clicks to handlers registered after the menu was set", async () => {

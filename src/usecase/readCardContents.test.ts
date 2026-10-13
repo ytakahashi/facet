@@ -77,13 +77,12 @@ describe("readCardContents", () => {
       fileState: "unresolvable",
     });
     const fileSystem = new FakeFileSystemPort((path) =>
-      Promise.resolve(`content:${path}`)
+      Promise.resolve(`content:${path}`),
     );
 
-    const result = await readCardContents(
-      [available, restored, unresolvable],
-      { fileSystem },
-    );
+    const result = await readCardContents([available, restored, unresolvable], {
+      fileSystem,
+    });
 
     expect(result).toEqual([
       {
@@ -108,14 +107,13 @@ describe("readCardContents", () => {
     const fileSystem = new FakeFileSystemPort((path) =>
       path.endsWith("broken.md")
         ? Promise.reject(new Error("unreadable"))
-        : Promise.resolve(path)
+        : Promise.resolve(path),
     );
 
-    const result = await readCardContents([
-      makeCard("first.md"),
-      makeCard("broken.md"),
-      makeCard("last.md"),
-    ], { fileSystem });
+    const result = await readCardContents(
+      [makeCard("first.md"), makeCard("broken.md"), makeCard("last.md")],
+      { fileSystem },
+    );
 
     expect(result).toEqual([
       { path: "first.md", read: true, content: "/board/first.md" },
@@ -138,9 +136,8 @@ describe("readCardContents", () => {
         });
       });
     });
-    const cards = Array.from(
-      { length: 10 },
-      (_, index) => makeCard(`card-${index}.md`),
+    const cards = Array.from({ length: 10 }, (_, index) =>
+      makeCard(`card-${index}.md`),
     );
 
     const reading = readCardContents(cards, { fileSystem });
@@ -160,7 +157,7 @@ describe("readCardContents", () => {
 
   it("returns an empty result without reading files for an empty input", async () => {
     const fileSystem = new FakeFileSystemPort(() =>
-      Promise.reject(new Error("must not read"))
+      Promise.reject(new Error("must not read")),
     );
 
     await expect(readCardContents([], { fileSystem })).resolves.toEqual([]);

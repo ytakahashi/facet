@@ -13,9 +13,7 @@ export function resolveBoardSearchShortcut(
 ): BoardSearchShortcut | undefined {
   if (!event.metaKey || event.ctrlKey || event.altKey) return undefined;
 
-  if (
-    !event.shiftKey && (event.key === "p" || event.key === "P")
-  ) {
+  if (!event.shiftKey && (event.key === "p" || event.key === "P")) {
     return "title";
   }
   if (event.shiftKey && (event.key === "f" || event.key === "F")) {

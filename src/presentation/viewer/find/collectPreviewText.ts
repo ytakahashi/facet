@@ -54,9 +54,8 @@ export function collectPreviewText(root: HTMLElement) {
     NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
     {
       acceptNode(node) {
-        if (
-          node instanceof Element && (node.matches("svg, [data-find-ignore]"))
-        ) return NodeFilter.FILTER_REJECT;
+        if (node instanceof Element && node.matches("svg, [data-find-ignore]"))
+          return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       },
     },
@@ -74,9 +73,11 @@ export function collectPreviewText(root: HTMLElement) {
     // react-markdown inserts formatting whitespace between structural nodes.
     // Preserve soft line breaks and code whitespace, but not that formatting.
     if (
-      /^\s*$/.test(node.data) && node.data.includes("\n") &&
+      /^\s*$/.test(node.data) &&
+      node.data.includes("\n") &&
       !textTags.has(block.tagName)
-    ) continue;
+    )
+      continue;
     if (previousBlock && previousBlock !== block) {
       parts.push({ kind: "boundary" });
     }

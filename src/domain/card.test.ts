@@ -81,8 +81,13 @@ describe("resolveCardTitle", () => {
   });
 
   it("does not close a fence on a line with text after the run", () => {
-    const markdown = ["```", "``` not a close", "# inside", "```", "# Outside"]
-      .join("\n");
+    const markdown = [
+      "```",
+      "``` not a close",
+      "# inside",
+      "```",
+      "# Outside",
+    ].join("\n");
 
     const title = resolveCardTitle(undefined, markdown, "improve-search.md");
 

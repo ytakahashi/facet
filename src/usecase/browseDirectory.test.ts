@@ -7,11 +7,7 @@ class FakeFileSystemPort implements FileSystemPort {
   private readonly dirs: Map<string, DirEntry[]>;
   private readonly failure?: Error;
 
-  constructor(
-    home: string,
-    dirs: Record<string, DirEntry[]>,
-    failure?: Error,
-  ) {
+  constructor(home: string, dirs: Record<string, DirEntry[]>, failure?: Error) {
     this.home = home;
     this.dirs = new Map(Object.entries(dirs));
     this.failure = failure;

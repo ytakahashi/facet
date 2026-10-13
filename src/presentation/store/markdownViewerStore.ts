@@ -87,9 +87,7 @@ export type ConfirmDiscard = () => Promise<boolean>;
 // moved away from: the file changed either way, and whatever is derived from
 // it - the card's title on the board - has to follow.
 export type MarkdownSaved = (cardPath: string, content: string) => void;
-export type ConfirmOverwrite = (
-  conflict: MarkdownConflict,
-) => Promise<boolean>;
+export type ConfirmOverwrite = (conflict: MarkdownConflict) => Promise<boolean>;
 
 // Exported because "has the draft diverged from what is on disk" is asked
 // outside this store too - the viewer's Save button and the delete dialog's
@@ -119,9 +117,14 @@ export function canRefreshMarkdown(
   selectedPath: string;
   absolutePath: string;
 } {
-  return state.status === "loaded" && !!state.selectedPath &&
-    !!state.absolutePath && !isCardSaving(state, state.selectedPath) &&
-    !state.isRefreshing && state.conflictResolution === undefined;
+  return (
+    state.status === "loaded" &&
+    !!state.selectedPath &&
+    !!state.absolutePath &&
+    !isCardSaving(state, state.selectedPath) &&
+    !state.isRefreshing &&
+    state.conflictResolution === undefined
+  );
 }
 
 // A conflict is resolved one way at a time, and not while a refresh is
@@ -132,14 +135,21 @@ function canReloadFromDisk(
   selectedPath: string;
   absolutePath: string;
 } {
-  return state.conflict === "changed" &&
-    state.conflictResolution === undefined && !state.isRefreshing &&
-    !!state.selectedPath && !!state.absolutePath;
+  return (
+    state.conflict === "changed" &&
+    state.conflictResolution === undefined &&
+    !state.isRefreshing &&
+    !!state.selectedPath &&
+    !!state.absolutePath
+  );
 }
 
 function canOverwrite(state: MarkdownViewerState): boolean {
-  return state.conflict !== undefined &&
-    state.conflictResolution === undefined && !state.isRefreshing;
+  return (
+    state.conflict !== undefined &&
+    state.conflictResolution === undefined &&
+    !state.isRefreshing
+  );
 }
 
 // Deliberately omits savingPaths: closing the viewer does not call off a write
@@ -187,7 +197,7 @@ export function createMarkdownViewerStore(
       confirm: () => Promise<boolean>,
     ): Promise<boolean> {
       const asked = generation;
-      return await confirmation.ask(confirm) && generation === asked;
+      return (await confirmation.ask(confirm)) && generation === asked;
     }
 
     async function loadMarkdown(
@@ -273,7 +283,10 @@ export function createMarkdownViewerStore(
       // A refresh replaces the baseline and draft; a write started during it
       // would race that replacement and leave an unrelated revision behind.
       if (
-        isRefreshing || !selectedPath || !absolutePath || draft === undefined
+        isRefreshing ||
+        !selectedPath ||
+        !absolutePath ||
+        draft === undefined
       ) {
         return;
       }
@@ -288,9 +301,9 @@ export function createMarkdownViewerStore(
         savingPaths: new Set(savingPaths).add(selectedPath),
         ...(resolution
           ? {
-            conflictResolution: resolution,
-            conflictResolutionError: undefined,
-          }
+              conflictResolution: resolution,
+              conflictResolutionError: undefined,
+            }
           : { saveError: undefined }),
       });
       try {
@@ -319,7 +332,8 @@ export function createMarkdownViewerStore(
             conflictResolution: undefined,
           });
         } else if (
-          error instanceof UseCaseError && error.code === "markdown.conflict"
+          error instanceof UseCaseError &&
+          error.code === "markdown.conflict"
         ) {
           set({
             saveError: toUiError(error).message,
@@ -328,7 +342,8 @@ export function createMarkdownViewerStore(
             conflictResolution: undefined,
           });
         } else if (
-          error instanceof UseCaseError && error.code === "markdown.file-gone"
+          error instanceof UseCaseError &&
+          error.code === "markdown.file-gone"
         ) {
           set({
             saveError: toUiError(error).message,
@@ -361,14 +376,13 @@ export function createMarkdownViewerStore(
       options: { force?: boolean; skipDiscardPrompt?: boolean } = {},
     ): Promise<boolean> {
       const state = get();
-      if (
-        !options.force && card.path === state.selectedPath
-      ) {
+      if (!options.force && card.path === state.selectedPath) {
         return false;
       }
       if (
-        !options.skipDiscardPrompt && isMarkdownDirty(state) &&
-        !await confirmUnchanged(confirmDiscard)
+        !options.skipDiscardPrompt &&
+        isMarkdownDirty(state) &&
+        !(await confirmUnchanged(confirmDiscard))
       ) {
         return false;
       }
@@ -448,18 +462,16 @@ export function createMarkdownViewerStore(
       refreshMarkdown: async () => {
         // A native menu click can arrive after the item was enabled.
         if (!canRefreshMarkdown(get())) return;
-        if (
-          isMarkdownDirty(get()) && !await confirmUnchanged(confirmDiscard)
-        ) return;
+        if (isMarkdownDirty(get()) && !(await confirmUnchanged(confirmDiscard)))
+          return;
         const state = get();
         if (!canRefreshMarkdown(state)) return;
         await loadMarkdown(state.selectedPath, state.absolutePath, "refresh");
       },
       reloadFromDisk: async () => {
         if (!canReloadFromDisk(get())) return;
-        if (
-          isMarkdownDirty(get()) && !await confirmUnchanged(confirmDiscard)
-        ) return;
+        if (isMarkdownDirty(get()) && !(await confirmUnchanged(confirmDiscard)))
+          return;
         const state = get();
         if (!canReloadFromDisk(state)) return;
         await loadMarkdown(state.selectedPath, state.absolutePath, "reload");
@@ -467,14 +479,13 @@ export function createMarkdownViewerStore(
       overwrite: async () => {
         const { conflict } = get();
         if (!conflict || !canOverwrite(get())) return;
-        if (!await confirmUnchanged(() => confirmOverwrite(conflict))) return;
+        if (!(await confirmUnchanged(() => confirmOverwrite(conflict)))) return;
         if (!canOverwrite(get())) return;
         await persist(undefined, "overwriting");
       },
       close: async () => {
-        if (
-          isMarkdownDirty(get()) && !await confirmUnchanged(confirmDiscard)
-        ) return false;
+        if (isMarkdownDirty(get()) && !(await confirmUnchanged(confirmDiscard)))
+          return false;
 
         generation++;
         set(CLOSED_STATE);

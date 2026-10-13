@@ -16,20 +16,18 @@ interface FindBarProps {
   onClose: () => void;
 }
 
-export function FindBar(
-  {
-    mode,
-    query,
-    count,
-    activeIndex,
-    focusToken,
-    handledFocusToken,
-    onQueryChange,
-    onNext,
-    onPrevious,
-    onClose,
-  }: FindBarProps,
-) {
+export function FindBar({
+  mode,
+  query,
+  count,
+  activeIndex,
+  focusToken,
+  handledFocusToken,
+  onQueryChange,
+  onNext,
+  onPrevious,
+  onClose,
+}: FindBarProps) {
   const input = useRef<HTMLInputElement>(null);
   const targetName = mode === "edit" ? "editor" : "preview";
   useEffect(() => {
@@ -62,16 +60,18 @@ export function FindBar(
         }}
       />
       <span
-        className={query !== "" && count === 0
-          ? "markdown-find__count markdown-find__count--empty"
-          : "markdown-find__count"}
+        className={
+          query !== "" && count === 0
+            ? "markdown-find__count markdown-find__count--empty"
+            : "markdown-find__count"
+        }
         role="status"
       >
         {query === ""
           ? ""
           : count === 0
-          ? "No results"
-          : `${activeIndex === undefined ? 0 : activeIndex + 1} / ${count}`}
+            ? "No results"
+            : `${activeIndex === undefined ? 0 : activeIndex + 1} / ${count}`}
       </span>
       <button
         type="button"

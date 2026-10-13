@@ -131,9 +131,9 @@ export function toUiError(error: unknown): UiError {
       return { message: "Failed to load recent boards." };
     case "recent-boards.remove-failed":
       return {
-        message: `Failed to remove the board${
-          atPath(path)
-        } from recent boards.`,
+        message: `Failed to remove the board${atPath(
+          path,
+        )} from recent boards.`,
       };
   }
 }

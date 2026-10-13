@@ -24,7 +24,11 @@ function BoardView() {
     return <p className="board-load-state">Opening board…</p>;
   }
   if (status === "error") {
-    return <p className="board-load-state" role="alert">{error}</p>;
+    return (
+      <p className="board-load-state" role="alert">
+        {error}
+      </p>
+    );
   }
   if (!board) {
     throw new Error("A loaded board must have board data");
@@ -58,19 +62,17 @@ function App() {
         aria-labelledby={activeTab ? `board-tab-${activeTab.id}` : "start-tab"}
         className="workspace-panel"
       >
-        {activeTab
-          ? (
-            <BoardSessionProvider key={activeTab.id} value={activeTab.session}>
-              <BoardView />
-            </BoardSessionProvider>
-          )
-          : <StartScreen />}
+        {activeTab ? (
+          <BoardSessionProvider key={activeTab.id} value={activeTab.session}>
+            <BoardView />
+          </BoardSessionProvider>
+        ) : (
+          <StartScreen />
+        )}
       </div>
-      {
-        /* Mounted once outside both branches: creating a board switches the
+      {/* Mounted once outside both branches: creating a board switches the
           branch mid-submit, and remounting the dialog then would close it
-          before the submit handler finishes. */
-      }
+          before the submit handler finishes. */}
       <NewBoardDialog />
       <ShortcutHelpDialog />
     </>

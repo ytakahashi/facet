@@ -27,7 +27,8 @@ export function ShortcutHelpDialog() {
       if (
         isTextEditingTarget(event.target) ||
         document.querySelector("dialog[open]")
-      ) return;
+      )
+        return;
       event.preventDefault();
       open();
     }

@@ -28,18 +28,16 @@ interface MarkdownEditorProps {
   onFindTextChange?: (source: FindText) => void;
 }
 
-export function MarkdownEditor(
-  {
-    value,
-    onChange,
-    board,
-    fromPath,
-    autoFocus = false,
-    readOnly = false,
-    find,
-    onFindTextChange,
-  }: MarkdownEditorProps,
-) {
+export function MarkdownEditor({
+  value,
+  onChange,
+  board,
+  fromPath,
+  autoFocus = false,
+  readOnly = false,
+  find,
+  onFindTextChange,
+}: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
@@ -51,9 +49,7 @@ export function MarkdownEditor(
     find,
     onFindTextChange,
   );
-  const insertionTargetRef = useRef<LinkInsertionTarget | undefined>(
-    undefined,
-  );
+  const insertionTargetRef = useRef<LinkInsertionTarget | undefined>(undefined);
   const pendingCaretRef = useRef<number | undefined>(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 

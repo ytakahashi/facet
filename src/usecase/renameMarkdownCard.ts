@@ -62,9 +62,13 @@ export async function renameMarkdownCard(
     // separates them: "nothing is there" is the answer that explains why the
     // move did not happen.
     if (cause instanceof FileSystemError && cause.kind === "not-found") {
-      throw new UseCaseError("card.file-not-found", { path: source }, {
-        cause,
-      });
+      throw new UseCaseError(
+        "card.file-not-found",
+        { path: source },
+        {
+          cause,
+        },
+      );
     }
     throw new UseCaseError("card.load-failed", { path: source }, { cause });
   }

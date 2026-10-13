@@ -8,14 +8,18 @@ const validBoard = {
   version: 1,
   name: "Development",
   labels: [{ name: "search", color: "sapphire" }],
-  columns: [{
-    id: "doing",
-    name: "Doing",
-    cards: [{
-      path: "notes/improve-search.md",
-      labels: ["search"],
-    }],
-  }],
+  columns: [
+    {
+      id: "doing",
+      name: "Doing",
+      cards: [
+        {
+          path: "notes/improve-search.md",
+          labels: ["search"],
+        },
+      ],
+    },
+  ],
 };
 
 Deno.test("accepts the board shape Facet writes", async () => {
@@ -25,22 +29,27 @@ Deno.test("accepts the board shape Facet writes", async () => {
 });
 
 Deno.test("reports schema and relationship errors", async () => {
-  const result = await validateBoard({
-    ...validBoard,
-    custom: "lost on save",
-    columns: [{
-      id: "doing",
-      name: "Doing",
-      cards: [
+  const result = await validateBoard(
+    {
+      ...validBoard,
+      custom: "lost on save",
+      columns: [
         {
-          path: "notes/../task.md",
-          priority: "high",
-          labels: ["undefined", "undefined"],
+          id: "doing",
+          name: "Doing",
+          cards: [
+            {
+              path: "notes/../task.md",
+              priority: "high",
+              labels: ["undefined", "undefined"],
+            },
+            { path: "TASK.md", labels: [] },
+          ],
         },
-        { path: "TASK.md", labels: [] },
       ],
-    }],
-  }, () => Promise.resolve("file"));
+    },
+    () => Promise.resolve("file"),
+  );
 
   assertEquals(result.warnings, []);
   assertEquals(result.errors, [
@@ -54,9 +63,8 @@ Deno.test("reports schema and relationship errors", async () => {
 });
 
 Deno.test("keeps a missing Card recoverable by reporting a warning", async () => {
-  const result = await validateBoard(
-    validBoard,
-    () => Promise.resolve("missing"),
+  const result = await validateBoard(validBoard, () =>
+    Promise.resolve("missing"),
   );
 
   assertEquals(result, {

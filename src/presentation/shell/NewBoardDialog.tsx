@@ -123,15 +123,15 @@ export function NewBoardDialog() {
         </label>
         <fieldset disabled={isSubmitting}>
           <legend>Directory</legend>
-          {directory
-            ? (
-              <BoardDirectoryPicker
-                root="/"
-                value={directory}
-                onChange={setDirectory}
-              />
-            )
-            : <p>Loading…</p>}
+          {directory ? (
+            <BoardDirectoryPicker
+              root="/"
+              value={directory}
+              onChange={setDirectory}
+            />
+          ) : (
+            <p>Loading…</p>
+          )}
         </fieldset>
         <div className="new-board-dialog__actions">
           <button type="button" onClick={close} disabled={isSubmitting}>

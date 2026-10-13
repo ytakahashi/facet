@@ -61,7 +61,7 @@ import { useMarkdownFind } from "./find/useMarkdownFind.ts";
 const MarkdownPreview = lazy(() =>
   import("./preview/MarkdownPreview.tsx").then((module) => ({
     default: module.MarkdownPreview,
-  }))
+  })),
 );
 
 function isEscapeOwnedByField(target: EventTarget | null): boolean {
@@ -76,9 +76,10 @@ export function MarkdownViewer() {
   const error = useMarkdownViewer((state) => state.error);
   // Scoped to the open card: a write still running for a card the user has
   // since navigated away from must not label this card's button "Saving…".
-  const isSaving = useMarkdownViewer((state) =>
-    state.selectedPath !== undefined &&
-    isCardSaving(state, state.selectedPath)
+  const isSaving = useMarkdownViewer(
+    (state) =>
+      state.selectedPath !== undefined &&
+      isCardSaving(state, state.selectedPath),
   );
   const saveError = useMarkdownViewer((state) => state.saveError);
   const isRefreshing = useMarkdownViewer((state) => state.isRefreshing);
@@ -91,8 +92,8 @@ export function MarkdownViewer() {
   const conflictResolution = useMarkdownViewer(
     (state) => state.conflictResolution,
   );
-  const canSave = isDirty && !isSaving && !isRefreshing &&
-    conflict === undefined;
+  const canSave =
+    isDirty && !isSaving && !isRefreshing && conflict === undefined;
   const updateDraft = useMarkdownViewer((state) => state.updateDraft);
   const save = useMarkdownViewer((state) => state.save);
   const refreshMarkdown = useMarkdownViewer((state) => state.refreshMarkdown);
@@ -129,10 +130,12 @@ export function MarkdownViewer() {
     }
 
     const updateAvailableWidth = () => {
-      setAvailableWidth(getAvailableViewerWidth(
-        boardMain.getBoundingClientRect().width,
-        handle.getBoundingClientRect().width,
-      ));
+      setAvailableWidth(
+        getAvailableViewerWidth(
+          boardMain.getBoundingClientRect().width,
+          handle.getBoundingClientRect().width,
+        ),
+      );
     };
     updateAvailableWidth();
 
@@ -154,30 +157,40 @@ export function MarkdownViewer() {
   const setLabelColor = useBoardStore((state) => state.setLabelColor);
   const removeLabel = useBoardStore((state) => state.removeLabel);
   const moveLabel = useBoardStore((state) => state.moveLabel);
-  const resolveLink = useCallback((href: string) => {
-    if (!board || !selectedPath) return undefined;
-    return resolveCardLink(board, selectedPath, href);
-  }, [board, selectedPath]);
-  const openCard = useCallback((card: Card) => {
-    void selectCard(card);
-  }, [selectCard]);
+  const resolveLink = useCallback(
+    (href: string) => {
+      if (!board || !selectedPath) return undefined;
+      return resolveCardLink(board, selectedPath, href);
+    },
+    [board, selectedPath],
+  );
+  const openCard = useCallback(
+    (card: Card) => {
+      void selectCard(card);
+    },
+    [selectCard],
+  );
   const clipboard = useClipboard();
   const contextMenu = useContextMenu();
   const { copyText, reveal } = useMenuActions();
   const showAlert = useShowAlert();
   // Reports the failure here and still rejects, so the code block keeps
   // showing "Copy" rather than claiming the text was copied.
-  const copyCode = useCallback(async (text: string) => {
-    try {
-      await clipboard.copyText(text);
-    } catch (error) {
-      showAlert(toUiError(error).message);
-      throw error;
-    }
-  }, [clipboard, showAlert]);
-  const card = status === "loaded" && board && selectedPath
-    ? findCardByPath(board, selectedPath)
-    : undefined;
+  const copyCode = useCallback(
+    async (text: string) => {
+      try {
+        await clipboard.copyText(text);
+      } catch (error) {
+        showAlert(toUiError(error).message);
+        throw error;
+      }
+    },
+    [clipboard, showAlert],
+  );
+  const card =
+    status === "loaded" && board && selectedPath
+      ? findCardByPath(board, selectedPath)
+      : undefined;
   const labelDisplay = useMemo(
     () => buildLabelDisplay(board?.labels ?? []),
     [board?.labels],
@@ -219,7 +232,8 @@ export function MarkdownViewer() {
       if (
         (shortcut === "find-next" || shortcut === "find-previous") &&
         (!canToggleMode || !find.isOpen)
-      ) return;
+      )
+        return;
       const isModalOpen = document.querySelector("dialog[open]") !== null;
       if (shortcut === "close") {
         // Escape is left unclaimed wherever something else owns it: a modal
@@ -230,7 +244,8 @@ export function MarkdownViewer() {
         if (isModalOpen || isEscapeOwnedByField(event.target)) return;
         event.preventDefault();
         if (
-          viewerMode === "edit" && find.isOpen &&
+          viewerMode === "edit" &&
+          find.isOpen &&
           event.target instanceof Element &&
           event.target.hasAttribute("data-markdown-editor")
         ) {
@@ -333,9 +348,11 @@ export function MarkdownViewer() {
               type="button"
               className="markdown-viewer__back"
               aria-label="Back"
-              title={backDestination
-                ? `Back to ${backDestination.card.displayTitle} (⌘[)`
-                : "Back (⌘[)"}
+              title={
+                backDestination
+                  ? `Back to ${backDestination.card.displayTitle} (⌘[)`
+                  : "Back (⌘[)"
+              }
               disabled={!backDestination}
               onClick={() => {
                 if (backDestination) void goBack(backDestination.board);
@@ -344,11 +361,7 @@ export function MarkdownViewer() {
               ←
             </button>
             {card && (
-              <CardTitle
-                key={card.path}
-                card={card}
-                onRename={renameCard}
-              />
+              <CardTitle key={card.path} card={card} onRename={renameCard} />
             )}
           </div>
           <div className="markdown-viewer__header-actions">
@@ -375,18 +388,18 @@ export function MarkdownViewer() {
         {card && (
           <div className="markdown-viewer__meta">
             <div className="markdown-viewer__labels">
-              {orderCardLabels(card.labels, labelDisplay.positions).map((
-                label,
-              ) => (
-                <span
-                  className={`card__label card__label--${
-                    labelDisplay.colors.get(label) ?? "neutral"
-                  }`}
-                  key={label}
-                >
-                  {label}
-                </span>
-              ))}
+              {orderCardLabels(card.labels, labelDisplay.positions).map(
+                (label) => (
+                  <span
+                    className={`card__label card__label--${
+                      labelDisplay.colors.get(label) ?? "neutral"
+                    }`}
+                    key={label}
+                  >
+                    {label}
+                  </span>
+                ),
+              )}
               <button
                 type="button"
                 className="markdown-viewer__labels-button"
@@ -400,22 +413,18 @@ export function MarkdownViewer() {
 
         {card && (
           <div className="markdown-viewer__path">
-            {
-              /* The board-relative path, the same form the board file stores. The
+            {/* The board-relative path, the same form the board file stores. The
             absolute path goes in the tooltip: it is what the user needs when
             leaving for Finder or another editor, but it is too long to sit in
-            this row. */
-            }
+            this row. */}
             <span
               className="markdown-viewer__path-text"
               title={card.absolutePath}
             >
               {card.path}
             </span>
-            {
-              /* Not "Rename…": this app already renames the card's title from
-              the heading above, and the two are independent. */
-            }
+            {/* Not "Rename…": this app already renames the card's title from
+              the heading above, and the two are independent. */}
             <button
               type="button"
               className="markdown-viewer__path-button"
@@ -429,13 +438,11 @@ export function MarkdownViewer() {
           </div>
         )}
 
-        {
-          /* Both dialogs below are keyed by a card path so their input state
+        {/* Both dialogs below are keyed by a card path so their input state
           does not survive into the next card, and both sit in this same list
           of children - so each key carries what it identifies. Two siblings
           holding the same key breaks reconciliation, and an open modal caught
-          by that is left behind in the document, blocking the whole window. */
-        }
+          by that is left behind in the document, blocking the whole window. */}
         {renameFileTarget && boardPath && (
           <RenameCardFileDialog
             key={`rename-file-${renameFileTarget.path}`}
@@ -460,12 +467,10 @@ export function MarkdownViewer() {
           />
         )}
 
-        {
-          /* The one place two modals are stacked: Manage Labels opens over
+        {/* The one place two modals are stacked: Manage Labels opens over
           the picker, so closing it lands back on a picker showing the
           updated registry. Escape reaches only the topmost dialog, and the
-          picker is modal-blocked meanwhile. Keyed for the reason above. */
-        }
+          picker is modal-blocked meanwhile. Keyed for the reason above. */}
         <ManageLabelsDialog
           key="manage-labels"
           board={board}
@@ -478,38 +483,46 @@ export function MarkdownViewer() {
           onMoveLabel={moveLabel}
         />
 
-        {saveError && conflict
-          ? (
-            <SaveErrorBanner
-              message={saveError}
-              detail={conflict === "changed"
+        {saveError && conflict ? (
+          <SaveErrorBanner
+            message={saveError}
+            detail={
+              conflict === "changed"
                 ? EXTERNAL_CHANGE_CONFLICT_DETAIL
-                : "Recreate writes the Markdown shown in Facet back to this path."}
-              resolutionError={conflictResolutionError}
-            >
-              {conflict === "changed" && (
-                <button
-                  type="button"
-                  onClick={reloadFromDisk}
-                  disabled={isSaving || isRefreshing ||
-                    conflictResolution !== undefined}
-                >
-                  {conflictResolution === "reloading" ? "Reloading…" : "Reload"}
-                </button>
-              )}
+                : "Recreate writes the Markdown shown in Facet back to this path."
+            }
+            resolutionError={conflictResolutionError}
+          >
+            {conflict === "changed" && (
               <button
                 type="button"
-                onClick={overwrite}
-                disabled={isSaving || isRefreshing ||
-                  conflictResolution !== undefined}
+                onClick={reloadFromDisk}
+                disabled={
+                  isSaving || isRefreshing || conflictResolution !== undefined
+                }
               >
-                {conflictResolution === "overwriting"
-                  ? (conflict === "gone" ? "Recreating…" : "Overwriting…")
-                  : (conflict === "gone" ? "Recreate" : "Overwrite")}
+                {conflictResolution === "reloading" ? "Reloading…" : "Reload"}
               </button>
-            </SaveErrorBanner>
-          )
-          : saveError && <SaveErrorBanner message={saveError} />}
+            )}
+            <button
+              type="button"
+              onClick={overwrite}
+              disabled={
+                isSaving || isRefreshing || conflictResolution !== undefined
+              }
+            >
+              {conflictResolution === "overwriting"
+                ? conflict === "gone"
+                  ? "Recreating…"
+                  : "Overwriting…"
+                : conflict === "gone"
+                  ? "Recreate"
+                  : "Overwrite"}
+            </button>
+          </SaveErrorBanner>
+        ) : (
+          saveError && <SaveErrorBanner message={saveError} />
+        )}
         {refreshError && (
           <SaveErrorBanner message={refreshError}>
             <button
@@ -563,39 +576,37 @@ export function MarkdownViewer() {
                 onClose={() => find.close({ restoreSelection: true })}
               />
             )}
-            {viewerMode === "edit"
-              ? (
-                <MarkdownEditor
+            {viewerMode === "edit" ? (
+              <MarkdownEditor
+                key={selectedPath}
+                value={draft}
+                onChange={updateDraft}
+                board={board}
+                fromPath={selectedPath}
+                autoFocus={focusEditorOnMount}
+                readOnly={isRefreshing}
+                find={find.presentation}
+                onFindTextChange={find.onFindTextChange}
+              />
+            ) : (
+              <Suspense
+                fallback={
+                  <p className="markdown-viewer__placeholder">
+                    Loading preview…
+                  </p>
+                }
+              >
+                <MarkdownPreview
                   key={selectedPath}
-                  value={draft}
-                  onChange={updateDraft}
-                  board={board}
-                  fromPath={selectedPath}
-                  autoFocus={focusEditorOnMount}
-                  readOnly={isRefreshing}
+                  markdown={draft}
+                  resolveLink={resolveLink}
+                  onOpenCard={openCard}
+                  onCopyCode={copyCode}
                   find={find.presentation}
                   onFindTextChange={find.onFindTextChange}
                 />
-              )
-              : (
-                <Suspense
-                  fallback={
-                    <p className="markdown-viewer__placeholder">
-                      Loading preview…
-                    </p>
-                  }
-                >
-                  <MarkdownPreview
-                    key={selectedPath}
-                    markdown={draft}
-                    resolveLink={resolveLink}
-                    onOpenCard={openCard}
-                    onCopyCode={copyCode}
-                    find={find.presentation}
-                    onFindTextChange={find.onFindTextChange}
-                  />
-                </Suspense>
-              )}
+              </Suspense>
+            )}
           </>
         )}
       </div>

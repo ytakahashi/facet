@@ -17,9 +17,10 @@ export interface ListRecentBoardEntriesDeps {
 // in the config, which would go stale whenever a board is renamed or edited
 // outside Facet. A board that cannot be read becomes an entry of its own
 // instead of failing the list, so the user can still see and remove it.
-export async function listRecentBoardEntries(
-  { configRepository, boardRepository }: ListRecentBoardEntriesDeps,
-): Promise<RecentBoardEntry[]> {
+export async function listRecentBoardEntries({
+  configRepository,
+  boardRepository,
+}: ListRecentBoardEntriesDeps): Promise<RecentBoardEntry[]> {
   const paths = await listRecentBoards({ configRepository });
   return Promise.all(
     paths.map(async (path): Promise<RecentBoardEntry> => {

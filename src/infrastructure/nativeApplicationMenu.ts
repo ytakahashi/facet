@@ -25,12 +25,13 @@ export function buildApplicationMenu(
   homeDirectory: string,
   handlers: MenuSelectionHandlers,
 ): ApplicationMenuItem[] {
-  const recentItems: ApplicationMenuItem[] = recentBoardPaths.length === 0
-    ? [{ text: "No Recent Boards", enabled: false }]
-    : recentBoardPaths.map((path) => ({
-      text: labelFor(path, homeDirectory),
-      action: () => handlers.openRecent(path),
-    }));
+  const recentItems: ApplicationMenuItem[] =
+    recentBoardPaths.length === 0
+      ? [{ text: "No Recent Boards", enabled: false }]
+      : recentBoardPaths.map((path) => ({
+          text: labelFor(path, homeDirectory),
+          action: () => handlers.openRecent(path),
+        }));
 
   return [
     {

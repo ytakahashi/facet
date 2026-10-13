@@ -70,9 +70,9 @@ export function TabBar() {
       // Focus the persistent tab button synchronously before switching: blur
       // commits inline edits before the old board unmounts. It also keeps
       // keyboard navigation available after the switch.
-      tabListRef.current?.querySelector<HTMLButtonElement>(
-        `[id="board-tab-${tab.id}"]`,
-      )?.focus();
+      tabListRef.current
+        ?.querySelector<HTMLButtonElement>(`[id="board-tab-${tab.id}"]`)
+        ?.focus();
       activateTab(tab.id);
     }
 
@@ -84,7 +84,8 @@ export function TabBar() {
     if (
       !(event.target instanceof HTMLButtonElement) ||
       event.target.getAttribute("role") !== "tab"
-    ) return;
+    )
+      return;
     const tabButtons = Array.from(
       tabListRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ??
         [],

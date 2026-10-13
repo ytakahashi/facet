@@ -18,9 +18,7 @@ function createMarkdownViewerStore(
     content: string,
     expectedRevision?: string,
   ) => Promise<string | void>,
-  confirmDiscard: Parameters<
-    typeof createMarkdownViewerStoreImplementation
-  >[2],
+  confirmDiscard: Parameters<typeof createMarkdownViewerStoreImplementation>[2],
   confirmOverwrite: Parameters<
     typeof createMarkdownViewerStoreImplementation
   >[3] = alwaysOverwrite,
@@ -186,7 +184,8 @@ describe("createMarkdownViewerStore", () => {
 
   it("uses the revision returned by one save for the next save", async () => {
     const card = makeCard();
-    const saveMarkdown = vi.fn()
+    const saveMarkdown = vi
+      .fn()
       .mockResolvedValueOnce("revision-2")
       .mockResolvedValueOnce("revision-3");
     const useMarkdownViewer = createMarkdownViewerStore(
@@ -376,7 +375,8 @@ describe("createMarkdownViewerStore", () => {
 
   it("reloads an externally changed file and replaces the draft and revision", async () => {
     const card = makeCard();
-    const viewMarkdown = vi.fn()
+    const viewMarkdown = vi
+      .fn()
       .mockResolvedValueOnce({
         content: "# Improve search",
         revision: "revision-1",
@@ -417,7 +417,8 @@ describe("createMarkdownViewerStore", () => {
     const conflictError = new UseCaseError("markdown.conflict", {
       path: "/board/improve-search.md",
     });
-    const viewMarkdown = vi.fn()
+    const viewMarkdown = vi
+      .fn()
       .mockResolvedValueOnce("# Improve search")
       .mockRejectedValueOnce(loadError);
     const useMarkdownViewer = createMarkdownViewerStore(
@@ -445,15 +446,14 @@ describe("createMarkdownViewerStore", () => {
 
   it("stays closed when a conflict reload resolves after the viewer closes", async () => {
     const card = makeCard();
-    let finishReload!: (
-      value: { content: string; revision: string },
-    ) => void;
+    let finishReload!: (value: { content: string; revision: string }) => void;
     const reloading = new Promise<{ content: string; revision: string }>(
       (resolve) => {
         finishReload = resolve;
       },
     );
-    const viewMarkdown = vi.fn()
+    const viewMarkdown = vi
+      .fn()
       .mockResolvedValueOnce("# Improve search")
       .mockReturnValueOnce(reloading);
     const useMarkdownViewer = createMarkdownViewerStore(
@@ -471,7 +471,7 @@ describe("createMarkdownViewerStore", () => {
 
     const reload = useMarkdownViewer.getState().reloadFromDisk();
     await vi.waitFor(() =>
-      expect(useMarkdownViewer.getState().conflictResolution).toBe("reloading")
+      expect(useMarkdownViewer.getState().conflictResolution).toBe("reloading"),
     );
     await useMarkdownViewer.getState().close();
     finishReload({ content: "# External edit", revision: "revision-2" });
@@ -488,7 +488,8 @@ describe("createMarkdownViewerStore", () => {
     const conflictError = new UseCaseError("markdown.conflict", {
       path: "/board/improve-search.md",
     });
-    const saveMarkdown = vi.fn()
+    const saveMarkdown = vi
+      .fn()
       .mockRejectedValueOnce(conflictError)
       .mockResolvedValueOnce("revision-2")
       .mockResolvedValueOnce("revision-3");
@@ -533,7 +534,8 @@ describe("createMarkdownViewerStore", () => {
     const overwriteError = new UseCaseError("markdown.save-failed", {
       path: "/board/improve-search.md",
     });
-    const saveMarkdown = vi.fn()
+    const saveMarkdown = vi
+      .fn()
       .mockRejectedValueOnce(conflictError)
       .mockRejectedValueOnce(overwriteError);
     const useMarkdownViewer = createMarkdownViewerStore(
@@ -558,15 +560,14 @@ describe("createMarkdownViewerStore", () => {
   });
 
   it("does not start another reload while conflict resolution is in progress", async () => {
-    let finishReload!: (
-      value: { content: string; revision: string },
-    ) => void;
+    let finishReload!: (value: { content: string; revision: string }) => void;
     const reloading = new Promise<{ content: string; revision: string }>(
       (resolve) => {
         finishReload = resolve;
       },
     );
-    const viewMarkdown = vi.fn()
+    const viewMarkdown = vi
+      .fn()
       .mockResolvedValueOnce("# Improve search")
       .mockReturnValueOnce(reloading);
     const confirmDiscard = vi.fn(() => Promise.resolve(true));
@@ -583,7 +584,7 @@ describe("createMarkdownViewerStore", () => {
     const secondReload = useMarkdownViewer.getState().reloadFromDisk();
 
     await vi.waitFor(() =>
-      expect(useMarkdownViewer.getState().conflictResolution).toBe("reloading")
+      expect(useMarkdownViewer.getState().conflictResolution).toBe("reloading"),
     );
     expect(confirmDiscard).toHaveBeenCalledOnce();
     expect(viewMarkdown).toHaveBeenCalledTimes(2);
@@ -650,9 +651,9 @@ describe("createMarkdownViewerStore", () => {
     });
     useMarkdownViewer.getState().updateDraft("# Improve search");
     await useMarkdownViewer.getState().selectCard(thirdCard);
-    await useMarkdownViewer.getState().goBack(
-      makeBoard([card, otherCard, thirdCard]),
-    );
+    await useMarkdownViewer
+      .getState()
+      .goBack(makeBoard([card, otherCard, thirdCard]));
     expect(useMarkdownViewer.getState().selectedPath).toBe(card.path);
   });
 
@@ -688,7 +689,8 @@ describe("createMarkdownViewerStore", () => {
       path: "redesign-sidebar.md",
       absolutePath: "/board/redesign-sidebar.md",
     });
-    const viewMarkdown = vi.fn()
+    const viewMarkdown = vi
+      .fn()
       .mockResolvedValueOnce("# Improve search")
       .mockResolvedValueOnce("# Redesign sidebar");
     const useMarkdownViewer = createMarkdownViewerStore(
@@ -1307,10 +1309,9 @@ describe("createMarkdownViewerStore", () => {
       fileState: "missing",
     });
 
-    await useMarkdownViewer.getState().reopenRepairedCard(
-      repaired.path,
-      repaired,
-    );
+    await useMarkdownViewer
+      .getState()
+      .reopenRepairedCard(repaired.path, repaired);
     await useMarkdownViewer.getState().goBack(makeBoard([a, repaired]));
 
     expect(useMarkdownViewer.getState().selectedPath).toBe(a.path);
@@ -1319,7 +1320,8 @@ describe("createMarkdownViewerStore", () => {
   describe("refreshMarkdown", () => {
     it("replaces the baseline and draft and clears a save conflict", async () => {
       const conflict = new UseCaseError("markdown.conflict");
-      const viewMarkdown = vi.fn()
+      const viewMarkdown = vi
+        .fn()
         .mockResolvedValueOnce({ content: "original", revision: "revision-1" })
         .mockResolvedValueOnce({ content: "external", revision: "revision-3" });
       const store = createMarkdownViewerStore(
@@ -1368,7 +1370,8 @@ describe("createMarkdownViewerStore", () => {
       const error = new UseCaseError("markdown.load-failed", {
         path: "/board/improve-search.md",
       });
-      const viewMarkdown = vi.fn()
+      const viewMarkdown = vi
+        .fn()
         .mockResolvedValueOnce("original")
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce({ content: "external", revision: "revision-3" });
@@ -1396,20 +1399,22 @@ describe("createMarkdownViewerStore", () => {
     });
 
     it("blocks duplicate refreshes, edits, saves, and conflict actions while reading", async () => {
-      let finishRefresh!: (
-        value: { content: string; revision: string },
-      ) => void;
+      let finishRefresh!: (value: {
+        content: string;
+        revision: string;
+      }) => void;
       const reading = new Promise<{ content: string; revision: string }>(
         (resolve) => {
           finishRefresh = resolve;
         },
       );
-      const viewMarkdown = vi.fn()
+      const viewMarkdown = vi
+        .fn()
         .mockResolvedValueOnce("original")
         .mockReturnValueOnce(reading);
-      const saveMarkdown = vi.fn().mockRejectedValueOnce(
-        new UseCaseError("markdown.conflict"),
-      );
+      const saveMarkdown = vi
+        .fn()
+        .mockRejectedValueOnce(new UseCaseError("markdown.conflict"));
       const confirmOverwrite = vi.fn(alwaysOverwrite);
       const store = createMarkdownViewerStore(
         viewMarkdown,
@@ -1470,7 +1475,8 @@ describe("createMarkdownViewerStore", () => {
           finishReload = resolve;
         },
       );
-      const viewMarkdown = vi.fn()
+      const viewMarkdown = vi
+        .fn()
         .mockResolvedValueOnce("original")
         .mockReturnValueOnce(reloading);
       const store = createMarkdownViewerStore(
@@ -1484,7 +1490,7 @@ describe("createMarkdownViewerStore", () => {
 
       const reload = store.getState().reloadFromDisk();
       await vi.waitFor(() =>
-        expect(store.getState().conflictResolution).toBe("reloading")
+        expect(store.getState().conflictResolution).toBe("reloading"),
       );
       expect(canRefreshMarkdown(store.getState())).toBe(false);
       await store.getState().refreshMarkdown();
@@ -1495,15 +1501,17 @@ describe("createMarkdownViewerStore", () => {
     });
 
     it("drops a refresh result after selecting another card", async () => {
-      let finishRefresh!: (
-        value: { content: string; revision: string },
-      ) => void;
+      let finishRefresh!: (value: {
+        content: string;
+        revision: string;
+      }) => void;
       const reading = new Promise<{ content: string; revision: string }>(
         (resolve) => {
           finishRefresh = resolve;
         },
       );
-      const viewMarkdown = vi.fn()
+      const viewMarkdown = vi
+        .fn()
         .mockResolvedValueOnce("original")
         .mockReturnValueOnce(reading)
         .mockResolvedValueOnce("other");
@@ -1515,10 +1523,12 @@ describe("createMarkdownViewerStore", () => {
       await store.getState().selectCard(makeCard());
 
       const refresh = store.getState().refreshMarkdown();
-      await store.getState().selectCard(makeCard({
-        path: "other.md",
-        absolutePath: "/board/other.md",
-      }));
+      await store.getState().selectCard(
+        makeCard({
+          path: "other.md",
+          absolutePath: "/board/other.md",
+        }),
+      );
       finishRefresh({ content: "stale", revision: "revision-stale" });
       await refresh;
 

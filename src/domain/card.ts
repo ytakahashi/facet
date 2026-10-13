@@ -104,7 +104,8 @@ function findFirstH1(markdown: string): string | undefined {
     if (fence !== undefined) {
       const close = FENCE_OPEN.exec(line);
       if (
-        close && close[1][0] === fence[0] &&
+        close &&
+        close[1][0] === fence[0] &&
         close[1].length >= fence.length &&
         line.slice(close[0].length).trim() === ""
       ) {
@@ -116,7 +117,8 @@ function findFirstH1(markdown: string): string | undefined {
     // A backtick fence's info string may not contain a backtick; such a line
     // is inline code, not a fence.
     if (
-      open && !(open[1][0] === "`" && line.slice(open[0].length).includes("`"))
+      open &&
+      !(open[1][0] === "`" && line.slice(open[0].length).includes("`"))
     ) {
       fence = open[1];
       continue;

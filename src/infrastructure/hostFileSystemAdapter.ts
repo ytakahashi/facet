@@ -42,19 +42,16 @@ export class HostFileSystemAdapter implements FileSystemPort {
     content: string,
     expectedRevision?: FileRevision,
   ): Promise<FileRevision> {
-    return runFileSystemOperation(
-      "write-file",
-      path,
-      async () => {
-        const result = expectedRevision === undefined
+    return runFileSystemOperation("write-file", path, async () => {
+      const result =
+        expectedRevision === undefined
           ? await hostCommands.writeTextFile(path, content)
           : await hostCommands.writeTextFile(path, content, expectedRevision);
-        if (!result.written) {
-          throw new FileSystemError(result.reason, "write-file", path);
-        }
-        return result.revision;
-      },
-    );
+      if (!result.written) {
+        throw new FileSystemError(result.reason, "write-file", path);
+      }
+      return result.revision;
+    });
   }
 
   async createTextFile(path: string, content: string): Promise<void> {
@@ -92,34 +89,26 @@ export class HostFileSystemAdapter implements FileSystemPort {
   }
 
   readDir(path: string): Promise<DirEntry[]> {
-    return runFileSystemOperation(
-      "read-directory",
-      path,
-      () => hostCommands.readDir(path),
+    return runFileSystemOperation("read-directory", path, () =>
+      hostCommands.readDir(path),
     );
   }
 
   homeDirectory(): Promise<string> {
-    return runFileSystemOperation(
-      "get-home-directory",
-      undefined,
-      () => hostCommands.homeDirectory(),
+    return runFileSystemOperation("get-home-directory", undefined, () =>
+      hostCommands.homeDirectory(),
     );
   }
 
   exists(path: string): Promise<boolean> {
-    return runFileSystemOperation(
-      "check-existence",
-      path,
-      () => hostCommands.exists(path),
+    return runFileSystemOperation("check-existence", path, () =>
+      hostCommands.exists(path),
     );
   }
 
   mkdir(path: string): Promise<void> {
-    return runFileSystemOperation(
-      "create-directory",
-      path,
-      () => hostCommands.mkdir(path),
+    return runFileSystemOperation("create-directory", path, () =>
+      hostCommands.mkdir(path),
     );
   }
 }
