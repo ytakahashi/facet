@@ -12,10 +12,6 @@ dist
 dist-ssr
 *.local
 
-# deno desktop build output
-*.app
-/Facet
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

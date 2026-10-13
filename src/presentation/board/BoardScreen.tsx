@@ -65,7 +65,7 @@ export function BoardScreen({ board }: { board: Board }) {
   const [repairTarget, setRepairTarget] = useState<Card>();
   const [isMissingCardOpen, setIsMissingCardOpen] = useState(false);
 
-  // The native menu carries no accelerators (see denoApplicationMenu.ts), so
+  // The native menu carries no accelerators (see nativeApplicationMenu.ts), so
   // search keys pressed anywhere in the window can only be caught here. The
   // pure resolver owns the modifier split between title and content search.
   useEffect(() => {

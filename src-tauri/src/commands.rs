@@ -1,6 +1,6 @@
 //! The webview's entry points into the host, and nothing else: argument
-//! conversion and error flattening only. Each command mirrors one method of
-//! `HostBindings` in `desktop/bindings.ts`, under its snake_case name.
+//! conversion and error flattening only. Each command has a typed wrapper of
+//! the same name, in camelCase, in `src/infrastructure/hostCommands.ts`.
 //!
 //! Commands are `async` so the work runs off the main thread - a plain
 //! `#[tauri::command]` runs on it and would stall the window for the length of
@@ -8,9 +8,8 @@
 //! borrow from the request.
 //!
 //! An `io::Error` becomes a string: it rejects the invoke promise, which the
-//! adapter turns into an operation-failed error, the same path a thrown Deno
-//! error took. Failures a caller has to tell apart never get here; the
-//! modules below report those as data.
+//! adapter turns into an operation-failed error. Failures a caller has to tell
+//! apart never get here; the modules below report those as data.
 
 use crate::file_system::{
     self, CreateTextFileResult, DirEntry, ReadTextFileResult, RemoveFileResult, WriteTextFileResult,

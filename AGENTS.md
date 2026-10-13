@@ -1,9 +1,7 @@
 # Working on Facet
 
 Facet is a local-first Markdown kanban desktop app for macOS built on
-[Tauri](https://tauri.app/). The app no longer uses its former
-[Deno Desktop](https://docs.deno.com/runtime/desktop/) host in `desktop/`, which
-stays in the tree until it is removed.
+[Tauri](https://tauri.app/).
 
 `ARCHITECTURE.md` describes the structure most of this follows from; read it
 first.
@@ -50,25 +48,20 @@ src-tauri/src/<module>.rs → commands.rs → lib.rs
   `hostCommands.test.ts` pins each command and argument name.
 - A command only a plugin provides needs its permission in
   `src-tauri/capabilities/default.json`; the app's own commands do not.
-- Nothing new goes into `desktop/`.
 
 ## Tests
 
 - `src/**` runs under Vitest against fake ports and fake dependencies.
-- `desktop/**` runs under `deno test` against a real temporary directory. The
-  app no longer runs it.
-- `deno task test` runs both.
-- `src-tauri/**` runs under `cargo test` (`deno task test:rust`), also against a
-  real temporary directory, and only on macOS.
+- `src-tauri/**` runs under `cargo test` (`deno task test:rust`) against a real
+  temporary directory, and only on macOS.
   - The `tauri` crate checks at compile time that `dist/` exists, so the Rust
     tasks create an empty one first; the tests never read it.
+- `.agents/skills/manage-facet-board/scripts/` runs under `deno test`.
+- `deno task test` runs Vitest and `deno test`.
 
-`deno test` cannot see Deno Desktop's types. That is why `bindings.ts` holds the
-only reference to `Deno.MenuItem` and nothing under test imports it.
-
-The split is about what the code needs to be true. The desktop-side rules are
-facts about the file system rather than about this app, and a stubbed test would
-only restate the assumption being questioned.
+The split is about what the code needs to be true. The host-side rules are facts
+about the file system rather than about this app, and a stubbed test would only
+restate the assumption being questioned.
 
 ### Test conventions
 
