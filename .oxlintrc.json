@@ -5,8 +5,7 @@
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
   },
-  // Enforces the import directions ARCHITECTURE.md describes, including the
-  // process boundary between src/ and desktop/.
+  // Enforces the import directions ARCHITECTURE.md describes.
   //
   // Patterns match the import specifier as written, so they are anchored with
   // `**/` rather than spelled relatively: `../usecase/*` stops matching the
@@ -17,14 +16,6 @@
   // so each layer restates every boundary that applies to it.
   "overrides": [
     {
-      "files": ["src/**"],
-      "rules": {
-        "no-restricted-imports": ["error", {
-          "patterns": ["**/desktop/**"]
-        }]
-      }
-    },
-    {
       "files": ["src/domain/**"],
       "rules": {
         "no-restricted-imports": ["error", {
@@ -32,8 +23,7 @@
             "**/usecase/**",
             "**/infrastructure/**",
             "**/presentation/**",
-            "**/composition/**",
-            "**/desktop/**"
+            "**/composition/**"
           ]
         }]
       }
@@ -45,8 +35,7 @@
           "patterns": [
             "**/infrastructure/**",
             "**/presentation/**",
-            "**/composition/**",
-            "**/desktop/**"
+            "**/composition/**"
           ]
         }]
       }
@@ -58,8 +47,7 @@
           "patterns": [
             "**/usecase/**",
             "**/presentation/**",
-            "**/composition/**",
-            "**/desktop/**"
+            "**/composition/**"
           ]
         }]
       }
@@ -70,8 +58,7 @@
         "no-restricted-imports": ["error", {
           "patterns": [
             "**/infrastructure/**",
-            "**/composition/**",
-            "**/desktop/**"
+            "**/composition/**"
           ]
         }]
       }
@@ -86,7 +73,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/labels/**",
             "**/kanban/**",
             "**/table/**",
@@ -106,7 +92,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/kanban/**",
             "**/table/**",
             "**/search/**",
@@ -125,7 +110,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/table/**",
             "**/search/**",
             "**/filter/**",
@@ -143,7 +127,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/kanban/**",
             "**/search/**",
             "**/filter/**",
@@ -161,7 +144,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/kanban/**",
             "**/table/**",
             "**/filter/**",
@@ -179,7 +161,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/kanban/**",
             "**/table/**",
             "**/search/**",
@@ -197,7 +178,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/kanban/**",
             "**/table/**",
             "**/search/**",
@@ -215,7 +195,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/shell/**"
           ]
         }]
@@ -228,7 +207,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/board/**"
           ]
         }]
@@ -245,7 +223,6 @@
           "patterns": [
             "**/infrastructure/**",
             "**/composition/**",
-            "**/desktop/**",
             "**/shared/**",
             "**/labels/**",
             "**/kanban/**",
@@ -256,14 +233,6 @@
             "**/board/**",
             "**/shell/**"
           ]
-        }]
-      }
-    },
-    {
-      "files": ["desktop/**"],
-      "rules": {
-        "no-restricted-imports": ["error", {
-          "patterns": ["**/src/**"]
         }]
       }
     }

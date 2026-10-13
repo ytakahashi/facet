@@ -8,7 +8,7 @@
 //! questioned.
 //!
 //! Every failure a caller has to tell apart is returned as data, mirroring the
-//! result types in `src/infrastructure/bindings.d.ts`; the two sides are
+//! result types in `src/infrastructure/hostCommands.ts`; the two sides are
 //! compiled separately and have to be kept in step by hand. Anything else is an
 //! `io::Error`, which the webview sees as a failed operation.
 
@@ -112,10 +112,11 @@ fn revision_of(bytes: &[u8]) -> FileRevision {
         .collect()
 }
 
-// Decoded the way the webview's TextDecoder decoded it when the host ran on
-// Deno: invalid UTF-8 becomes U+FFFD rather than an error, and a leading BOM
-// is dropped. The revision is still taken from the raw bytes, so a file that
-// differs only in its BOM is a different revision.
+// Decoded the way the web's TextDecoder decodes: invalid UTF-8 becomes U+FFFD
+// rather than an error, and a leading BOM is dropped. A card that is not valid
+// UTF-8 still opens; saving it writes the replacement characters back. The
+// revision is still taken from the raw bytes, so a file that differs only in
+// its BOM is a different revision.
 fn decode(bytes: &[u8]) -> String {
     let text = String::from_utf8_lossy(bytes);
     text.strip_prefix('\u{feff}').unwrap_or(&text).to_owned()
@@ -230,7 +231,7 @@ pub fn remove_file(path: &Path) -> io::Result<RemoveFileResult> {
 
 // Copied field by field: the boundary only ever hands over what the view asked
 // about. file_type() does not follow symlinks, so a symlink to a directory is
-// reported as not a directory, as Deno.readDir reported it.
+// reported as not a directory.
 pub fn read_dir(path: &Path) -> io::Result<Vec<DirEntry>> {
     fs::read_dir(path)?
         .map(|entry| {

@@ -12,19 +12,20 @@ rule earns a place in this document only when no single file could own it.
 
 ## Two processes
 
-A Deno host process owns the native window; the app runs in the system WebView.
+A Rust host process, built on Tauri, owns the native window; the app runs in the
+system WebView.
 
 ```mermaid
 flowchart TB
-  subgraph host["desktop/ — Deno host process"]
-    H["native window and menu<br>file-system and Finder bindings<br>serves dist/"]
+  subgraph host["src-tauri/ — Rust host process"]
+    H["native window<br>file-system and Finder commands<br>shows menus and dialogs<br>serves dist/"]
   end
   subgraph view["src/ — system WebView"]
-    V["the board, its cards<br>and the Markdown editor"]
+    V["the board, its cards, the Markdown editor<br>and what every menu and dialog says"]
   end
-  H -- "serves the built app over localhost" --> V
-  V -- "win.bind(): raw strings and plain data, nothing else" --> H
-  H -. "menu clicks, through a call the view leaves open" .-> V
+  H -- "serves the built app" --> V
+  V -- "invoke(): raw strings and plain data, nothing else" --> H
+  H -. "menu clicks and dialog answers, back to the view that asked" .-> V
 ```
 
 The host is a thin I/O layer.
@@ -34,16 +35,20 @@ The host is a thin I/O layer.
 - That is what keeps the layering below meaningful: if the host parsed YAML on
   the way in, it would have to serialise it on the way out, and the domain model
   would end up split across the process boundary.
+- Within `src-tauri/`, only `commands.rs` and `lib.rs` refer to Tauri. The file
+  rules live in modules that do not, so they can be tested on their own.
 
-`win.bind()` only ever runs view → host. The one thing that starts on the host
-side — a click on a native menu — comes back through a call the view leaves open
-instead. `desktop/menuClickQueue.ts` and `infrastructure/denoApplicationMenu.ts`
-hold what that costs.
+Every exchange starts in the view. Menus and dialogs are built and opened from
+the view through Tauri's JavaScript API, and what comes back is tied to the call
+that asked for it: a click runs the action of the item that was chosen, and a
+dialog's answer resolves the promise that opened it.
 
-- The application menu and context menus each have their own queue and their own
-  open call, because a queue serves a single waiter.
-- The host shows either kind of menu as it is handed. What a menu contains and
-  what each item does are decided in the view.
+- What a menu contains and what each item does are decided in the view; the host
+  only shows it.
+- The macOS WebView implements neither `window.confirm()` nor `window.alert()`,
+  so both go through a native dialog, which can only answer asynchronously.
+  `store/confirmationGate.ts` holds what that costs: one question at a time, and
+  preconditions checked again once the answer arrives.
 
 The domain sits on the WebView side for two further reasons:
 
@@ -63,7 +68,7 @@ The domain sits on the WebView side for two further reasons:
 | `presentation/`   | `domain/`, `usecase/`     |
 | `composition/`    | everything                |
 
-Enforced by `.oxlintrc.json`, which also covers the `src/` ↔ `desktop/` split.
+Enforced by `.oxlintrc.json`.
 
 - Ports (`fileSystemPort`, `*Repository`) sit in `domain/` beside the entities
   that use them, rather than in a directory of their own.
@@ -183,10 +188,10 @@ domain / port:  a stable kind + what was being done
 
 The host refuses rather than overwrites, and reports why as data rather than as
 an exception, so the webview side can tell the cases apart. Each check sits
-inside the same binding invocation as the call it guards — as narrow as the gap
-can be made without an atomic primitive the runtime does not expose.
+inside the same command invocation as the call it guards — as narrow as the gap
+can be made without an atomic primitive.
 
 Creating, removing and renaming are each careful in a way the system call alone
-does not explain. `desktop/fileSystem.ts` and `desktop/renameFile.ts` carry
-that, and are kept out of `desktop/main.ts` so `deno test` can run them against
-a real directory.
+does not explain. `src-tauri/src/file_system.rs` and `rename_file.rs` carry
+that, and do not depend on Tauri, so `cargo test` runs them against a real
+directory.

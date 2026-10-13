@@ -14,9 +14,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    // The desktop host's tests run under Deno, against a real file system;
-    // picked up here they would only fail on the Deno globals they exist to
-    // exercise.
+    // The board-validation skill's tests run under Deno (`deno test`);
+    // picked up here they would only fail on the Deno globals they exercise.
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 });
