@@ -50,6 +50,7 @@ import {
   UseCaseError,
 } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
+import { createConfirmationGate } from "./confirmationGate.ts";
 
 export type BoardStatus = "empty" | "loading" | "loaded" | "error";
 
@@ -103,7 +104,7 @@ export interface BoardState {
   retrySave: () => void;
   refreshBoard: () => Promise<void>;
   reloadBoard: () => Promise<void>;
-  overwriteBoard: () => void;
+  overwriteBoard: () => Promise<void>;
 }
 
 export function canRefreshBoard(
@@ -112,6 +113,14 @@ export function canRefreshBoard(
   return state.status === "loaded" && state.board !== undefined &&
     !!state.path && !state.isSaving && !state.isRefreshing &&
     state.conflictResolution === undefined;
+}
+
+// Reload and overwrite are offered only while a conflict is waiting and
+// nothing else is resolving it. Checked again once the confirmation is
+// answered, against the board the question was asked about.
+function canResolveConflict(state: BoardState, path: string): boolean {
+  return state.path === path && state.saveConflict && !state.isSaving &&
+    !state.isRefreshing && state.conflictResolution === undefined;
 }
 
 export interface NewCardInput {
@@ -140,8 +149,12 @@ export type SaveBoard = (
   expectedRevision: FileRevision | undefined,
 ) => Promise<FileRevision>;
 export type BoardDiscardReason = "reload" | "refresh";
-export type ConfirmDiscardBoard = (reason: BoardDiscardReason) => boolean;
-export type ConfirmOverwriteBoard = () => boolean;
+// Both resolve rather than block; see confirmationGate.ts for what that asks
+// of the callers.
+export type ConfirmDiscardBoard = (
+  reason: BoardDiscardReason,
+) => Promise<boolean>;
+export type ConfirmOverwriteBoard = () => Promise<boolean>;
 export type CreateMarkdownCard = (
   input: CreateMarkdownCardInput,
 ) => Promise<Card>;
@@ -205,6 +218,7 @@ export function createBoardStore({
     // board would discard.
     let boardEditCount = 0;
     let activeMarkdownSavedDuringLoad: Map<string, string> | undefined;
+    const confirmation = createConfirmationGate();
 
     const saveQueue = createBoardSaveQueue(async (path, board) => {
       activeSavePath = path;
@@ -918,40 +932,32 @@ export function createBoardStore({
           await get().reloadBoard();
           return;
         }
-        if (saveError && !confirmDiscardBoard("refresh")) return;
+        if (saveError) {
+          if (
+            !await confirmation.ask(() => confirmDiscardBoard("refresh"))
+          ) return;
+          const answered = get();
+          if (!canRefreshBoard(answered) || answered.path !== path) return;
+        }
         await loadBoard(path, "refresh", boardEditCount);
       },
       reloadBoard: async () => {
-        const {
-          path,
-          saveConflict,
-          isSaving,
-          isRefreshing,
-          conflictResolution,
-        } = get();
-        if (
-          !path || !saveConflict || isSaving || isRefreshing ||
-          conflictResolution ||
-          !confirmDiscardBoard("reload")
-        ) return;
-        await loadBoard(path, "reload");
-      },
-      overwriteBoard: () => {
-        const {
-          board,
-          path,
-          saveConflict,
-          isSaving,
-          isRefreshing,
-          conflictResolution,
-        } = get();
-        if (
-          !board || !path || !saveConflict || isSaving || isRefreshing ||
-          conflictResolution ||
-          !confirmOverwriteBoard()
-        ) {
+        const { path } = get();
+        if (!path || !canResolveConflict(get(), path)) return;
+        if (!await confirmation.ask(() => confirmDiscardBoard("reload"))) {
           return;
         }
+        if (!canResolveConflict(get(), path)) return;
+        await loadBoard(path, "reload");
+      },
+      overwriteBoard: async () => {
+        const { board, path } = get();
+        if (!board || !path || !canResolveConflict(get(), path)) return;
+        if (!await confirmation.ask(confirmOverwriteBoard)) return;
+        // Whatever the board became while the question was open is what gets
+        // written: it is what the user was looking at when they said yes.
+        const answered = get();
+        if (!answered.board || !canResolveConflict(answered, path)) return;
         conflictedPaths.delete(path);
         revisions.delete(path);
         overwritingPaths.add(path);
@@ -959,7 +965,7 @@ export function createBoardStore({
           conflictResolution: "overwriting",
           conflictResolutionError: undefined,
         });
-        queueSave(path, board);
+        queueSave(path, answered.board);
       },
     };
   });

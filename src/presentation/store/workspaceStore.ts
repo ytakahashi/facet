@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import type { CreateBoardInput } from "../../usecase/createBoard.ts";
 import type { BoardSession } from "../context/appContext.ts";
+import { createConfirmationGate } from "./confirmationGate.ts";
 
 export interface BoardTab {
   id: string;
@@ -16,12 +17,13 @@ export interface WorkspaceState {
   createBoard: (input: CreateBoardInput) => Promise<void>;
   activateTab: (id: string) => void;
   showStartScreen: () => void;
-  closeTab: (id: string) => boolean;
+  closeTab: (id: string) => Promise<boolean>;
 }
 
 export interface WorkspaceStoreDeps {
   createSession: () => BoardSession;
-  confirmCloseBoard: () => boolean;
+  // Resolves rather than blocks; see confirmationGate.ts.
+  confirmCloseBoard: () => Promise<boolean>;
 }
 
 export function createWorkspaceStore({
@@ -29,6 +31,7 @@ export function createWorkspaceStore({
   confirmCloseBoard,
 }: WorkspaceStoreDeps): UseBoundStore<StoreApi<WorkspaceState>> {
   let nextTabId = 0;
+  const confirmation = createConfirmationGate();
 
   return create<WorkspaceState>((set, get) => ({
     tabs: [],
@@ -71,20 +74,25 @@ export function createWorkspaceStore({
       }
     },
     showStartScreen: () => set({ activeTabId: undefined }),
-    closeTab: (id) => {
-      const { tabs, activeTabId } = get();
-      const index = tabs.findIndex((tab) => tab.id === id);
-      if (index === -1) return false;
-      const tab = tabs[index];
+    closeTab: async (id) => {
+      const tab = get().tabs.find((entry) => entry.id === id);
+      if (!tab) return false;
       const boardState = tab.session.boardStore.getState();
       if (
         (boardState.isSaving || boardState.saveError !== undefined ||
-          boardState.saveConflict) && !confirmCloseBoard()
+          boardState.saveConflict) &&
+        !await confirmation.ask(confirmCloseBoard)
       ) return false;
       // close() clears the viewer. Keep it last so declining either prompt
       // leaves the entire tab unchanged.
-      if (!tab.session.markdownViewer.getState().close()) return false;
+      if (!await tab.session.markdownViewer.getState().close()) return false;
 
+      // Read again rather than reusing what was read before the prompts: tabs
+      // can be opened, switched or closed while a question is open, and this
+      // one may already be gone.
+      const { tabs, activeTabId } = get();
+      const index = tabs.findIndex((entry) => entry.id === id);
+      if (index === -1) return false;
       const remaining = tabs.filter((entry) => entry.id !== id);
       const nextActiveTabId = activeTabId === id
         ? (remaining[index] ?? remaining[index - 1])?.id

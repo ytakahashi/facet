@@ -62,15 +62,15 @@ function makeBoard(cards: Card[]): Board {
 }
 
 function alwaysDiscard() {
-  return true;
+  return Promise.resolve(true);
 }
 
 function neverDiscard() {
-  return false;
+  return Promise.resolve(false);
 }
 
 function alwaysOverwrite() {
-  return true;
+  return Promise.resolve(true);
 }
 
 describe("createMarkdownViewerStore", () => {
@@ -134,7 +134,7 @@ describe("createMarkdownViewerStore", () => {
     );
     await useMarkdownViewer.getState().selectCard(card);
 
-    const result = useMarkdownViewer.getState().close();
+    const result = await useMarkdownViewer.getState().close();
 
     expect(result).toBe(true);
     expect(useMarkdownViewer.getState().status).toBe("idle");
@@ -470,7 +470,10 @@ describe("createMarkdownViewerStore", () => {
     await useMarkdownViewer.getState().save();
 
     const reload = useMarkdownViewer.getState().reloadFromDisk();
-    useMarkdownViewer.getState().close();
+    await vi.waitFor(() =>
+      expect(useMarkdownViewer.getState().conflictResolution).toBe("reloading")
+    );
+    await useMarkdownViewer.getState().close();
     finishReload({ content: "# External edit", revision: "revision-2" });
     await reload;
 
@@ -489,7 +492,7 @@ describe("createMarkdownViewerStore", () => {
       .mockRejectedValueOnce(conflictError)
       .mockResolvedValueOnce("revision-2")
       .mockResolvedValueOnce("revision-3");
-    const confirmOverwrite = vi.fn(() => true);
+    const confirmOverwrite = vi.fn(() => Promise.resolve(true));
     const useMarkdownViewer = createMarkdownViewerStore(
       () => Promise.resolve("# Improve search"),
       saveMarkdown,
@@ -566,7 +569,7 @@ describe("createMarkdownViewerStore", () => {
     const viewMarkdown = vi.fn()
       .mockResolvedValueOnce("# Improve search")
       .mockReturnValueOnce(reloading);
-    const confirmDiscard = vi.fn(() => true);
+    const confirmDiscard = vi.fn(() => Promise.resolve(true));
     const useMarkdownViewer = createMarkdownViewerStore(
       viewMarkdown,
       vi.fn().mockRejectedValue(new UseCaseError("markdown.conflict")),
@@ -579,7 +582,9 @@ describe("createMarkdownViewerStore", () => {
     const firstReload = useMarkdownViewer.getState().reloadFromDisk();
     const secondReload = useMarkdownViewer.getState().reloadFromDisk();
 
-    expect(useMarkdownViewer.getState().conflictResolution).toBe("reloading");
+    await vi.waitFor(() =>
+      expect(useMarkdownViewer.getState().conflictResolution).toBe("reloading")
+    );
     expect(confirmDiscard).toHaveBeenCalledOnce();
     expect(viewMarkdown).toHaveBeenCalledTimes(2);
 
@@ -595,7 +600,7 @@ describe("createMarkdownViewerStore", () => {
         path: "/board/improve-search.md",
       }),
     );
-    const confirmOverwrite = vi.fn(() => false);
+    const confirmOverwrite = vi.fn(() => Promise.resolve(false));
     const useMarkdownViewer = createMarkdownViewerStore(
       () => Promise.resolve("# Improve search"),
       saveMarkdown,
@@ -649,6 +654,32 @@ describe("createMarkdownViewerStore", () => {
       makeBoard([card, otherCard, thirdCard]),
     );
     expect(useMarkdownViewer.getState().selectedPath).toBe(card.path);
+  });
+
+  it("does not open the next card when the viewer changed while asking to discard", async () => {
+    const card = makeCard();
+    const otherCard = makeCard({
+      path: "redesign-sidebar.md",
+      absolutePath: "/board/redesign-sidebar.md",
+    });
+    let answer!: (discard: boolean) => void;
+    const viewMarkdown = vi.fn().mockResolvedValue("# Improve search");
+    const useMarkdownViewer = createMarkdownViewerStore(
+      viewMarkdown,
+      vi.fn(),
+      () => new Promise((resolve) => (answer = resolve)),
+    );
+    await useMarkdownViewer.getState().selectCard(card);
+    useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
+
+    const selecting = useMarkdownViewer.getState().selectCard(otherCard);
+    useMarkdownViewer.getState().discardCard(card.path);
+    answer(true);
+    await selecting;
+
+    expect(viewMarkdown).toHaveBeenCalledOnce();
+    expect(useMarkdownViewer.getState().status).toBe("idle");
+    expect(useMarkdownViewer.getState().selectedPath).toBeUndefined();
   });
 
   it("loads the new card once discarding an unsaved edit is confirmed", async () => {
@@ -706,7 +737,7 @@ describe("createMarkdownViewerStore", () => {
     await useMarkdownViewer.getState().selectCard(card);
     useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
 
-    const result = useMarkdownViewer.getState().close();
+    const result = await useMarkdownViewer.getState().close();
 
     expect(result).toBe(false);
     expect(useMarkdownViewer.getState().status).toBe("loaded");
@@ -1076,7 +1107,7 @@ describe("createMarkdownViewerStore", () => {
   });
 
   it("keeps history unchanged when discarding a dirty draft for back is declined", async () => {
-    const confirmDiscard = vi.fn(() => false);
+    const confirmDiscard = vi.fn(() => Promise.resolve(false));
     const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
     const b = makeCard({ path: "b.md", absolutePath: "/board/b.md" });
     const board = makeBoard([a, b]);
@@ -1391,6 +1422,7 @@ describe("createMarkdownViewerStore", () => {
       await store.getState().save();
 
       const refresh = store.getState().refreshMarkdown();
+      await vi.waitFor(() => expect(store.getState().isRefreshing).toBe(true));
       expect(canRefreshMarkdown(store.getState())).toBe(false);
       await store.getState().refreshMarkdown();
       store.getState().updateDraft("late edit");
@@ -1451,7 +1483,9 @@ describe("createMarkdownViewerStore", () => {
       await store.getState().save();
 
       const reload = store.getState().reloadFromDisk();
-      expect(store.getState().conflictResolution).toBe("reloading");
+      await vi.waitFor(() =>
+        expect(store.getState().conflictResolution).toBe("reloading")
+      );
       expect(canRefreshMarkdown(store.getState())).toBe(false);
       await store.getState().refreshMarkdown();
       expect(viewMarkdown).toHaveBeenCalledTimes(2);
