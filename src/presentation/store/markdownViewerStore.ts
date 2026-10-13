@@ -14,6 +14,7 @@ import type { Card } from "../../domain/card.ts";
 import type { FileRevision } from "../../domain/fileSystemPort.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
+import { createConfirmationGate } from "./confirmationGate.ts";
 
 export type MarkdownStatus = "idle" | "loading" | "loaded" | "error";
 export type MarkdownConflict = "changed" | "gone";
@@ -51,9 +52,9 @@ export interface MarkdownViewerState {
   refreshMarkdown: () => Promise<void>;
   reloadFromDisk: () => Promise<void>;
   overwrite: () => Promise<void>;
-  // Returns whether the viewer was actually closed, so closing its tab can
+  // Resolves whether the viewer was actually closed, so closing its tab can
   // abort when the user declines to discard unsaved changes.
-  close: () => boolean;
+  close: () => Promise<boolean>;
   // Resets the viewer without the discard prompt, for a card that no longer
   // exists. The caller has already confirmed a destructive action on it, and
   // when its file was deleted, leaving the editor open would let Save recreate
@@ -79,12 +80,16 @@ export type SaveMarkdown = (
   content: string,
   expectedRevision: FileRevision | undefined,
 ) => Promise<FileRevision>;
-export type ConfirmDiscard = () => boolean;
+// Both resolve rather than block; see confirmationGate.ts for what that asks
+// of the callers.
+export type ConfirmDiscard = () => Promise<boolean>;
 // Told about every write that landed, including one the viewer has since
 // moved away from: the file changed either way, and whatever is derived from
 // it - the card's title on the board - has to follow.
 export type MarkdownSaved = (cardPath: string, content: string) => void;
-export type ConfirmOverwrite = (conflict: MarkdownConflict) => boolean;
+export type ConfirmOverwrite = (
+  conflict: MarkdownConflict,
+) => Promise<boolean>;
 
 // Exported because "has the draft diverged from what is on disk" is asked
 // outside this store too - the viewer's Save button and the delete dialog's
@@ -119,6 +124,24 @@ export function canRefreshMarkdown(
     !state.isRefreshing && state.conflictResolution === undefined;
 }
 
+// A conflict is resolved one way at a time, and not while a refresh is
+// replacing the draft it is about.
+function canReloadFromDisk(
+  state: MarkdownViewerState,
+): state is MarkdownViewerState & {
+  selectedPath: string;
+  absolutePath: string;
+} {
+  return state.conflict === "changed" &&
+    state.conflictResolution === undefined && !state.isRefreshing &&
+    !!state.selectedPath && !!state.absolutePath;
+}
+
+function canOverwrite(state: MarkdownViewerState): boolean {
+  return state.conflict !== undefined &&
+    state.conflictResolution === undefined && !state.isRefreshing;
+}
+
 // Deliberately omits savingPaths: closing the viewer does not call off a write
 // that is already on its way, so the marker has to outlive the card's presence
 // on screen and is cleared by whichever save owns it.
@@ -151,8 +174,22 @@ export function createMarkdownViewerStore(
   // because the card was deleted - is dropped instead of reopening a viewer
   // the user already left.
   let generation = 0;
+  const confirmation = createConfirmationGate();
 
   return create<MarkdownViewerState>((set, get) => {
+    // A yes only counts for the viewer state it was given about. Anything that
+    // replaces what is on screen - a selection, a load, a save, closing - moves
+    // the generation, so the answer is dropped if it moved while asking.
+    // Callers only await this when there is something to ask: a clean draft
+    // proceeds synchronously, as it always has, so nothing can slip in
+    // between the call and the work it starts.
+    async function confirmUnchanged(
+      confirm: () => Promise<boolean>,
+    ): Promise<boolean> {
+      const asked = generation;
+      return await confirmation.ask(confirm) && generation === asked;
+    }
+
     async function loadMarkdown(
       selectedPath: string,
       absolutePath: string,
@@ -331,7 +368,7 @@ export function createMarkdownViewerStore(
       }
       if (
         !options.skipDiscardPrompt && isMarkdownDirty(state) &&
-        !confirmDiscard()
+        !await confirmUnchanged(confirmDiscard)
       ) {
         return false;
       }
@@ -409,41 +446,35 @@ export function createMarkdownViewerStore(
         await persist(revision);
       },
       refreshMarkdown: async () => {
-        const state = get();
         // A native menu click can arrive after the item was enabled.
+        if (!canRefreshMarkdown(get())) return;
+        if (
+          isMarkdownDirty(get()) && !await confirmUnchanged(confirmDiscard)
+        ) return;
+        const state = get();
         if (!canRefreshMarkdown(state)) return;
-        if (isMarkdownDirty(state) && !confirmDiscard()) return;
         await loadMarkdown(state.selectedPath, state.absolutePath, "refresh");
       },
       reloadFromDisk: async () => {
-        const state = get();
-        const {
-          selectedPath,
-          absolutePath,
-          conflict,
-          conflictResolution,
-          isRefreshing,
-        } = state;
+        if (!canReloadFromDisk(get())) return;
         if (
-          conflict !== "changed" || conflictResolution || isRefreshing ||
-          !selectedPath || !absolutePath
+          isMarkdownDirty(get()) && !await confirmUnchanged(confirmDiscard)
         ) return;
-        if (isMarkdownDirty(state) && !confirmDiscard()) return;
-        await loadMarkdown(selectedPath, absolutePath, "reload");
+        const state = get();
+        if (!canReloadFromDisk(state)) return;
+        await loadMarkdown(state.selectedPath, state.absolutePath, "reload");
       },
       overwrite: async () => {
-        const { conflict, conflictResolution, isRefreshing } = get();
-        if (
-          !conflict || conflictResolution || isRefreshing ||
-          !confirmOverwrite(conflict)
-        ) return;
+        const { conflict } = get();
+        if (!conflict || !canOverwrite(get())) return;
+        if (!await confirmUnchanged(() => confirmOverwrite(conflict))) return;
+        if (!canOverwrite(get())) return;
         await persist(undefined, "overwriting");
       },
-      close: () => {
-        const state = get();
-        if (isMarkdownDirty(state) && !confirmDiscard()) {
-          return false;
-        }
+      close: async () => {
+        if (
+          isMarkdownDirty(get()) && !await confirmUnchanged(confirmDiscard)
+        ) return false;
 
         generation++;
         set(CLOSED_STATE);

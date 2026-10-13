@@ -20,8 +20,8 @@ function makeDeps(overrides: Partial<BoardStoreDeps> = {}): BoardStoreDeps {
     renameMarkdownCard: vi.fn(),
     createBoard: vi.fn(),
     deleteMarkdown: vi.fn(),
-    confirmDiscardBoard: vi.fn(() => true),
-    confirmOverwriteBoard: vi.fn(() => true),
+    confirmDiscardBoard: vi.fn(() => Promise.resolve(true)),
+    confirmOverwriteBoard: vi.fn(() => Promise.resolve(true)),
     ...overrides,
   };
 }
@@ -1966,7 +1966,7 @@ describe("createBoardStore", () => {
     const openBoard = vi.fn()
       .mockResolvedValueOnce(loaded(makeBoard()))
       .mockResolvedValueOnce(loaded(diskBoard, "revision-2"));
-    const confirmDiscardBoard = vi.fn(() => true);
+    const confirmDiscardBoard = vi.fn(() => Promise.resolve(true));
     const useBoardStore = createBoardStore(makeDeps({
       openBoard,
       saveBoard: vi.fn().mockRejectedValue(new UseCaseError("board.conflict")),
@@ -1995,7 +1995,7 @@ describe("createBoardStore", () => {
       .mockResolvedValueOnce(loaded(makeBoard()))
       .mockResolvedValueOnce(loaded(diskBoard, "revision-2"));
     const saveBoard = vi.fn().mockResolvedValue("revision-3");
-    const confirmDiscardBoard = vi.fn(() => true);
+    const confirmDiscardBoard = vi.fn(() => Promise.resolve(true));
     const useBoardStore = createBoardStore(makeDeps({
       openBoard,
       saveBoard,
@@ -2022,8 +2022,8 @@ describe("createBoardStore", () => {
       .mockResolvedValueOnce(loaded(makeBoard()))
       .mockResolvedValueOnce(loaded(diskBoard, "revision-2"));
     const confirmDiscardBoard = vi.fn()
-      .mockReturnValueOnce(false)
-      .mockReturnValueOnce(true);
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
     const useBoardStore = createBoardStore(makeDeps({
       openBoard,
       saveBoard: vi.fn().mockRejectedValue(
@@ -2053,7 +2053,7 @@ describe("createBoardStore", () => {
     const openBoard = vi.fn()
       .mockResolvedValueOnce(loaded(makeBoard()))
       .mockResolvedValueOnce(loaded(diskBoard, "revision-2"));
-    const confirmDiscardBoard = vi.fn(() => true);
+    const confirmDiscardBoard = vi.fn(() => Promise.resolve(true));
     const useBoardStore = createBoardStore(makeDeps({
       openBoard,
       saveBoard: vi.fn().mockRejectedValue(new UseCaseError("board.conflict")),
@@ -2315,6 +2315,9 @@ describe("createBoardStore", () => {
     );
 
     const reload = useBoardStore.getState().reloadBoard();
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().conflictResolution).toBe("reloading")
+    );
     useBoardStore.getState().syncCardTitle("a.md", "# Saved during reload");
     reloading.resolve(loaded(makeBoard({ name: "From disk" })));
     await reload;
@@ -2325,12 +2328,38 @@ describe("createBoardStore", () => {
     expect(useBoardStore.getState().saveConflict).toBe(false);
   });
 
+  it("drops a reload confirmed after another board was opened", async () => {
+    const answer = deferred<boolean>();
+    const openBoard = vi.fn()
+      .mockResolvedValueOnce(loaded(makeBoard()))
+      .mockResolvedValueOnce(loaded(makeBoard({ name: "Other" })));
+    const useBoardStore = createBoardStore(makeDeps({
+      openBoard,
+      saveBoard: vi.fn().mockRejectedValue(new UseCaseError("board.conflict")),
+      confirmDiscardBoard: () => answer.promise,
+    }));
+    await useBoardStore.getState().openBoard("/board/development.board.yaml");
+    useBoardStore.getState().renameBoard("Local edit");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().saveConflict).toBe(true)
+    );
+
+    const reload = useBoardStore.getState().reloadBoard();
+    await useBoardStore.getState().openBoard("/board/other.board.yaml");
+    answer.resolve(true);
+    await reload;
+
+    expect(openBoard).toHaveBeenCalledTimes(2);
+    expect(useBoardStore.getState().path).toBe("/board/other.board.yaml");
+    expect(useBoardStore.getState().conflictResolution).toBeUndefined();
+  });
+
   it("does not start another reload while conflict resolution is in progress", async () => {
     const reloading = deferred<ReturnType<typeof loaded>>();
     const openBoard = vi.fn()
       .mockResolvedValueOnce(loaded(makeBoard()))
       .mockReturnValueOnce(reloading.promise);
-    const confirmDiscardBoard = vi.fn(() => true);
+    const confirmDiscardBoard = vi.fn(() => Promise.resolve(true));
     const useBoardStore = createBoardStore(makeDeps({
       openBoard,
       saveBoard: vi.fn().mockRejectedValue(new UseCaseError("board.conflict")),
@@ -2345,7 +2374,9 @@ describe("createBoardStore", () => {
     const firstReload = useBoardStore.getState().reloadBoard();
     const secondReload = useBoardStore.getState().reloadBoard();
 
-    expect(useBoardStore.getState().conflictResolution).toBe("reloading");
+    await vi.waitFor(() =>
+      expect(useBoardStore.getState().conflictResolution).toBe("reloading")
+    );
     expect(confirmDiscardBoard).toHaveBeenCalledOnce();
     expect(openBoard).toHaveBeenCalledTimes(2);
 
@@ -2358,7 +2389,7 @@ describe("createBoardStore", () => {
     const saveBoard = vi.fn()
       .mockRejectedValueOnce(new UseCaseError("board.conflict"))
       .mockResolvedValueOnce("revision-overwritten");
-    const confirmOverwriteBoard = vi.fn(() => true);
+    const confirmOverwriteBoard = vi.fn(() => Promise.resolve(true));
     const useBoardStore = createBoardStore(makeDeps({
       openBoard: () => Promise.resolve(loaded(makeBoard())),
       saveBoard,
@@ -2394,7 +2425,7 @@ describe("createBoardStore", () => {
       .mockRejectedValueOnce(conflictError)
       .mockRejectedValueOnce(overwriteError)
       .mockResolvedValueOnce("revision-overwritten");
-    const confirmOverwriteBoard = vi.fn(() => true);
+    const confirmOverwriteBoard = vi.fn(() => Promise.resolve(true));
     const useBoardStore = createBoardStore(makeDeps({
       openBoard: () => Promise.resolve(loaded(makeBoard())),
       saveBoard,
@@ -2505,7 +2536,7 @@ describe("createBoardStore", () => {
 
   it("does not start another overwrite while conflict resolution is in progress", async () => {
     const overwriting = deferred<string>();
-    const confirmOverwriteBoard = vi.fn(() => true);
+    const confirmOverwriteBoard = vi.fn(() => Promise.resolve(true));
     const saveBoard = vi.fn()
       .mockRejectedValueOnce(new UseCaseError("board.conflict"))
       .mockReturnValueOnce(overwriting.promise);
@@ -2520,8 +2551,9 @@ describe("createBoardStore", () => {
       expect(useBoardStore.getState().saveConflict).toBe(true)
     );
 
-    useBoardStore.getState().overwriteBoard();
-    useBoardStore.getState().overwriteBoard();
+    const firstOverwrite = useBoardStore.getState().overwriteBoard();
+    const secondOverwrite = useBoardStore.getState().overwriteBoard();
+    await Promise.all([firstOverwrite, secondOverwrite]);
 
     expect(useBoardStore.getState().conflictResolution).toBe("overwriting");
     expect(confirmOverwriteBoard).toHaveBeenCalledOnce();
@@ -2539,12 +2571,12 @@ describe("createBoardStore", () => {
       new UseCaseError("board.conflict"),
     );
     const openBoard = vi.fn().mockResolvedValue(loaded(makeBoard()));
-    const confirmDiscardBoard = vi.fn(() => false);
+    const confirmDiscardBoard = vi.fn(() => Promise.resolve(false));
     const useBoardStore = createBoardStore(makeDeps({
       openBoard,
       saveBoard,
       confirmDiscardBoard,
-      confirmOverwriteBoard: () => false,
+      confirmOverwriteBoard: () => Promise.resolve(false),
     }));
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
     useBoardStore.getState().renameBoard("Local edit");

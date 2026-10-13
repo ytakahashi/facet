@@ -38,6 +38,12 @@ import { createRecentBoardsStore } from "../presentation/store/recentBoardsStore
 import { createShortcutHelpStore } from "../presentation/store/shortcutHelpStore.ts";
 import { createWorkspaceStore } from "../presentation/store/workspaceStore.ts";
 
+// The stores take confirmations that resolve, because a native dialog in a
+// WebView answers asynchronously. window.confirm still answers at once here.
+function askUser(message: string): Promise<boolean> {
+  return Promise.resolve(confirm(message));
+}
+
 const fileSystem = new DenoFileSystemAdapter();
 const boardRepository = new YamlBoardRepository(fileSystem);
 const configRepository = new YamlConfigRepository(fileSystem);
@@ -80,11 +86,11 @@ function createBoardSession(): BoardSession {
     createBoard: (input) => createBoard(input, { fileSystem, boardRepository }),
     deleteMarkdown: (path) => deleteMarkdown(path, { fileSystem }),
     confirmDiscardBoard: () =>
-      confirm(
+      askUser(
         "Discard changes made in Facet and reload the board from disk?",
       ),
     confirmOverwriteBoard: () =>
-      confirm(
+      askUser(
         "Overwrite changes made outside Facet? The board shown in Facet will replace them.",
       ),
   });
@@ -96,9 +102,9 @@ function createBoardSession(): BoardSession {
       (path) => viewMarkdown(path, { fileSystem }),
       (path, content, expectedRevision) =>
         saveMarkdown(path, content, expectedRevision, { fileSystem }),
-      () => confirm("Discard unsaved changes to this Markdown file?"),
+      () => askUser("Discard unsaved changes to this Markdown file?"),
       (conflict) =>
-        confirm(
+        askUser(
           conflict === "gone"
             ? "Recreate this Markdown file at its previous path? The draft shown in Facet will be written there."
             : "Overwrite changes made outside Facet? The draft shown in Facet will replace them.",
@@ -142,7 +148,7 @@ export const appDependencies: AppDependencies = {
   workspace: createWorkspaceStore({
     createSession: createBoardSession,
     confirmCloseBoard: () =>
-      confirm("Discard unsaved changes to this board and close it?"),
+      askUser("Discard unsaved changes to this board and close it?"),
   }),
 };
 

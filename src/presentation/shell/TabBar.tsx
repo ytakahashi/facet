@@ -16,7 +16,7 @@ function BoardTabItem({
   tab: BoardTab;
   selected: boolean;
   activate: (id: string) => void;
-  close: (id: string) => boolean;
+  close: (id: string) => Promise<boolean>;
 }) {
   const boardName = tab.session.boardStore((state) => state.board?.name);
   const label = boardName ?? basenameOf(tab.path);
@@ -40,7 +40,7 @@ function BoardTabItem({
         type="button"
         className="tab-bar__close"
         aria-label={`Close ${label}`}
-        onClick={() => close(tab.id)}
+        onClick={() => void close(tab.id)}
       >
         ×
       </button>

@@ -171,7 +171,7 @@ export function BoardScreen({ board }: { board: Board }) {
                 </button>
                 <button
                   type="button"
-                  onClick={overwriteBoard}
+                  onClick={() => void overwriteBoard()}
                   disabled={isSaving || isRefreshing ||
                     conflictResolution !== undefined}
                 >

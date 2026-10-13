@@ -237,7 +237,7 @@ export function MarkdownViewer() {
           closeFind({ restoreSelection: false });
           return;
         }
-        close();
+        void close();
         return;
       }
       // The viewer owns this shortcut while open, even when there is no back
@@ -361,7 +361,11 @@ export function MarkdownViewer() {
             >
               {isSaving ? "Saving…" : "Save"}
             </button>
-            <button type="button" title="Close (Esc)" onClick={close}>
+            <button
+              type="button"
+              title="Close (Esc)"
+              onClick={() => void close()}
+            >
               Close
             </button>
           </div>

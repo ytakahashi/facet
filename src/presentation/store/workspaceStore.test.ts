@@ -31,7 +31,7 @@ function makeSession(overrides: {
     } as BoardState)),
     markdownViewer: create<MarkdownViewerState>(() => ({
       status: "idle",
-      close: overrides.close ?? vi.fn(() => true),
+      close: overrides.close ?? vi.fn(() => Promise.resolve(true)),
     } as MarkdownViewerState)),
     filterStore: createFilterStore(),
   };
@@ -43,7 +43,7 @@ describe("createWorkspaceStore", () => {
     const createSession = vi.fn(() => makeSession({ openBoard }));
     const workspace = createWorkspaceStore({
       createSession,
-      confirmCloseBoard: vi.fn(() => true),
+      confirmCloseBoard: vi.fn(() => Promise.resolve(true)),
     });
 
     workspace.getState().openBoard("/boards/a.board.yaml");
@@ -68,7 +68,7 @@ describe("createWorkspaceStore", () => {
     });
     const workspace = createWorkspaceStore({
       createSession: () => session,
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
 
     workspace.getState().openBoard("/boards/missing.board.yaml");
@@ -90,7 +90,7 @@ describe("createWorkspaceStore", () => {
     const createSession = vi.fn(() => session);
     const workspace = createWorkspaceStore({
       createSession,
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
     const path = "/boards/a.board.yaml";
 
@@ -112,7 +112,7 @@ describe("createWorkspaceStore", () => {
     const createBoard = vi.fn().mockResolvedValue("/boards/new.board.yaml");
     const workspace = createWorkspaceStore({
       createSession: () => makeSession({ createBoard }),
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
 
     await workspace.getState().createBoard(input);
@@ -129,7 +129,7 @@ describe("createWorkspaceStore", () => {
     const workspace = createWorkspaceStore({
       createSession: () =>
         makeSession({ createBoard: () => Promise.reject(failure) }),
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
 
     await expect(workspace.getState().createBoard(input)).rejects.toBe(failure);
@@ -143,7 +143,7 @@ describe("createWorkspaceStore", () => {
     session.boardStore.setState({ status: "error", error: "Cannot read" });
     const workspace = createWorkspaceStore({
       createSession: () => session,
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
 
     await workspace.getState().createBoard(input);
@@ -151,9 +151,9 @@ describe("createWorkspaceStore", () => {
     expect(session.boardStore.getState().error).toBe("Cannot read");
   });
 
-  it("keeps the viewer open when the board close prompt is declined", () => {
-    const close = vi.fn(() => true);
-    const confirmCloseBoard = vi.fn(() => false);
+  it("keeps the viewer open when the board close prompt is declined", async () => {
+    const close = vi.fn(() => Promise.resolve(true));
+    const confirmCloseBoard = vi.fn(() => Promise.resolve(false));
     const session = makeSession({ close });
     const workspace = createWorkspaceStore({
       createSession: () => session,
@@ -162,41 +162,43 @@ describe("createWorkspaceStore", () => {
     workspace.getState().openBoard("/boards/a.board.yaml");
     session.boardStore.setState({ isSaving: true });
 
-    expect(workspace.getState().closeTab(workspace.getState().tabs[0].id)).toBe(
-      false,
-    );
+    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
+      .resolves.toBe(
+        false,
+      );
     expect(confirmCloseBoard).toHaveBeenCalledOnce();
     expect(close).not.toHaveBeenCalled();
     expect(workspace.getState().tabs).toHaveLength(1);
   });
 
-  it("closes a clean tab without a board confirmation", () => {
-    const confirmCloseBoard = vi.fn(() => false);
+  it("closes a clean tab without a board confirmation", async () => {
+    const confirmCloseBoard = vi.fn(() => Promise.resolve(false));
     const workspace = createWorkspaceStore({
       createSession: () => makeSession(),
       confirmCloseBoard,
     });
     workspace.getState().openBoard("/boards/a.board.yaml");
 
-    expect(workspace.getState().closeTab(workspace.getState().tabs[0].id)).toBe(
-      true,
-    );
+    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
+      .resolves.toBe(
+        true,
+      );
     expect(confirmCloseBoard).not.toHaveBeenCalled();
   });
 
-  it("confirms board changes before closing the viewer", () => {
+  it("confirms board changes before closing the viewer", async () => {
     const order: string[] = [];
     const workspace = createWorkspaceStore({
       createSession: () =>
         makeSession({
           close: () => {
             order.push("viewer");
-            return true;
+            return Promise.resolve(true);
           },
         }),
       confirmCloseBoard: () => {
         order.push("board");
-        return true;
+        return Promise.resolve(true);
       },
     });
     workspace.getState().openBoard("/boards/a.board.yaml");
@@ -204,17 +206,18 @@ describe("createWorkspaceStore", () => {
       isSaving: true,
     });
 
-    expect(workspace.getState().closeTab(workspace.getState().tabs[0].id)).toBe(
-      true,
-    );
+    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
+      .resolves.toBe(
+        true,
+      );
     expect(order).toEqual(["board", "viewer"]);
   });
 
   it.each([
     { name: "a failed save", state: { saveError: "Cannot save" } },
     { name: "a save conflict", state: { saveConflict: true } },
-  ])("confirms before closing a tab with $name", ({ state }) => {
-    const confirmCloseBoard = vi.fn(() => false);
+  ])("confirms before closing a tab with $name", async ({ state }) => {
+    const confirmCloseBoard = vi.fn(() => Promise.resolve(false));
     const session = makeSession();
     const workspace = createWorkspaceStore({
       createSession: () => session,
@@ -223,60 +226,87 @@ describe("createWorkspaceStore", () => {
     workspace.getState().openBoard("/boards/a.board.yaml");
     session.boardStore.setState(state);
 
-    expect(workspace.getState().closeTab(workspace.getState().tabs[0].id)).toBe(
-      false,
-    );
+    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
+      .resolves.toBe(
+        false,
+      );
     expect(confirmCloseBoard).toHaveBeenCalledOnce();
   });
 
-  it("keeps the tab when the viewer refuses to close", () => {
-    const session = makeSession({ close: () => false });
+  it("picks the next tab from the tabs as they are once the close is confirmed", async () => {
+    let answer!: (close: boolean) => void;
+    const workspace = createWorkspaceStore({
+      createSession: () => makeSession(),
+      confirmCloseBoard: () => new Promise((resolve) => (answer = resolve)),
+    });
+    workspace.getState().openBoard("/boards/a.board.yaml");
+    workspace.getState().openBoard("/boards/b.board.yaml");
+    const [a, b] = workspace.getState().tabs;
+    b.session.boardStore.setState({ isSaving: true });
+
+    const closing = workspace.getState().closeTab(b.id);
+    workspace.getState().activateTab(a.id);
+    workspace.getState().openBoard("/boards/c.board.yaml");
+    answer(true);
+
+    await expect(closing).resolves.toBe(true);
+    const c = workspace.getState().tabs[1];
+    expect(workspace.getState().tabs.map((tab) => tab.id)).toEqual([
+      a.id,
+      c.id,
+    ]);
+    expect(workspace.getState().activeTabId).toBe(c.id);
+  });
+
+  it("keeps the tab when the viewer refuses to close", async () => {
+    const session = makeSession({ close: () => Promise.resolve(false) });
     const workspace = createWorkspaceStore({
       createSession: () => session,
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
     workspace.getState().openBoard("/boards/a.board.yaml");
 
-    expect(workspace.getState().closeTab(workspace.getState().tabs[0].id)).toBe(
-      false,
-    );
+    await expect(workspace.getState().closeTab(workspace.getState().tabs[0].id))
+      .resolves.toBe(
+        false,
+      );
     expect(workspace.getState().tabs).toHaveLength(1);
   });
 
-  it("selects the right neighbor, then the left, then the start screen", () => {
+  it("selects the right neighbor, then the left, then the start screen", async () => {
     const workspace = createWorkspaceStore({
       createSession: () => makeSession(),
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
     for (const path of ["a", "b", "c"]) workspace.getState().openBoard(path);
     const [a, b, c] = workspace.getState().tabs;
 
     workspace.getState().activateTab(b.id);
-    expect(workspace.getState().closeTab(b.id)).toBe(true);
+    await expect(workspace.getState().closeTab(b.id)).resolves.toBe(true);
     expect(workspace.getState().activeTabId).toBe(c.id);
-    expect(workspace.getState().closeTab(c.id)).toBe(true);
+    await expect(workspace.getState().closeTab(c.id)).resolves.toBe(true);
     expect(workspace.getState().activeTabId).toBe(a.id);
-    expect(workspace.getState().closeTab(a.id)).toBe(true);
+    await expect(workspace.getState().closeTab(a.id)).resolves.toBe(true);
     expect(workspace.getState().activeTabId).toBeUndefined();
   });
 
-  it("preserves the active tab when another tab closes", () => {
+  it("preserves the active tab when another tab closes", async () => {
     const workspace = createWorkspaceStore({
       createSession: () => makeSession(),
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
     workspace.getState().openBoard("a");
     workspace.getState().openBoard("b");
     const [a, b] = workspace.getState().tabs;
 
-    expect(workspace.getState().closeTab(a.id)).toBe(true);
+    await expect(workspace.getState().closeTab(a.id)).resolves.toBe(true);
     expect(workspace.getState().activeTabId).toBe(b.id);
   });
 
   it("shows the start screen without discarding open tabs", () => {
     const workspace = createWorkspaceStore({
       createSession: () => makeSession(),
-      confirmCloseBoard: () => true,
+      confirmCloseBoard: () => Promise.resolve(true),
     });
     workspace.getState().openBoard("a");
     const tab = workspace.getState().tabs[0];
