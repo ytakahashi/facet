@@ -291,7 +291,6 @@ export function MarkdownViewer() {
     if (isInsideDialog(event.target)) return;
     event.preventDefault();
     contextMenu.show(
-      { x: event.clientX, y: event.clientY },
       buildViewerContextMenu(card, board, canRefresh, {
         copyText,
         reveal,

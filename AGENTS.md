@@ -1,10 +1,9 @@
 # Working on Facet
 
 Facet is a local-first Markdown kanban desktop app for macOS built on
-[Tauri](https://tauri.app/). It is moving off
-[Deno Desktop](https://docs.deno.com/runtime/desktop/): the native menus are not
-wired to Tauri yet and do not appear, and `desktop/` stays in the tree, unused,
-until they are.
+[Tauri](https://tauri.app/). The app no longer uses its former
+[Deno Desktop](https://docs.deno.com/runtime/desktop/) host in `desktop/`, which
+stays in the tree until it is removed.
 
 `ARCHITECTURE.md` describes the structure most of this follows from; read it
 first.
