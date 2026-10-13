@@ -1,7 +1,7 @@
-import { DenoApplicationMenu } from "../infrastructure/denoApplicationMenu.ts";
-import { DenoContextMenu } from "../infrastructure/denoContextMenu.ts";
 import { HostFileSystemAdapter } from "../infrastructure/hostFileSystemAdapter.ts";
 import { HostFinder } from "../infrastructure/hostFinder.ts";
+import { NativeApplicationMenu } from "../infrastructure/nativeApplicationMenu.ts";
+import { NativeContextMenu } from "../infrastructure/nativeContextMenu.ts";
 import { confirmAction, showError } from "../infrastructure/nativeDialogs.ts";
 import { WebClipboard } from "../infrastructure/webClipboard.ts";
 import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
@@ -42,8 +42,8 @@ import { createWorkspaceStore } from "../presentation/store/workspaceStore.ts";
 const fileSystem = new HostFileSystemAdapter();
 const boardRepository = new YamlBoardRepository(fileSystem);
 const configRepository = new YamlConfigRepository(fileSystem);
-const applicationMenu = new DenoApplicationMenu(fileSystem);
-const contextMenu = new DenoContextMenu();
+const applicationMenu = new NativeApplicationMenu(fileSystem);
+const contextMenu = new NativeContextMenu();
 const clipboard = new WebClipboard();
 const finder = new HostFinder();
 
@@ -158,10 +158,4 @@ export function startApplicationMenu(): void {
     newBoard: () => appDependencies.newBoardDialog.getState().open(),
     openRecent: (path) => appDependencies.workspace.getState().openBoard(path),
   });
-}
-
-// Called once at startup, like startApplicationMenu: the host queue serves a
-// single waiter, so exactly one loop may collect context menu clicks.
-export function startContextMenu(): void {
-  contextMenu.start();
 }

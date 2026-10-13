@@ -143,7 +143,6 @@ export function Column(
     // Handled here, so no enclosing element opens a menu of its own as well.
     event.stopPropagation();
     contextMenu.show(
-      { x: event.clientX, y: event.clientY },
       buildColumnContextMenu({
         addCard: () => onAddCard(column.id),
         rename: () => setIsEditingName(true),

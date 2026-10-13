@@ -106,7 +106,6 @@ export function BoardScreen({ board }: { board: Board }) {
     event.stopPropagation();
 
     contextMenu.show(
-      { x: event.clientX, y: event.clientY },
       buildCardContextMenu(card, board, {
         copyText,
         reveal,
@@ -121,7 +120,6 @@ export function BoardScreen({ board }: { board: Board }) {
     if (isInsideDialog(event.target)) return;
     event.preventDefault();
     contextMenu.show(
-      { x: event.clientX, y: event.clientY },
       buildBoardContextMenu(
         boardPath,
         canRefresh,

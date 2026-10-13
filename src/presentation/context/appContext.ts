@@ -36,14 +36,11 @@ export type ContextMenuEntry =
   | { kind: "submenu"; label: string; entries: readonly ContextMenuEntry[] }
   | { kind: "separator" };
 
-// A native menu at a point in the viewport (a MouseEvent's clientX/clientY).
-// Nothing reports a menu dismissed without a choice, so show() returns
-// nothing to wait for: a chosen entry's onSelect is the only outcome.
+// A native menu at the mouse pointer, so it is only for menus opened by a
+// pointer event. Nothing reports a menu dismissed without a choice, so show()
+// returns nothing to wait for: a chosen entry's onSelect is the only outcome.
 export interface ContextMenu {
-  show(
-    position: { x: number; y: number },
-    entries: readonly ContextMenuEntry[],
-  ): void;
+  show(entries: readonly ContextMenuEntry[]): void;
 }
 
 // App-wide services share one context: adding one requires a field and a hook,
