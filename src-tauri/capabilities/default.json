@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the Facet webview may call. The app's own commands need no entry here; plugin commands each do.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-confirm",
+    "dialog:allow-message"
+  ]
+}

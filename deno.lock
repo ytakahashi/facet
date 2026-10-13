@@ -18,6 +18,9 @@
     "npm:@atlaskit/pragmatic-drag-and-drop-auto-scroll@3.0.0": "3.0.0",
     "npm:@atlaskit/pragmatic-drag-and-drop-hitbox@2.0.0": "2.0.0",
     "npm:@atlaskit/pragmatic-drag-and-drop@2.0.1": "2.0.1",
+    "npm:@tauri-apps/api@2.12.3": "2.12.3",
+    "npm:@tauri-apps/cli@2.12.2": "2.12.2",
+    "npm:@tauri-apps/plugin-dialog@2.8.2": "2.8.2",
     "npm:@types/node@26.1.1": "26.1.1",
     "npm:@types/react-dom@19.2.3": "19.2.3_@types+react@19.2.17",
     "npm:@types/react@19.2.17": "19.2.17",
@@ -376,6 +379,87 @@
     },
     "@standard-schema/spec@1.1.0": {
       "integrity": "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="
+    },
+    "@tauri-apps/api@2.12.3": {
+      "integrity": "sha512-9s0PKw0p4r3kFq92jhpivYSp+cSht15o0gXpZxuQd0+dV9KCexEVkNaLELVoLdJWyoH4KlfQo5h3W2LIM8siJg=="
+    },
+    "@tauri-apps/cli-darwin-arm64@2.12.2": {
+      "integrity": "sha512-Lk3zaBTfzNvA7670Al5PNgo2M/95uaDPe1yp+ILJeDOmol87XiYuK5E5+FUbK5e6U6OORx9qpZdOo2U+5tETtQ==",
+      "os": ["darwin"],
+      "cpu": ["arm64"]
+    },
+    "@tauri-apps/cli-darwin-x64@2.12.2": {
+      "integrity": "sha512-2CyYjJ833JB3sKRz4B0W/Tv4oOVC16ws1bxdSCWj1XvrmanWwvZi99e5tNIoCHwHhcOm0jh+sh0PCGQyls6Z+w==",
+      "os": ["darwin"],
+      "cpu": ["x64"]
+    },
+    "@tauri-apps/cli-linux-arm-gnueabihf@2.12.2": {
+      "integrity": "sha512-uvt2xbone4JftKarelssi86Kqnl7JiG1Smh5+Ae+nZmtM+JUhTGmqkcqfUPXRW8Ygwog92POZvd4oGDN9j8eXQ==",
+      "os": ["linux"],
+      "cpu": ["arm"]
+    },
+    "@tauri-apps/cli-linux-arm64-gnu@2.12.2": {
+      "integrity": "sha512-DZlDJ24u3tlocKOYqzR+b2M+Qr+5WFcoMBZ7EfdhHN5j3ZXwBBpms4G4gyNvPCrak5vMzmdZ65ecBXPJcC+5sA==",
+      "os": ["linux"],
+      "cpu": ["arm64"]
+    },
+    "@tauri-apps/cli-linux-arm64-musl@2.12.2": {
+      "integrity": "sha512-pb+RTZUYH/p0gR4j4ecCCq+FNfz3W3eKuUQvVEBn7MQZx6DzfLO7FaYzt2NyDKWpdNN3lP10mdzOvw3R5P5aAQ==",
+      "os": ["linux"],
+      "cpu": ["arm64"]
+    },
+    "@tauri-apps/cli-linux-riscv64-gnu@2.12.2": {
+      "integrity": "sha512-nidEvDUJyHYNbIv9MUk6KiEix8IXfRh4Wj2G2SA5g8nFmgbBCwazUNWYiG/LhNeNbfZpBMLerRBUtoQ5K0GidA==",
+      "os": ["linux"],
+      "cpu": ["riscv64"]
+    },
+    "@tauri-apps/cli-linux-x64-gnu@2.12.2": {
+      "integrity": "sha512-gkXyYn3w+Xfc8nz/DleEbkm1M7bBuU2cejqUXNmI98cA2P5kp+oPmS4ALTorb1FaNWjpsKoYZBWsbS9BXxYFkQ==",
+      "os": ["linux"],
+      "cpu": ["x64"]
+    },
+    "@tauri-apps/cli-linux-x64-musl@2.12.2": {
+      "integrity": "sha512-MrjgoZ09s8Hsn99XvxSNvK8NQTZxi7XiyK3FxxytzfHgz2jb3qUT69CZtsokRkN/zdi9rCgrMtq+w9XNICjcfQ==",
+      "os": ["linux"],
+      "cpu": ["x64"]
+    },
+    "@tauri-apps/cli-win32-arm64-msvc@2.12.2": {
+      "integrity": "sha512-BR+CYM7iF3lkfyTtVkwMQU/s9hwegLpj3UqDjaxKCPmixQCa1csBBPy3C75V+FhLtOjIXNna4Gt6Vm9oxbV+qA==",
+      "os": ["win32"],
+      "cpu": ["arm64"]
+    },
+    "@tauri-apps/cli-win32-ia32-msvc@2.12.2": {
+      "integrity": "sha512-zODJo9l3TbNBM+GrO/yPqGeELNMK5cjIc+QHh1WQc3l8tD+jDZGTQyYuAxViCsM6Uh5uWJ//RnCZG9LXrvsXww==",
+      "os": ["win32"],
+      "cpu": ["ia32"]
+    },
+    "@tauri-apps/cli-win32-x64-msvc@2.12.2": {
+      "integrity": "sha512-cQXI2ZaZmwBDt0XATCqASVanYizxkEE3ceQVlVHXaQ51HzsQUWA04c9Nz7LrrY2lgAu3jFMyat+8Yz3Z2R2qBA==",
+      "os": ["win32"],
+      "cpu": ["x64"]
+    },
+    "@tauri-apps/cli@2.12.2": {
+      "integrity": "sha512-PMSppzAnlT+BvZtRKuidxjRSm2r5t8kDpJ/czmmQUa0AtDNTwrjLE8vApK3phCWGg7isfnYL46Dl1jB4ArI0hA==",
+      "optionalDependencies": [
+        "@tauri-apps/cli-darwin-arm64",
+        "@tauri-apps/cli-darwin-x64",
+        "@tauri-apps/cli-linux-arm-gnueabihf",
+        "@tauri-apps/cli-linux-arm64-gnu",
+        "@tauri-apps/cli-linux-arm64-musl",
+        "@tauri-apps/cli-linux-riscv64-gnu",
+        "@tauri-apps/cli-linux-x64-gnu",
+        "@tauri-apps/cli-linux-x64-musl",
+        "@tauri-apps/cli-win32-arm64-msvc",
+        "@tauri-apps/cli-win32-ia32-msvc",
+        "@tauri-apps/cli-win32-x64-msvc"
+      ],
+      "bin": true
+    },
+    "@tauri-apps/plugin-dialog@2.8.2": {
+      "integrity": "sha512-LFqp8OTx0bHOwhKRhMMDyRDlo/2IO5XxoOclpf8+yvjAfM2ytVdbB6tk63dBlicsR8pRw38maj/GxrU6cW8mXw==",
+      "dependencies": [
+        "@tauri-apps/api"
+      ]
     },
     "@tybys/wasm-util@0.10.3": {
       "integrity": "sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==",
@@ -2230,6 +2314,9 @@
         "npm:@atlaskit/pragmatic-drag-and-drop-auto-scroll@3.0.0",
         "npm:@atlaskit/pragmatic-drag-and-drop-hitbox@2.0.0",
         "npm:@atlaskit/pragmatic-drag-and-drop@2.0.1",
+        "npm:@tauri-apps/api@2.12.3",
+        "npm:@tauri-apps/cli@2.12.2",
+        "npm:@tauri-apps/plugin-dialog@2.8.2",
         "npm:@types/node@26.1.1",
         "npm:@types/react-dom@19.2.3",
         "npm:@types/react@19.2.17",

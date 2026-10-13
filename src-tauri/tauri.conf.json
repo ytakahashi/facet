@@ -4,12 +4,28 @@
   "version": "0.1.0",
   "identifier": "net.ytakahashi.facet",
   "build": {
-    "frontendDist": "../dist"
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "deno task dev",
+    "beforeBuildCommand": "deno task build"
   },
   "app": {
-    "windows": []
+    "windows": [
+      {
+        "label": "main",
+        "title": "Facet",
+        "width": 1200,
+        "height": 800,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
   },
   "bundle": {
-    "active": false
+    "active": true,
+    "targets": ["app"],
+    "icon": ["icons/icon.png", "../build/icon.icns"]
   }
 }
