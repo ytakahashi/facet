@@ -55,5 +55,16 @@ jobs:
       - name: Install dependencies
         run: deno install --frozen
 
+      # Installs the toolchain rust-toolchain.toml pins, with its components.
+      # Rust runs on this job only: the tauri crate needs the macOS WebView.
+      - name: Install Rust toolchain
+        run: rustup toolchain install
+
+      - name: Lint Rust
+        run: deno task lint:rust
+
+      - name: Test Rust
+        run: deno task test:rust
+
       - name: Build desktop app
         run: deno task desktop
