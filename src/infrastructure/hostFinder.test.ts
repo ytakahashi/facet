@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import * as hostCommands from "./hostCommands.ts";
 import { HostFinder } from "./hostFinder.ts";
 

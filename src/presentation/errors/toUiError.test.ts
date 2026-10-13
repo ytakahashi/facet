@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "./toUiError.ts";
 

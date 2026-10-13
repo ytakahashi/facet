@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { resolveFindShortcut } from "./findShortcut.ts";
 
 function shortcut(key: string, overrides: Partial<KeyboardEvent> = {}) {

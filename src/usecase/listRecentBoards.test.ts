@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { AppConfig } from "../domain/appConfig.ts";
 import type { ConfigRepository } from "../domain/configRepository.ts";
 import { listRecentBoards } from "./listRecentBoards.ts";

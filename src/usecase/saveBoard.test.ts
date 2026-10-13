@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { Board } from "../domain/board.ts";
 import type { BoardRepository } from "../domain/boardRepository.ts";
 import { FileSystemError } from "../domain/fileSystemPort.ts";

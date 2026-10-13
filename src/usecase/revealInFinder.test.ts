@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { FinderError, type FinderPort } from "../domain/finderPort.ts";
 import { revealInFinder } from "./revealInFinder.ts";
 

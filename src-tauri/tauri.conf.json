@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "deno task dev",
-    "beforeBuildCommand": "deno task build"
+    "beforeDevCommand": "vp dev",
+    "beforeBuildCommand": "vp run build"
   },
   "app": {
     "windows": [
@@ -25,7 +25,12 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app"],
-    "icon": ["icons/icon.png", "../build/icon.icns"]
+    "targets": [
+      "app"
+    ],
+    "icon": [
+      "icons/icon.png",
+      "../build/icon.icns"
+    ]
   }
 }

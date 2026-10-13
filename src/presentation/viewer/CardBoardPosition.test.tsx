@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { Board } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import { CardBoardPosition } from "./CardBoardPosition.tsx";

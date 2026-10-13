@@ -71,18 +71,19 @@ renders in the system WebView rather than shipping a browser of its own.
 
 ## Getting started
 
-Requires macOS, [Deno](https://deno.com/) 2.9.7 or newer, and
-[rustup](https://rustup.rs/). The Rust version is pinned in
-`rust-toolchain.toml`, and rustup installs it on first use.
+Requires macOS, the [Vite+](https://viteplus.dev/) CLI (`vp`), and
+[rustup](https://rustup.rs/). The versions are pinned in the project: Node.js
+and pnpm in `package.json`'s `devEngines`, which `vp` downloads on first use,
+and Rust in `rust-toolchain.toml`, which rustup installs on first use.
 
 ```sh
-deno install          # install the dependencies
-deno task desktop     # build the app bundle
+vp install            # install the dependencies
+vp run desktop        # build the app bundle
 open src-tauri/target/release/bundle/macos/Facet.app   # launch it
 ```
 
-`deno task desktop` only builds `Facet.app`; it does not start the app.
-`deno task desktop:dev` starts it against the Vite dev server instead.
+`vp run desktop` only builds `Facet.app`; it does not start the app.
+`vp run desktop:dev` starts it against the Vite dev server instead.
 
 Recently opened boards are remembered in
 `~/Library/Application Support/Facet/config.yaml`.

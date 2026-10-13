@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { CreateBoardInput } from "../../usecase/createBoard.ts";
 import type { BoardSession } from "../context/appContext.ts";
 import type { BoardState } from "./boardStore.ts";

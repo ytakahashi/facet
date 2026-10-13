@@ -1,5 +1,5 @@
 import { confirm, message } from "@tauri-apps/plugin-dialog";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { confirmAction, showError } from "./nativeDialogs.ts";
 
 vi.mock("@tauri-apps/plugin-dialog");

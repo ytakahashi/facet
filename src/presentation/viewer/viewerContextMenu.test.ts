@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { Board } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import { buildViewerContextMenu } from "./viewerContextMenu.ts";

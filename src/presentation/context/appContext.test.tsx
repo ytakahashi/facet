@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { create } from "zustand";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { BoardState } from "../store/boardStore.ts";
 import { createBoardViewStore } from "../store/boardViewStore.ts";
 import type { FilterState } from "../store/filterStore.ts";

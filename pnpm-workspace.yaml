@@ -1,0 +1,14 @@
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@1.1.0
+  vite-plus: 1.1.0
+overrides:
+  vite@*: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+  allowedVersions:
+    vite: "*"
+# Only versions published at least a day ago are installed: a hijacked release
+# is usually caught and pulled within that window. Set explicitly, so an
+# install fails rather than falling back to a younger version.
+minimumReleaseAge: 1440

@@ -1,4 +1,4 @@
-name: Deno
+name: CI
 
 on:
   push:
@@ -21,39 +21,44 @@ jobs:
       - name: Setup repo
         uses: actions/checkout@v7
 
+      # Pinned to a commit: the action's moving v1 tag is frozen and no longer
+      # updated. Node, pnpm and Vite+ follow the versions the project pins
+      # (package.json devEngines, pnpm-workspace.yaml catalog).
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
+        with:
+          cache: true
+          run-install: true
+
+      # Still needed for formatting and the board-validation skill's tests.
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.9.7
           cache: true
 
-      - name: Setup
-        run: deno install --frozen
-
-      - name: Lint
-        run: deno task lint
+      - name: Check
+        run: vp run check
 
       - name: Check code format
         run: deno fmt --check
 
       - name: Run Tests
-        run: deno task test
+        run: vp run test
 
       - name: Build
-        run: deno task build
+        run: vp run build
 
   desktop-build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
 
-      - uses: denoland/setup-deno@v2
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
         with:
-          deno-version: v2.9.7
           cache: true
-
-      - name: Install dependencies
-        run: deno install --frozen
+          run-install: true
 
       # Installs the toolchain rust-toolchain.toml pins, with its components.
       # Rust runs on this job only: the tauri crate needs the macOS WebView.
@@ -61,10 +66,10 @@ jobs:
         run: rustup toolchain install
 
       - name: Lint Rust
-        run: deno task lint:rust
+        run: vp run lint:rust
 
       - name: Test Rust
-        run: deno task test:rust
+        run: vp run test:rust
 
       - name: Build desktop app
-        run: deno task desktop
+        run: vp run desktop

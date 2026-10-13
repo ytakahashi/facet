@@ -1,5 +1,5 @@
 import { attachClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { CardDragData, CardListDropData } from "../shared/dragData.ts";
 import { resolveMove } from "./resolveMove.ts";
 
