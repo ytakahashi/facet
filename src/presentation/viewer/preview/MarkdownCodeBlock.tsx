@@ -10,9 +10,11 @@ interface MarkdownCodeBlockProps {
   onCopy: (text: string) => Promise<void>;
 }
 
-export function MarkdownCodeBlock(
-  { text, children, onCopy }: MarkdownCodeBlockProps,
-) {
+export function MarkdownCodeBlock({
+  text,
+  children,
+  onCopy,
+}: MarkdownCodeBlockProps) {
   // A counter rather than a flag: copying again while "Copied" is showing
   // must restart the timer, which an unchanged `true` would not do.
   const [copyCount, setCopyCount] = useState(0);
@@ -41,9 +43,11 @@ export function MarkdownCodeBlock(
       <button
         type="button"
         data-find-ignore
-        className={isCopied
-          ? "markdown-preview__copy markdown-preview__copy--copied"
-          : "markdown-preview__copy"}
+        className={
+          isCopied
+            ? "markdown-preview__copy markdown-preview__copy--copied"
+            : "markdown-preview__copy"
+        }
         aria-label={label}
         title={label}
         onClick={copy}

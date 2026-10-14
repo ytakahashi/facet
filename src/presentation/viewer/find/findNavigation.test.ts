@@ -5,10 +5,14 @@ import {
   nearestFindIndex,
 } from "./findNavigation.ts";
 
-const ranges = [{ start: 2, end: 4 }, { start: 10, end: 12 }, {
-  start: 18,
-  end: 20,
-}];
+const ranges = [
+  { start: 2, end: 4 },
+  { start: 10, end: 12 },
+  {
+    start: 18,
+    end: 20,
+  },
+];
 
 describe("find navigation", () => {
   it("wraps in either direction, including a single result", () => {

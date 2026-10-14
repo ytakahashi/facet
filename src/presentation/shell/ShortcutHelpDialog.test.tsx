@@ -22,10 +22,10 @@ function renderHelp() {
 
 // Mirrors the escaping renderToStaticMarkup applies to text content.
 function escapeHtml(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(
-    ">",
-    "&gt;",
-  );
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 describe("ShortcutHelpDialog", () => {

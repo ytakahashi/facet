@@ -50,10 +50,12 @@ describe("createBoard", () => {
     const result = await createBoard(input, { fileSystem, boardRepository });
 
     expect(result).toBe("/home/user/boards/facet.board.yaml");
-    expect(create).toHaveBeenCalledWith(
-      "/home/user/boards/facet.board.yaml",
-      { version: 1, name: "My Board", labels: [], columns: [] },
-    );
+    expect(create).toHaveBeenCalledWith("/home/user/boards/facet.board.yaml", {
+      version: 1,
+      name: "My Board",
+      labels: [],
+      columns: [],
+    });
   });
 
   it("appends the yaml extension to an extensionless file name", async () => {
@@ -127,13 +129,15 @@ describe("createBoard", () => {
   });
 
   it("reports an exclusive-create race as an already-exists error", async () => {
-    const create = vi.fn().mockRejectedValue(
-      new FileSystemError(
-        "already-exists",
-        "create-file",
-        "/home/user/boards/facet.board.yaml",
-      ),
-    );
+    const create = vi
+      .fn()
+      .mockRejectedValue(
+        new FileSystemError(
+          "already-exists",
+          "create-file",
+          "/home/user/boards/facet.board.yaml",
+        ),
+      );
     const boardRepository = makeBoardRepository({ create });
     const fileSystem = makeFileSystem();
     const input = {

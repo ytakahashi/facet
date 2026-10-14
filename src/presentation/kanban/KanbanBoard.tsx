@@ -19,9 +19,12 @@ interface KanbanBoardProps {
   onCardContextMenu: (card: CardModel, event: MouseEvent<HTMLElement>) => void;
 }
 
-export function KanbanBoard(
-  { board, onDeleteCard, onRepairCard, onCardContextMenu }: KanbanBoardProps,
-) {
+export function KanbanBoard({
+  board,
+  onDeleteCard,
+  onRepairCard,
+  onCardContextMenu,
+}: KanbanBoardProps) {
   const columnsRef = useRef<HTMLDivElement>(null);
   const moveCard = useBoardStore((state) => state.moveCard);
   const moveColumn = useBoardStore((state) => state.moveColumn);

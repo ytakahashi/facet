@@ -25,8 +25,8 @@ function board(columns: Board["columns"], labels: string[] = []): Board {
 }
 
 function paths(value: Board, sort?: CardTableSort) {
-  return listCardTableRows(value, EMPTY_CARD_FILTER, sort).map((row) =>
-    row.card.path
+  return listCardTableRows(value, EMPTY_CARD_FILTER, sort).map(
+    (row) => row.card.path,
   );
 }
 
@@ -38,9 +38,12 @@ describe("listCardTableRows", () => {
     ]);
 
     expect(
-      listCardTableRows(value, EMPTY_CARD_FILTER, undefined).map((
-        row,
-      ) => [row.card.path, row.column.id, row.columnIndex, row.cardIndex]),
+      listCardTableRows(value, EMPTY_CARD_FILTER, undefined).map((row) => [
+        row.card.path,
+        row.column.id,
+        row.columnIndex,
+        row.cardIndex,
+      ]),
     ).toEqual([
       ["b", "left", 0, 0],
       ["a", "left", 0, 1],
@@ -49,15 +52,17 @@ describe("listCardTableRows", () => {
   });
 
   it("sorts title and path naturally without case distinctions", () => {
-    const value = board([{
-      id: "one",
-      name: "One",
-      cards: [
-        card("file-10.md", { displayTitle: "task-10" }),
-        card("File-2.md", { displayTitle: "Task-2" }),
-        card("file-1.md", { displayTitle: "task-1" }),
-      ],
-    }]);
+    const value = board([
+      {
+        id: "one",
+        name: "One",
+        cards: [
+          card("file-10.md", { displayTitle: "task-10" }),
+          card("File-2.md", { displayTitle: "Task-2" }),
+          card("file-1.md", { displayTitle: "task-1" }),
+        ],
+      },
+    ]);
 
     expect(paths(value, { key: "title", direction: "asc" })).toEqual([
       "file-1.md",
@@ -112,19 +117,24 @@ describe("listCardTableRows", () => {
   });
 
   it("sorts labels by registry sequence, prefixes, then unknown names", () => {
-    const value = board([{
-      id: "one",
-      name: "One",
-      cards: [
-        card("empty"),
-        card("unknown-z", { labels: ["zulu"] }),
-        card("bug-docs", { labels: ["docs", "bug"] }),
-        card("feature", { labels: ["feature"] }),
-        card("bug", { labels: ["bug"] }),
-        card("unknown-a", { labels: ["alpha"] }),
-        card("bug-feature", { labels: ["feature", "bug"] }),
+    const value = board(
+      [
+        {
+          id: "one",
+          name: "One",
+          cards: [
+            card("empty"),
+            card("unknown-z", { labels: ["zulu"] }),
+            card("bug-docs", { labels: ["docs", "bug"] }),
+            card("feature", { labels: ["feature"] }),
+            card("bug", { labels: ["bug"] }),
+            card("unknown-a", { labels: ["alpha"] }),
+            card("bug-feature", { labels: ["feature", "bug"] }),
+          ],
+        },
       ],
-    }], ["bug", "feature", "docs"]);
+      ["bug", "feature", "docs"],
+    );
 
     expect(paths(value, { key: "labels", direction: "asc" })).toEqual([
       "bug",
@@ -164,10 +174,14 @@ describe("listCardTableRows", () => {
     ]);
 
     expect(
-      listCardTableRows(value, {
-        labels: new Set(["bug"]),
-        hiddenColumnIds: new Set(["right"]),
-      }, undefined).map((row) => row.card.path),
+      listCardTableRows(
+        value,
+        {
+          labels: new Set(["bug"]),
+          hiddenColumnIds: new Set(["right"]),
+        },
+        undefined,
+      ).map((row) => row.card.path),
     ).toEqual(["match"]);
   });
 });

@@ -18,10 +18,12 @@ describe("suggestMarkdownFileName", () => {
 
 describe("resolveExistingMarkdownPath", () => {
   it("resolves Markdown in a board subdirectory", () => {
-    expect(resolveExistingMarkdownPath(
-      "/board/development.board.yaml",
-      "/board/ideas/existing.md",
-    )).toEqual({
+    expect(
+      resolveExistingMarkdownPath(
+        "/board/development.board.yaml",
+        "/board/ideas/existing.md",
+      ),
+    ).toEqual({
       absolutePath: "/board/ideas/existing.md",
       relativePath: "ideas/existing.md",
     });
@@ -46,9 +48,7 @@ describe("resolveExistingMarkdownPath", () => {
         "/board/existing.txt",
       );
 
-    expect(act).toThrow(
-      expect.objectContaining({ kind: "not-markdown-file" }),
-    );
+    expect(act).toThrow(expect.objectContaining({ kind: "not-markdown-file" }));
   });
 });
 

@@ -40,7 +40,7 @@ describe("buildContextMenu", () => {
     expect(menu[2]).toMatchObject({ text: "More" });
     select(menu[0]);
     select(
-      "items" in menu[2] ? menu[2].items?.[0] as ContextMenuItem : undefined,
+      "items" in menu[2] ? (menu[2].items?.[0] as ContextMenuItem) : undefined,
     );
     expect(first).toHaveBeenCalledOnce();
     expect(nested).toHaveBeenCalledOnce();

@@ -15,14 +15,16 @@ interface DeleteCardDialogProps {
 // opt-in and off by default: dropping the board's reference is reversible by
 // re-adding the same file, while deleting it is not - and the same Markdown
 // may well be referenced by another board this one cannot see.
-export function DeleteCardDialog(
-  { card, open, onClose }: DeleteCardDialogProps,
-) {
+export function DeleteCardDialog({
+  card,
+  open,
+  onClose,
+}: DeleteCardDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const removeCard = useBoardStore((state) => state.removeCard);
   const discardCard = useMarkdownViewer((state) => state.discardCard);
-  const hasUnsavedChanges = useMarkdownViewer((state) =>
-    state.selectedPath === card.path && isMarkdownDirty(state)
+  const hasUnsavedChanges = useMarkdownViewer(
+    (state) => state.selectedPath === card.path && isMarkdownDirty(state),
   );
   // A save started before this dialog opened can still be in flight (the modal
   // blocks the Save button, not a write already on its way). Deleting now
@@ -138,22 +140,22 @@ export function DeleteCardDialog(
           <button type="button" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </button>
-          {
-            /* The label follows the checkbox so the button never reads as a
-              plain "Delete" while it is about to remove a file too. */
-          }
+          {/* The label follows the checkbox so the button never reads as a
+              plain "Delete" while it is about to remove a file too. */}
           <button
             type="submit"
-            className={deleteFile
-              ? "delete-card-dialog__confirm delete-card-dialog__confirm--destructive"
-              : "delete-card-dialog__confirm"}
+            className={
+              deleteFile
+                ? "delete-card-dialog__confirm delete-card-dialog__confirm--destructive"
+                : "delete-card-dialog__confirm"
+            }
             disabled={isSubmitting || isSaving}
           >
             {isSubmitting
               ? "Deleting…"
               : deleteFile
-              ? "Delete card and file"
-              : "Remove from board"}
+                ? "Delete card and file"
+                : "Remove from board"}
           </button>
         </div>
       </form>

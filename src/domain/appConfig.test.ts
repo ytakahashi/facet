@@ -28,13 +28,15 @@ describe("addRecentBoard", () => {
 
     const result = addRecentBoard(config, "/boards/c.board.yaml");
 
-    expect(result).toEqual(makeConfig({
-      recentBoards: [
-        "/boards/c.board.yaml",
-        "/boards/a.board.yaml",
-        "/boards/b.board.yaml",
-      ],
-    }));
+    expect(result).toEqual(
+      makeConfig({
+        recentBoards: [
+          "/boards/c.board.yaml",
+          "/boards/a.board.yaml",
+          "/boards/b.board.yaml",
+        ],
+      }),
+    );
   });
 
   it("moves an already-recorded path to the front instead of duplicating it", () => {
@@ -48,13 +50,15 @@ describe("addRecentBoard", () => {
 
     const result = addRecentBoard(config, "/boards/b.board.yaml");
 
-    expect(result).toEqual(makeConfig({
-      recentBoards: [
-        "/boards/b.board.yaml",
-        "/boards/a.board.yaml",
-        "/boards/c.board.yaml",
-      ],
-    }));
+    expect(result).toEqual(
+      makeConfig({
+        recentBoards: [
+          "/boards/b.board.yaml",
+          "/boards/a.board.yaml",
+          "/boards/c.board.yaml",
+        ],
+      }),
+    );
   });
 
   it("truncates the list at the maximum of 10 entries", () => {
@@ -84,9 +88,11 @@ describe("removeRecentBoard", () => {
 
     const result = removeRecentBoard(config, "/boards/b.board.yaml");
 
-    expect(result).toEqual(makeConfig({
-      recentBoards: ["/boards/a.board.yaml", "/boards/c.board.yaml"],
-    }));
+    expect(result).toEqual(
+      makeConfig({
+        recentBoards: ["/boards/a.board.yaml", "/boards/c.board.yaml"],
+      }),
+    );
   });
 
   it("leaves the list unchanged when the path is not recorded", () => {

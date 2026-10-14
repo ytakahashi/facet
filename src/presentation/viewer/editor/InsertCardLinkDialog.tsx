@@ -24,18 +24,23 @@ function optionId(index: number): string {
   return `insert-card-link-option-${index}`;
 }
 
-export function InsertCardLinkDialog(
-  { board, fromPath, open, onClose, onSelect }: InsertCardLinkDialogProps,
-) {
+export function InsertCardLinkDialog({
+  board,
+  fromPath,
+  open,
+  onClose,
+  onSelect,
+}: InsertCardLinkDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const selectedRef = useRef<HTMLLIElement>(null);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const results = useMemo(
     () =>
-      searchCardsByTitle(board, query).filter((hit) =>
-        isLinkableCardPath(hit.card.path) &&
-        !isSameCardPath(hit.card.path, fromPath)
+      searchCardsByTitle(board, query).filter(
+        (hit) =>
+          isLinkableCardPath(hit.card.path) &&
+          !isSameCardPath(hit.card.path, fromPath),
       ),
     [board, fromPath, query],
   );
@@ -107,9 +112,9 @@ export function InsertCardLinkDialog(
           role="combobox"
           aria-expanded
           aria-controls={RESULTS_ID}
-          aria-activedescendant={results.length > 0
-            ? optionId(activeIndex)
-            : undefined}
+          aria-activedescendant={
+            results.length > 0 ? optionId(activeIndex) : undefined
+          }
           aria-label="Insert a link to a card"
           placeholder="Insert a link to a card"
           value={query}
@@ -118,50 +123,52 @@ export function InsertCardLinkDialog(
             setSelectedIndex(0);
           }}
         />
-        {results.length === 0
-          ? <p className="card-search-dialog__empty">No cards to link</p>
-          : (
-            <ul
-              id={RESULTS_ID}
-              role="listbox"
-              aria-label="Cards to link"
-              className="card-search-dialog__results"
-              // Result rows are not focusable. Keep focus in the input so
-              // typing immediately after a click still updates the query.
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              {results.map((hit, index) => (
-                <li
-                  key={hit.card.path}
-                  id={optionId(index)}
-                  role="option"
-                  aria-selected={index === activeIndex}
-                  ref={index === activeIndex ? selectedRef : undefined}
-                  className={index === activeIndex
+        {results.length === 0 ? (
+          <p className="card-search-dialog__empty">No cards to link</p>
+        ) : (
+          <ul
+            id={RESULTS_ID}
+            role="listbox"
+            aria-label="Cards to link"
+            className="card-search-dialog__results"
+            // Result rows are not focusable. Keep focus in the input so
+            // typing immediately after a click still updates the query.
+            onMouseDown={(event) => event.preventDefault()}
+          >
+            {results.map((hit, index) => (
+              <li
+                key={hit.card.path}
+                id={optionId(index)}
+                role="option"
+                aria-selected={index === activeIndex}
+                ref={index === activeIndex ? selectedRef : undefined}
+                className={
+                  index === activeIndex
                     ? "card-search-dialog__result card-search-dialog__result--selected"
-                    : "card-search-dialog__result"}
-                  onClick={() => selectAndClose(hit.card)}
-                >
-                  <span className="card-search-dialog__result-title">
-                    {hit.card.displayTitle}
+                    : "card-search-dialog__result"
+                }
+                onClick={() => selectAndClose(hit.card)}
+              >
+                <span className="card-search-dialog__result-title">
+                  {hit.card.displayTitle}
+                </span>
+                <span className="card-search-dialog__result-meta">
+                  <span className="card-search-dialog__result-column">
+                    {hit.columnName}
                   </span>
-                  <span className="card-search-dialog__result-meta">
-                    <span className="card-search-dialog__result-column">
-                      {hit.columnName}
-                    </span>
-                    <span className="card-search-dialog__result-path">
-                      {hit.card.path}
-                    </span>
-                    {isCardFileBroken(hit.card) && (
-                      <span className="card-search-dialog__result-note card-search-dialog__result-note--missing">
-                        Missing
-                      </span>
-                    )}
+                  <span className="card-search-dialog__result-path">
+                    {hit.card.path}
                   </span>
-                </li>
-              ))}
-            </ul>
-          )}
+                  {isCardFileBroken(hit.card) && (
+                    <span className="card-search-dialog__result-note card-search-dialog__result-note--missing">
+                      Missing
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </dialog>
   );

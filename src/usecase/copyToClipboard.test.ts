@@ -10,13 +10,12 @@ describe("copyToClipboard", () => {
       writeText: vi.fn().mockRejectedValue(cause),
     };
 
-    await expect(copyToClipboard("notes/card.md", { clipboard })).rejects
-      .toMatchObject(
-        {
-          code: "clipboard.write-failed",
-          details: {},
-          cause,
-        } satisfies Partial<UseCaseError>,
-      );
+    await expect(
+      copyToClipboard("notes/card.md", { clipboard }),
+    ).rejects.toMatchObject({
+      code: "clipboard.write-failed",
+      details: {},
+      cause,
+    } satisfies Partial<UseCaseError>);
   });
 });

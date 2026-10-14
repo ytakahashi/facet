@@ -78,8 +78,9 @@ describe("card history", () => {
   it("returns undefined when no earlier card remains on the board", () => {
     const history = record(["gone.md", "current.md"]);
 
-    expect(findPreviousCard(history, (path) => path === "current.md"))
-      .toBeUndefined();
+    expect(
+      findPreviousCard(history, (path) => path === "current.md"),
+    ).toBeUndefined();
   });
 
   it("retargets every visit and collapses adjacent identities", () => {

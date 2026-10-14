@@ -49,8 +49,8 @@ export function BoardDirectoryPicker({
     void load(value);
   }, [load, value]);
 
-  const directories = sortDirectoryEntries(entries).filter((entry) =>
-    entry.isDirectory
+  const directories = sortDirectoryEntries(entries).filter(
+    (entry) => entry.isDirectory,
   );
 
   async function handleCreateDirectory() {
@@ -96,50 +96,45 @@ export function BoardDirectoryPicker({
           </li>
         ))}
       </ul>
-      {isCreating
-        ? (
-          <div className="board-directory-picker__create">
-            <input
-              type="text"
-              value={newDirectoryName}
-              onChange={(event) => setNewDirectoryName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void handleCreateDirectory();
-                }
-              }}
-              placeholder="Directory name"
-              aria-label="New directory name"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={() => void handleCreateDirectory()}
-            >
-              Create
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsCreating(false);
-                setNewDirectoryName("");
-                setCreateError(undefined);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        )
-        : (
+      {isCreating ? (
+        <div className="board-directory-picker__create">
+          <input
+            type="text"
+            value={newDirectoryName}
+            onChange={(event) => setNewDirectoryName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void handleCreateDirectory();
+              }
+            }}
+            placeholder="Directory name"
+            aria-label="New directory name"
+            autoFocus
+          />
+          <button type="button" onClick={() => void handleCreateDirectory()}>
+            Create
+          </button>
           <button
             type="button"
-            className="board-directory-picker__new"
-            onClick={() => setIsCreating(true)}
+            onClick={() => {
+              setIsCreating(false);
+              setNewDirectoryName("");
+              setCreateError(undefined);
+            }}
           >
-            + New directory
+            Cancel
           </button>
-        )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="board-directory-picker__new"
+          onClick={() => setIsCreating(true)}
+        >
+          + New directory
+        </button>
+      )}
       {createError && <p role="alert">{createError.message}</p>}
     </div>
   );

@@ -118,12 +118,7 @@ export async function validateBoard(
         errors.push(`${cardLocation} must be a mapping`);
         continue;
       }
-      checkKeys(
-        card,
-        ["path", "title", "labels"],
-        cardLocation,
-        errors,
-      );
+      checkKeys(card, ["path", "title", "labels"], cardLocation, errors);
 
       const normalizedPath = validateCardPath(card.path, cardLocation, errors);
       if (normalizedPath !== undefined) {
@@ -160,9 +155,9 @@ export async function validateBoard(
         }
         if (!labelNames.has(label)) {
           errors.push(
-            `${labelLocation} references undefined label ${
-              JSON.stringify(label)
-            }`,
+            `${labelLocation} references undefined label ${JSON.stringify(
+              label,
+            )}`,
           );
         }
         if (cardLabels.has(label)) {
@@ -256,9 +251,9 @@ function joinPath(directory: string, path: string): string {
   return `${directory}/${path}`;
 }
 
-async function inspectCardFile(path: string): Promise<
-  "file" | "missing" | "unreadable" | "directory"
-> {
+async function inspectCardFile(
+  path: string,
+): Promise<"file" | "missing" | "unreadable" | "directory"> {
   try {
     const info = await Deno.stat(path);
     return info.isDirectory ? "directory" : "file";
@@ -306,9 +301,8 @@ async function main(): Promise<void> {
   }
 
   const boardDirectory = directoryOf(boardPath);
-  const result = await validateBoard(
-    value,
-    (path) => inspectCardFile(joinPath(boardDirectory, path)),
+  const result = await validateBoard(value, (path) =>
+    inspectCardFile(joinPath(boardDirectory, path)),
   );
   for (const warning of result.warnings) console.warn(`[warning] ${warning}`);
   for (const error of result.errors) console.error(`[error] ${error}`);

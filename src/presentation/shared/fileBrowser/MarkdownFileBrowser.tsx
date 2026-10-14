@@ -53,8 +53,8 @@ export function MarkdownFileBrowser({
     void load(currentDirectory);
   }, [currentDirectory, load]);
 
-  const visibleEntries = sortDirectoryEntries(entries).filter((entry) =>
-    entry.isDirectory || entry.name.toLowerCase().endsWith(".md")
+  const visibleEntries = sortDirectoryEntries(entries).filter(
+    (entry) => entry.isDirectory || entry.name.toLowerCase().endsWith(".md"),
   );
 
   return (
@@ -64,7 +64,8 @@ export function MarkdownFileBrowser({
           <button
             type="button"
             onClick={() =>
-              setCurrentDirectory(parentWithinRoot(currentDirectory, root))}
+              setCurrentDirectory(parentWithinRoot(currentDirectory, root))
+            }
             disabled={disabled || isLoading}
           >
             Up
@@ -88,9 +89,8 @@ export function MarkdownFileBrowser({
                 type="button"
                 className={selectedPath === path ? "is-selected" : undefined}
                 onClick={() =>
-                  entry.isDirectory
-                    ? setCurrentDirectory(path)
-                    : onSelect(path)}
+                  entry.isDirectory ? setCurrentDirectory(path) : onSelect(path)
+                }
                 disabled={disabled}
               >
                 {entry.name}

@@ -5,9 +5,9 @@ export interface ListRecentBoardsDeps {
   configRepository: ConfigRepository;
 }
 
-export async function listRecentBoards(
-  { configRepository }: ListRecentBoardsDeps,
-): Promise<string[]> {
+export async function listRecentBoards({
+  configRepository,
+}: ListRecentBoardsDeps): Promise<string[]> {
   try {
     return (await configRepository.load()).recentBoards;
   } catch (cause) {

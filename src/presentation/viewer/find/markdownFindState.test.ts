@@ -284,7 +284,10 @@ describe("Markdown find state", () => {
     expect(state.ranges).toEqual([]);
     expect(state.revealToken).toBe(revealToken);
     state = reduceMarkdownFind(state, { type: "open", offset: 9 });
-    expect(state.ranges).toEqual([{ start: 4, end: 8 }, { start: 9, end: 13 }]);
+    expect(state.ranges).toEqual([
+      { start: 4, end: 8 },
+      { start: 9, end: 13 },
+    ]);
     expect(state.activeIndex).toBe(1);
     expect(state.source).toBe(replacement);
   });

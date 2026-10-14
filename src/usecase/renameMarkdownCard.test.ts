@@ -39,12 +39,15 @@ describe("renameMarkdownCard", () => {
     const readTextFile = vi.fn().mockResolvedValue("# Improve search\n\nBody");
     const fileSystem = makeFileSystem({ renameFile, readTextFile });
 
-    const result = await renameMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard({ titleOverride: "Search" }),
-      directory: "/board/ideas",
-      fileName: "search.md",
-    }, { fileSystem });
+    const result = await renameMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard({ titleOverride: "Search" }),
+        directory: "/board/ideas",
+        fileName: "search.md",
+      },
+      { fileSystem },
+    );
 
     expect(readTextFile).toHaveBeenCalledWith("/board/improve-search.md");
     expect(renameFile).toHaveBeenCalledWith(
@@ -74,12 +77,15 @@ describe("renameMarkdownCard", () => {
       }),
     });
 
-    await renameMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard(),
-      directory: "/board",
-      fileName: "search.md",
-    }, { fileSystem });
+    await renameMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard(),
+        directory: "/board",
+        fileName: "search.md",
+      },
+      { fileSystem },
+    );
 
     expect(calls).toEqual(["read", "rename"]);
   });
@@ -88,12 +94,15 @@ describe("renameMarkdownCard", () => {
     const renameFile = vi.fn();
     const fileSystem = makeFileSystem({ renameFile });
 
-    const result = await renameMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard(),
-      directory: "/board",
-      fileName: "search",
-    }, { fileSystem });
+    const result = await renameMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard(),
+        directory: "/board",
+        fileName: "search",
+      },
+      { fileSystem },
+    );
 
     expect(renameFile).toHaveBeenCalledWith(
       "/board/improve-search.md",
@@ -107,12 +116,15 @@ describe("renameMarkdownCard", () => {
     const fileSystem = makeFileSystem({ renameFile });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        directory: "/other",
-        fileName: "search.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          directory: "/other",
+          fileName: "search.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.outside-board-directory",
@@ -125,12 +137,15 @@ describe("renameMarkdownCard", () => {
     const fileSystem = makeFileSystem({ renameFile });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        directory: "/board",
-        fileName: "ideas/search.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          directory: "/board",
+          fileName: "ideas/search.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.invalid-file-name",
@@ -141,23 +156,28 @@ describe("renameMarkdownCard", () => {
   it("reports a source that is no longer there without moving anything", async () => {
     const renameFile = vi.fn();
     const fileSystem = makeFileSystem({
-      readTextFile: vi.fn().mockRejectedValue(
-        new FileSystemError(
-          "not-found",
-          "read-file",
-          "/board/improve-search.md",
+      readTextFile: vi
+        .fn()
+        .mockRejectedValue(
+          new FileSystemError(
+            "not-found",
+            "read-file",
+            "/board/improve-search.md",
+          ),
         ),
-      ),
       renameFile,
     });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        directory: "/board/ideas",
-        fileName: "search.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          directory: "/board/ideas",
+          fileName: "search.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.file-not-found",
@@ -179,12 +199,15 @@ describe("renameMarkdownCard", () => {
     });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        directory: "/board/ideas",
-        fileName: "search.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          directory: "/board/ideas",
+          fileName: "search.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.load-failed",
@@ -196,22 +219,27 @@ describe("renameMarkdownCard", () => {
 
   it("reports an occupied destination as a collision at the destination", async () => {
     const fileSystem = makeFileSystem({
-      renameFile: vi.fn().mockRejectedValue(
-        new FileSystemError(
-          "already-exists",
-          "rename-file",
-          "/board/ideas/search.md",
+      renameFile: vi
+        .fn()
+        .mockRejectedValue(
+          new FileSystemError(
+            "already-exists",
+            "rename-file",
+            "/board/ideas/search.md",
+          ),
         ),
-      ),
     });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        directory: "/board/ideas",
-        fileName: "search.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          directory: "/board/ideas",
+          fileName: "search.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.file-already-exists",
@@ -221,18 +249,27 @@ describe("renameMarkdownCard", () => {
 
   it("reports a directory at the destination apart from a collision", async () => {
     const fileSystem = makeFileSystem({
-      renameFile: vi.fn().mockRejectedValue(
-        new FileSystemError("is-a-directory", "rename-file", "/board/ideas.md"),
-      ),
+      renameFile: vi
+        .fn()
+        .mockRejectedValue(
+          new FileSystemError(
+            "is-a-directory",
+            "rename-file",
+            "/board/ideas.md",
+          ),
+        ),
     });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        directory: "/board",
-        fileName: "ideas.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          directory: "/board",
+          fileName: "ideas.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.file-is-a-directory",
@@ -242,22 +279,27 @@ describe("renameMarkdownCard", () => {
 
   it("reports a source that disappeared between the read and the move", async () => {
     const fileSystem = makeFileSystem({
-      renameFile: vi.fn().mockRejectedValue(
-        new FileSystemError(
-          "not-found",
-          "rename-file",
-          "/board/improve-search.md",
+      renameFile: vi
+        .fn()
+        .mockRejectedValue(
+          new FileSystemError(
+            "not-found",
+            "rename-file",
+            "/board/improve-search.md",
+          ),
         ),
-      ),
     });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        directory: "/board/ideas",
-        fileName: "search.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          directory: "/board/ideas",
+          fileName: "search.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.file-not-found",
@@ -276,12 +318,15 @@ describe("renameMarkdownCard", () => {
     });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        directory: "/board/ideas",
-        fileName: "search.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          directory: "/board/ideas",
+          fileName: "search.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.move-failed",
@@ -295,12 +340,15 @@ describe("renameMarkdownCard", () => {
       readTextFile: vi.fn().mockResolvedValue("Body without a heading\n"),
     });
 
-    const result = await renameMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard({ displayTitle: "improve-search" }),
-      directory: "/board",
-      fileName: "search.md",
-    }, { fileSystem });
+    const result = await renameMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard({ displayTitle: "improve-search" }),
+        directory: "/board",
+        fileName: "search.md",
+      },
+      { fileSystem },
+    );
 
     expect(result.displayTitle).toBe("search");
   });
@@ -310,15 +358,18 @@ describe("renameMarkdownCard", () => {
       readTextFile: vi.fn().mockResolvedValue("Body without a heading\n"),
     });
 
-    const result = await renameMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard({
-        titleOverride: "Search",
-        displayTitle: "Search",
-      }),
-      directory: "/board",
-      fileName: "search.md",
-    }, { fileSystem });
+    const result = await renameMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard({
+          titleOverride: "Search",
+          displayTitle: "Search",
+        }),
+        directory: "/board",
+        fileName: "search.md",
+      },
+      { fileSystem },
+    );
 
     expect(result.displayTitle).toBe("Search");
   });
@@ -328,12 +379,15 @@ describe("renameMarkdownCard", () => {
       readTextFile: vi.fn().mockResolvedValue("# Improve search\n\nBody"),
     });
 
-    const result = await renameMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard(),
-      directory: "/board",
-      fileName: "search.md",
-    }, { fileSystem });
+    const result = await renameMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard(),
+        directory: "/board",
+        fileName: "search.md",
+      },
+      { fileSystem },
+    );
 
     expect(result.displayTitle).toBe("Improve search");
   });
@@ -343,15 +397,18 @@ describe("renameMarkdownCard", () => {
     const fileSystem = makeFileSystem({ renameFile });
 
     const act = () =>
-      renameMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard({
-          absolutePath: undefined,
-          fileState: "unresolvable",
-        }),
-        directory: "/board",
-        fileName: "search.md",
-      }, { fileSystem });
+      renameMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard({
+            absolutePath: undefined,
+            fileState: "unresolvable",
+          }),
+          directory: "/board",
+          fileName: "search.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toThrow(
       "Card path is not resolvable: improve-search.md",

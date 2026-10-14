@@ -7,8 +7,9 @@ vi.mock("./hostCommands.ts");
 // Each test supplies the commands it exercises; the rest stay bare mocks.
 function stubHostCommands(commands: Partial<typeof hostCommands>): void {
   for (const [name, command] of Object.entries(commands)) {
-    vi.mocked(hostCommands[name as keyof typeof hostCommands])
-      .mockImplementation(command as never);
+    vi.mocked(
+      hostCommands[name as keyof typeof hostCommands],
+    ).mockImplementation(command as never);
   }
 }
 
@@ -32,8 +33,9 @@ describe("HostFinder", () => {
       }),
     });
 
-    await expect(new HostFinder().reveal("/board/card.md")).rejects
-      .toMatchObject({ kind: "not-found", operation: "reveal" });
+    await expect(
+      new HostFinder().reveal("/board/card.md"),
+    ).rejects.toMatchObject({ kind: "not-found", operation: "reveal" });
   });
 
   it("maps a rejected command to a failed reveal", async () => {
@@ -42,7 +44,8 @@ describe("HostFinder", () => {
       revealInFinder: vi.fn().mockRejectedValue(cause),
     });
 
-    await expect(new HostFinder().reveal("/board/card.md")).rejects
-      .toMatchObject({ kind: "failed", cause });
+    await expect(
+      new HostFinder().reveal("/board/card.md"),
+    ).rejects.toMatchObject({ kind: "failed", cause });
   });
 });

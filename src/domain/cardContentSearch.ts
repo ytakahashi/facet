@@ -92,9 +92,10 @@ function matchLine(
   // the source. They are still mapped to a code-point boundary below so a
   // long snippet is centred around the match rather than an unrelated prefix.
   const ranges = canonicalLine.length === line.length ? canonicalRanges : [];
-  const anchor = canonicalLine.length === line.length
-    ? canonicalRanges[0].start
-    : sourceOffsetForFoldedOffset(line, canonicalRanges[0].start);
+  const anchor =
+    canonicalLine.length === line.length
+      ? canonicalRanges[0].start
+      : sourceOffsetForFoldedOffset(line, canonicalRanges[0].start);
   return makeSnippet(line, lineNumber, ranges, anchor);
 }
 
@@ -118,8 +119,8 @@ function sourceOffsetForFoldedOffset(
   let sourceOffset = 0;
   let currentFoldedOffset = 0;
   for (const codePoint of source) {
-    const nextFoldedOffset = currentFoldedOffset +
-      canonicalSearchText(codePoint).length;
+    const nextFoldedOffset =
+      currentFoldedOffset + canonicalSearchText(codePoint).length;
     if (foldedOffset < nextFoldedOffset) return sourceOffset;
     sourceOffset += codePoint.length;
     currentFoldedOffset = nextFoldedOffset;

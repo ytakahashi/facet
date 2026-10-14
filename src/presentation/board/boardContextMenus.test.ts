@@ -3,8 +3,8 @@ import type { ContextMenuEntry } from "../context/appContext.ts";
 import { buildBoardContextMenu } from "./boardContextMenus.ts";
 
 function select(entries: ContextMenuEntry[], label: string): void {
-  const entry = entries.find((candidate) =>
-    candidate.kind === "item" && candidate.label === label
+  const entry = entries.find(
+    (candidate) => candidate.kind === "item" && candidate.label === label,
   );
   if (entry?.kind !== "item") throw new Error(`no item labelled ${label}`);
   entry.onSelect();
@@ -21,13 +21,14 @@ describe("buildBoardContextMenu", () => {
       refresh,
     });
 
-    expect(entries.map((entry) => entry.kind === "item" && entry.label))
-      .toEqual([
-        "Reload Board",
-        false,
-        "Copy Board File Path",
-        "Reveal in Finder",
-      ]);
+    expect(
+      entries.map((entry) => entry.kind === "item" && entry.label),
+    ).toEqual([
+      "Reload Board",
+      false,
+      "Copy Board File Path",
+      "Reveal in Finder",
+    ]);
     select(entries, "Reload Board");
     select(entries, "Copy Board File Path");
     select(entries, "Reveal in Finder");

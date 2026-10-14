@@ -11,9 +11,11 @@ interface ColumnFilterListProps {
 // toggling reports straight to the caller without any local state. Adding,
 // renaming and removing columns stays the column header's job; this
 // component only reads the board's columns.
-export function ColumnFilterList(
-  { columns, hiddenColumnIds, onToggle }: ColumnFilterListProps,
-) {
+export function ColumnFilterList({
+  columns,
+  hiddenColumnIds,
+  onToggle,
+}: ColumnFilterListProps) {
   if (columns.length === 0) {
     return <p className="column-filter-list__empty">No columns yet</p>;
   }
@@ -25,8 +27,7 @@ export function ColumnFilterList(
           <input
             type="checkbox"
             checked={!hiddenColumnIds.has(column.id)}
-            onChange={() =>
-              onToggle(column.id)}
+            onChange={() => onToggle(column.id)}
           />
           <span className="column-filter-list__name" title={column.name}>
             {column.name}

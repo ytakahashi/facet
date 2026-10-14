@@ -25,9 +25,8 @@ export function resolveCardLink(
   // Strip delimiters before decoding: an encoded question mark or hash is
   // part of the filename, not the beginning of a query or fragment.
   const delimiterIndex = href.search(/[?#]/);
-  const encodedPath = delimiterIndex === -1
-    ? href
-    : href.slice(0, delimiterIndex);
+  const encodedPath =
+    delimiterIndex === -1 ? href : href.slice(0, delimiterIndex);
   if (encodedPath === "") return undefined;
 
   let decodedPath: string;
@@ -41,7 +40,8 @@ export function resolveCardLink(
 
   // Decoding can reveal a leading slash that was not visible in the href.
   if (
-    decodedPath.startsWith("/") || !decodedPath.toLowerCase().endsWith(".md")
+    decodedPath.startsWith("/") ||
+    !decodedPath.toLowerCase().endsWith(".md")
   ) {
     return undefined;
   }
@@ -69,18 +69,15 @@ export function cardLinkHref(fromPath: string, toPath: string): string {
   while (
     commonLength < fromDirectory.length &&
     commonLength < toDirectory.length &&
-    isSameCardPath(
-      fromDirectory[commonLength],
-      toDirectory[commonLength],
-    )
+    isSameCardPath(fromDirectory[commonLength], toDirectory[commonLength])
   ) {
     commonLength += 1;
   }
 
   const parentSegments = fromDirectory.slice(commonLength).map(() => "..");
-  const destinationSegments = toSegments.slice(commonLength).map(
-    encodeLinkPathSegment,
-  );
+  const destinationSegments = toSegments
+    .slice(commonLength)
+    .map(encodeLinkPathSegment);
   const relativePath = [...parentSegments, ...destinationSegments].join("/");
   return parentSegments.length === 0 ? `./${relativePath}` : relativePath;
 }
@@ -98,9 +95,13 @@ export function cardLinkMarkdown(
 // can be hand-written, so Card.fileState alone cannot guarantee either rule.
 export function isLinkableCardPath(path: string): boolean {
   const normalized = normalizeCardPath(path);
-  return !path.startsWith("/") && normalized !== "" && normalized !== ".." &&
+  return (
+    !path.startsWith("/") &&
+    normalized !== "" &&
+    normalized !== ".." &&
     !normalized.startsWith("../") &&
-    normalized.toLowerCase().endsWith(".md");
+    normalized.toLowerCase().endsWith(".md")
+  );
 }
 
 function normalizeLinkCardPath(path: string): string {
@@ -124,7 +125,8 @@ function encodeLinkPathSegment(segment: string): string {
   for (const character of segment) {
     const codeUnit = character.charCodeAt(0);
     if (
-      codeUnit <= 0x20 || codeUnit === 0x7f ||
+      codeUnit <= 0x20 ||
+      codeUnit === 0x7f ||
       "%()<>#?\\".includes(character)
     ) {
       encoded += `%${codeUnit.toString(16).toUpperCase().padStart(2, "0")}`;
@@ -136,8 +138,8 @@ function encodeLinkPathSegment(segment: string): string {
 }
 
 function escapeLinkText(text: string): string {
-  return text.replaceAll("\\", "\\\\").replaceAll("[", "\\[").replaceAll(
-    "]",
-    "\\]",
-  );
+  return text
+    .replaceAll("\\", "\\\\")
+    .replaceAll("[", "\\[")
+    .replaceAll("]", "\\]");
 }

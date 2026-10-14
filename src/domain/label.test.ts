@@ -4,7 +4,10 @@ import { orderCardLabels } from "./label.ts";
 describe("orderCardLabels", () => {
   it("uses registry order and leaves unknown names visible at the end", () => {
     const labels = ["later", "unknown-a", "first", "unknown-b"];
-    const positions = new Map([["first", 0], ["later", 1]]);
+    const positions = new Map([
+      ["first", 0],
+      ["later", 1],
+    ]);
 
     expect(orderCardLabels(labels, positions)).toEqual([
       "first",

@@ -53,7 +53,8 @@ describe("createBoardSaveQueue", () => {
 
   it("runs a request that arrives while a save is in flight once the in-flight one settles", async () => {
     const first = deferred<void>();
-    const saveBoard = vi.fn()
+    const saveBoard = vi
+      .fn()
       .mockReturnValueOnce(first.promise)
       .mockResolvedValue(undefined);
     const onSaved = vi.fn();
@@ -79,7 +80,8 @@ describe("createBoardSaveQueue", () => {
 
   it("keeps only the latest of several requests that arrive during one in-flight save", async () => {
     const first = deferred<void>();
-    const saveBoard = vi.fn()
+    const saveBoard = vi
+      .fn()
       .mockReturnValueOnce(first.promise)
       .mockResolvedValue(undefined);
     const queue = createBoardSaveQueue(saveBoard, {

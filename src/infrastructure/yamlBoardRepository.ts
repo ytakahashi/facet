@@ -51,42 +51,58 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) &&
-    value.every((item) => typeof item === "string");
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
 }
 
 function isRawCard(value: unknown): value is RawCard {
-  return isRecord(value) && typeof value.path === "string" &&
+  return (
+    isRecord(value) &&
+    typeof value.path === "string" &&
     (value.title === undefined || typeof value.title === "string") &&
-    (value.labels === undefined || isStringArray(value.labels));
+    (value.labels === undefined || isStringArray(value.labels))
+  );
 }
 
 function isRawColumn(value: unknown): value is RawColumn {
-  return isRecord(value) && typeof value.id === "string" &&
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
     typeof value.name === "string" &&
     (value.cards === undefined ||
-      (Array.isArray(value.cards) && value.cards.every(isRawCard)));
+      (Array.isArray(value.cards) && value.cards.every(isRawCard)))
+  );
 }
 
 function isRawLabelDefinition(value: unknown): value is RawLabelDefinition {
-  return isRecord(value) && typeof value.name === "string" &&
-    typeof value.color === "string";
+  return (
+    isRecord(value) &&
+    typeof value.name === "string" &&
+    typeof value.color === "string"
+  );
 }
 
 function isRawBoard(value: unknown): value is RawBoard & {
   columns: RawColumn[];
 } {
-  return isRecord(value) && typeof value.version === "number" &&
+  return (
+    isRecord(value) &&
+    typeof value.version === "number" &&
     typeof value.name === "string" &&
-    Array.isArray(value.columns) && value.columns.every(isRawColumn) &&
+    Array.isArray(value.columns) &&
+    value.columns.every(isRawColumn) &&
     (value.labels === undefined ||
-      (Array.isArray(value.labels) &&
-        value.labels.every(isRawLabelDefinition)));
+      (Array.isArray(value.labels) && value.labels.every(isRawLabelDefinition)))
+  );
 }
 
 // Shared by load() and loadName() so a named entry has the same board-file
 // structure load() expects, without reading any referenced Markdown files.
-function parseRawBoard(content: string, path: string): RawBoard & {
+function parseRawBoard(
+  content: string,
+  path: string,
+): RawBoard & {
   columns: RawColumn[];
 } {
   const raw: unknown = parse(content);
@@ -104,8 +120,8 @@ export class YamlBoardRepository implements BoardRepository {
   }
 
   async load(path: string): Promise<LoadedBoard> {
-    const { content, revision } = await this.fileSystem
-      .readTextFileWithRevision(path);
+    const { content, revision } =
+      await this.fileSystem.readTextFileWithRevision(path);
     const raw = parseRawBoard(content, path);
 
     const boardDirectory = directoryOf(path);
@@ -152,14 +168,10 @@ export class YamlBoardRepository implements BoardRepository {
       absolutePath: resolved.ok ? resolved.absolutePath : undefined,
       fileState: !resolved.ok
         ? "unresolvable"
-        : readResult?.fileState ?? "unreadable",
+        : (readResult?.fileState ?? "unreadable"),
       titleOverride: rawCard.title,
       labels: rawCard.labels ?? [],
-      displayTitle: resolveCardTitle(
-        rawCard.title,
-        markdownText,
-        rawCard.path,
-      ),
+      displayTitle: resolveCardTitle(rawCard.title, markdownText, rawCard.path),
     };
   }
 
@@ -221,10 +233,10 @@ export class YamlBoardRepository implements BoardRepository {
       };
     } catch (cause) {
       return {
-        fileState: cause instanceof FileSystemError &&
-            cause.kind === "not-found"
-          ? "missing"
-          : "unreadable",
+        fileState:
+          cause instanceof FileSystemError && cause.kind === "not-found"
+            ? "missing"
+            : "unreadable",
       };
     }
   }

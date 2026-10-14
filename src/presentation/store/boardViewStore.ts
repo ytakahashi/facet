@@ -23,11 +23,12 @@ export function createBoardViewStore(): UseBoundStore<
     setMode: (mode) => set({ mode }),
     cycleTableSort: (key) =>
       set((state) => ({
-        tableSort: state.tableSort?.key !== key
-          ? { key, direction: "asc" }
-          : state.tableSort.direction === "asc"
-          ? { key, direction: "desc" }
-          : undefined,
+        tableSort:
+          state.tableSort?.key !== key
+            ? { key, direction: "asc" }
+            : state.tableSort.direction === "asc"
+              ? { key, direction: "desc" }
+              : undefined,
       })),
   }));
 }

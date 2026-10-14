@@ -89,9 +89,11 @@ export function DirectoryBrowser() {
           <li key={entry.name}>
             <button
               type="button"
-              className={entry.isDirectory
-                ? "directory-browser__entry--directory"
-                : "directory-browser__entry--file"}
+              className={
+                entry.isDirectory
+                  ? "directory-browser__entry--directory"
+                  : "directory-browser__entry--file"
+              }
               onClick={() => handleEntryClick(entry)}
               disabled={!entry.isDirectory && !isBoardFile(entry.name)}
             >

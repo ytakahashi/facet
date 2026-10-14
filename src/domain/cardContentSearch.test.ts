@@ -29,19 +29,23 @@ describe("searchCardContents", () => {
 
     const result = searchCardContents(board, contents, " がめん ");
 
-    expect(result).toEqual([{
-      card,
-      columnId: "todo",
-      columnName: "todo column",
-      lines: [{
-        lineNumber: 1,
-        snippet: "Open the がめん in FACET",
-        truncatedStart: false,
-        truncatedEnd: false,
-        ranges: [{ start: 9, end: 12 }],
-      }],
-      totalLineCount: 1,
-    }]);
+    expect(result).toEqual([
+      {
+        card,
+        columnId: "todo",
+        columnName: "todo column",
+        lines: [
+          {
+            lineNumber: 1,
+            snippet: "Open the がめん in FACET",
+            truncatedStart: false,
+            truncatedEnd: false,
+            ranges: [{ start: 9, end: 12 }],
+          },
+        ],
+        totalLineCount: 1,
+      },
+    ]);
   });
 
   it("keeps line whitespace significant and returns every non-overlapping range", () => {
@@ -118,10 +122,9 @@ describe("searchCardContents", () => {
   it("keeps only the first three matching lines while counting every match", () => {
     const card = makeCard("many.md");
     const board = makeBoard([makeColumn("todo", [card])]);
-    const contents = new Map([[
-      card.path,
-      "match one\nmatch two\nmatch three\nmatch four",
-    ]]);
+    const contents = new Map([
+      [card.path, "match one\nmatch two\nmatch three\nmatch four"],
+    ]);
 
     const result = searchCardContents(board, contents, "match");
 
@@ -161,11 +164,13 @@ describe("searchCardContents", () => {
 
     const result = searchCardContents(board, contents, "match");
 
-    expect(result.map((hit) => ({
-      path: hit.card.path,
-      lineNumbers: hit.lines.map((line) => line.lineNumber),
-      totalLineCount: hit.totalLineCount,
-    }))).toEqual([
+    expect(
+      result.map((hit) => ({
+        path: hit.card.path,
+        lineNumbers: hit.lines.map((line) => line.lineNumber),
+        totalLineCount: hit.totalLineCount,
+      })),
+    ).toEqual([
       {
         path: first.path,
         lineNumbers: [1, 2, 3],

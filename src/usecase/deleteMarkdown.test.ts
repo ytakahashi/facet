@@ -32,13 +32,15 @@ describe("deleteMarkdown", () => {
 
   it("treats an already-missing file as success", async () => {
     const fileSystem = makeFileSystem(
-      vi.fn().mockRejectedValue(
-        new FileSystemError(
-          "not-found",
-          "remove-file",
-          "/board/improve-search.md",
+      vi
+        .fn()
+        .mockRejectedValue(
+          new FileSystemError(
+            "not-found",
+            "remove-file",
+            "/board/improve-search.md",
+          ),
         ),
-      ),
     );
 
     await expect(

@@ -7,11 +7,13 @@ import {
 function pre(className?: unknown): PreElementNode {
   return {
     type: "element",
-    children: [{
-      type: "element",
-      tagName: "code",
-      properties: className === undefined ? {} : { className },
-    }],
+    children: [
+      {
+        type: "element",
+        tagName: "code",
+        properties: className === undefined ? {} : { className },
+      },
+    ],
   };
 }
 
@@ -35,11 +37,13 @@ describe("isMermaidCodeBlock", () => {
   it("ignores a class that is not on the inner code element", () => {
     const node: PreElementNode = {
       type: "element",
-      children: [{
-        type: "element",
-        tagName: "span",
-        properties: { className: ["language-mermaid"] },
-      }],
+      children: [
+        {
+          type: "element",
+          tagName: "span",
+          properties: { className: ["language-mermaid"] },
+        },
+      ],
     };
 
     expect(isMermaidCodeBlock(node)).toBe(false);

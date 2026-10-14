@@ -29,8 +29,11 @@ export function normalizeBoardFileName(input: string): string {
     throw new BoardFileValidationError("file-name-required");
   }
   if (
-    fileName === "." || fileName === ".." || fileName.includes("/") ||
-    fileName.includes(":") || fileName.includes("\0")
+    fileName === "." ||
+    fileName === ".." ||
+    fileName.includes("/") ||
+    fileName.includes(":") ||
+    fileName.includes("\0")
   ) {
     throw new BoardFileValidationError("invalid-file-name");
   }

@@ -22,9 +22,7 @@ export function recordCardVisit(
   path: string,
 ): CardHistory {
   const current = history[entries];
-  if (
-    current.length > 0 && isSameCardPath(current[current.length - 1], path)
-  ) {
+  if (current.length > 0 && isSameCardPath(current[current.length - 1], path)) {
     return history;
   }
 
@@ -58,7 +56,7 @@ export function retargetCardHistory(
   return {
     [entries]: collapseAdjacent(
       history[entries].map((path) =>
-        isSameCardPath(path, previousPath) ? nextPath : path
+        isSameCardPath(path, previousPath) ? nextPath : path,
       ),
     ),
   };
@@ -76,7 +74,7 @@ export function removeFromCardHistory(
 }
 
 function collapseAdjacent(paths: readonly string[]): readonly string[] {
-  return paths.filter((path, index) =>
-    index === 0 || !isSameCardPath(paths[index - 1], path)
+  return paths.filter(
+    (path, index) => index === 0 || !isSameCardPath(paths[index - 1], path),
   );
 }

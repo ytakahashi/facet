@@ -28,7 +28,7 @@ export function isCardFilterActive(
 ): boolean {
   if (criteria.labels.size > 0) return true;
   return board.columns.some((column) =>
-    criteria.hiddenColumnIds.has(column.id)
+    criteria.hiddenColumnIds.has(column.id),
   );
 }
 
@@ -59,8 +59,9 @@ export function isCardHidden(
   columnId: string,
   criteria: CardFilterCriteria,
 ): boolean {
-  return criteria.hiddenColumnIds.has(columnId) ||
-    !cardMatchesFilter(card, criteria);
+  return (
+    criteria.hiddenColumnIds.has(columnId) || !cardMatchesFilter(card, criteria)
+  );
 }
 
 // The single entry point for "what does this column show".

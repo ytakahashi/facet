@@ -39,8 +39,9 @@ describe("createConfirmationGate", () => {
 
   it("asks again after a question that failed", async () => {
     const gate = createConfirmationGate();
-    await expect(gate.ask(() => Promise.reject(new Error("no dialog"))))
-      .rejects.toThrow("no dialog");
+    await expect(
+      gate.ask(() => Promise.reject(new Error("no dialog"))),
+    ).rejects.toThrow("no dialog");
 
     await expect(gate.ask(() => Promise.resolve(true))).resolves.toBe(true);
   });

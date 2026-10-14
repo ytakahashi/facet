@@ -41,9 +41,7 @@ export function BoardScreen({ board }: { board: Board }) {
   const conflictResolutionError = useBoardStore(
     (state) => state.conflictResolutionError,
   );
-  const conflictResolution = useBoardStore(
-    (state) => state.conflictResolution,
-  );
+  const conflictResolution = useBoardStore((state) => state.conflictResolution);
   const isSaving = useBoardStore((state) => state.isSaving);
   const isRefreshing = useBoardStore((state) => state.isRefreshing);
   const canRefresh = useBoardStore(canRefreshBoard);
@@ -120,11 +118,11 @@ export function BoardScreen({ board }: { board: Board }) {
     if (isInsideDialog(event.target)) return;
     event.preventDefault();
     contextMenu.show(
-      buildBoardContextMenu(
-        boardPath,
-        canRefresh,
-        { copyText, reveal, refresh: () => void refreshBoard() },
-      ),
+      buildBoardContextMenu(boardPath, canRefresh, {
+        copyText,
+        reveal,
+        refresh: () => void refreshBoard(),
+      }),
     );
   }
 
@@ -156,34 +154,34 @@ export function BoardScreen({ board }: { board: Board }) {
           detail={saveConflict ? EXTERNAL_CHANGE_CONFLICT_DETAIL : undefined}
           resolutionError={conflictResolutionError}
         >
-          {saveConflict
-            ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void reloadBoard()}
-                  disabled={isSaving || isRefreshing ||
-                    conflictResolution !== undefined}
-                >
-                  {conflictResolution === "reloading" ? "Reloading…" : "Reload"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void overwriteBoard()}
-                  disabled={isSaving || isRefreshing ||
-                    conflictResolution !== undefined}
-                >
-                  {conflictResolution === "overwriting"
-                    ? "Overwriting…"
-                    : "Overwrite"}
-                </button>
-              </>
-            )
-            : (
-              <button type="button" onClick={retrySave} disabled={isRefreshing}>
-                Retry
+          {saveConflict ? (
+            <>
+              <button
+                type="button"
+                onClick={() => void reloadBoard()}
+                disabled={
+                  isSaving || isRefreshing || conflictResolution !== undefined
+                }
+              >
+                {conflictResolution === "reloading" ? "Reloading…" : "Reload"}
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => void overwriteBoard()}
+                disabled={
+                  isSaving || isRefreshing || conflictResolution !== undefined
+                }
+              >
+                {conflictResolution === "overwriting"
+                  ? "Overwriting…"
+                  : "Overwrite"}
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={retrySave} disabled={isRefreshing}>
+              Retry
+            </button>
+          )}
         </SaveErrorBanner>
       )}
       {refreshError && (
@@ -197,27 +195,23 @@ export function BoardScreen({ board }: { board: Board }) {
           </button>
         </SaveErrorBanner>
       )}
-      {mode === "board"
-        ? (
-          <KanbanBoard
-            board={board}
-            onDeleteCard={openDeleteCard}
-            onRepairCard={openMissingCard}
-            onCardContextMenu={handleCardContextMenu}
-          />
-        )
-        : (
-          <CardTable
-            board={board}
-            onDeleteCard={openDeleteCard}
-            onRepairCard={openMissingCard}
-            onCardContextMenu={handleCardContextMenu}
-          />
-        )}
-      {
-        /* A broken search hit hands over to the repair dialog, so search
-          dialogs must close before that dialog opens. */
-      }
+      {mode === "board" ? (
+        <KanbanBoard
+          board={board}
+          onDeleteCard={openDeleteCard}
+          onRepairCard={openMissingCard}
+          onCardContextMenu={handleCardContextMenu}
+        />
+      ) : (
+        <CardTable
+          board={board}
+          onDeleteCard={openDeleteCard}
+          onRepairCard={openMissingCard}
+          onCardContextMenu={handleCardContextMenu}
+        />
+      )}
+      {/* A broken search hit hands over to the repair dialog, so search
+          dialogs must close before that dialog opens. */}
       <CardSearchDialog
         board={board}
         criteria={criteria}
@@ -233,11 +227,9 @@ export function BoardScreen({ board }: { board: Board }) {
         onClose={() => setIsContentSearchOpen(false)}
         onSelect={handleSearchSelect}
       />
-      {
-        /* Mounted before DeleteCardDialog so that when one hands over to the
+      {/* Mounted before DeleteCardDialog so that when one hands over to the
           other, the effect that closes this dialog runs before the effect that
-          opens that one - these two dialogs must not overlap. */
-      }
+          opens that one - these two dialogs must not overlap. */}
       {boardPath && repairTarget && (
         <MissingCardDialog
           card={repairTarget}

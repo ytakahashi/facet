@@ -42,7 +42,8 @@ export function resolveMove(
 
   const [cardTarget, cardListTarget] = dropTargets;
   if (
-    cardTarget.data.type !== "card" || cardListTarget.data.type !== "card-list"
+    cardTarget.data.type !== "card" ||
+    cardListTarget.data.type !== "card-list"
   ) {
     return undefined;
   }

@@ -4,11 +4,7 @@ import type { CardFilterCriteria } from "./cardFilter.ts";
 import { isCardHidden } from "./cardFilter.ts";
 import { orderCardLabels } from "./label.ts";
 
-export type CardTableSortKey =
-  | "title"
-  | "labels"
-  | "column"
-  | "path";
+export type CardTableSortKey = "title" | "labels" | "column" | "path";
 
 export type SortDirection = "asc" | "desc";
 
@@ -38,8 +34,8 @@ export function listCardTableRows(
     column.cards.flatMap((card, cardIndex) =>
       isCardHidden(card, column.id, criteria)
         ? []
-        : [{ card, column, columnIndex, cardIndex }]
-    )
+        : [{ card, column, columnIndex, cardIndex }],
+    ),
   );
   if (!sort) return rows;
 

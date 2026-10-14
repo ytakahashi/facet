@@ -17,9 +17,12 @@ interface RenameCardFileDialogProps {
 // Renaming a file and moving it are one dialog because they are one operation:
 // both name a new path inside the board directory, and doing them separately
 // would move the file twice to get to one place.
-export function RenameCardFileDialog(
-  { card, boardPath, open, onClose }: RenameCardFileDialogProps,
-) {
+export function RenameCardFileDialog({
+  card,
+  boardPath,
+  open,
+  onClose,
+}: RenameCardFileDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const renameCardFile = useBoardStore((state) => state.renameCardFile);
   const retargetCard = useMarkdownViewer((state) => state.retargetCard);
@@ -128,13 +131,11 @@ export function RenameCardFileDialog(
             </p>
           )}
         </fieldset>
-        {
-          /* The app only knows the board it has open, so a board that refers
+        {/* The app only knows the board it has open, so a board that refers
             to this file from elsewhere keeps pointing at the old path. Said
             plainly here rather than fixed silently: rewriting board files the
             user has not opened would be the more surprising behaviour, and the
-            card that breaks can be repaired from its own board. */
-        }
+            card that breaks can be repaired from its own board. */}
         <p className="rename-card-file-dialog__note">
           Other boards referencing this file will show it as missing until
           repaired.
@@ -155,8 +156,9 @@ export function RenameCardFileDialog(
           </button>
           <button
             type="submit"
-            disabled={!fileName.trim() || isSubmitting || isSaving ||
-              isRefreshing}
+            disabled={
+              !fileName.trim() || isSubmitting || isSaving || isRefreshing
+            }
           >
             {isSubmitting ? "Moving…" : "Move file"}
           </button>

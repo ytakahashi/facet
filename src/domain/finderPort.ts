@@ -7,10 +7,7 @@ export class FinderError extends Error {
   readonly operation = "reveal";
   readonly kind: "not-found" | "failed";
 
-  constructor(
-    kind: "not-found" | "failed",
-    options?: ErrorOptions,
-  ) {
+  constructor(kind: "not-found" | "failed", options?: ErrorOptions) {
     super(`finder:reveal:${kind}`, options);
     this.name = "FinderError";
     this.kind = kind;

@@ -57,11 +57,10 @@ export function LabelPickerDialog({
                 onChange={(event) =>
                   event.target.checked
                     ? onAddCardLabel(card.path, label.name)
-                    : onRemoveCardLabel(card.path, label.name)}
+                    : onRemoveCardLabel(card.path, label.name)
+                }
               />
-              <span
-                className={`label-dot label-dot--${label.color}`}
-              />
+              <span className={`label-dot label-dot--${label.color}`} />
               <span className="label-picker-dialog__name">{label.name}</span>
             </label>
           </li>
@@ -69,8 +68,12 @@ export function LabelPickerDialog({
       </ul>
       <LabelCreateForm open={open} onCreateLabel={onCreateLabel} />
       <div className="label-picker-dialog__actions">
-        <button type="button" onClick={onManageLabels}>Manage labels…</button>
-        <button type="button" onClick={onClose}>Close</button>
+        <button type="button" onClick={onManageLabels}>
+          Manage labels…
+        </button>
+        <button type="button" onClick={onClose}>
+          Close
+        </button>
       </div>
     </dialog>
   );

@@ -5,14 +5,12 @@ interface CardBoardPositionProps {
   cardPath: string;
 }
 
-export function CardBoardPosition(
-  { board, cardPath }: CardBoardPositionProps,
-) {
+export function CardBoardPosition({ board, cardPath }: CardBoardPositionProps) {
   // Position follows the board's stored order, including cards hidden by a
   // filter or shown elsewhere in a different table sort order.
   const location = findCardLocation(board, cardPath);
-  const column = board.columns.find((candidate) =>
-    candidate.id === location?.columnId
+  const column = board.columns.find(
+    (candidate) => candidate.id === location?.columnId,
   );
   if (!location || !column) return null;
 

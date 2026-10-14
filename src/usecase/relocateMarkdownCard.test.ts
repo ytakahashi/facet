@@ -38,11 +38,14 @@ describe("relocateMarkdownCard", () => {
     const readTextFile = vi.fn().mockResolvedValue("# Moved card\n\nBody");
     const fileSystem = makeFileSystem({ readTextFile });
 
-    const result = await relocateMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard(),
-      absolutePath: "/board/ideas/moved.md",
-    }, { fileSystem });
+    const result = await relocateMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard(),
+        absolutePath: "/board/ideas/moved.md",
+      },
+      { fileSystem },
+    );
 
     expect(readTextFile).toHaveBeenCalledWith("/board/ideas/moved.md");
     expect(result).toEqual({
@@ -57,11 +60,14 @@ describe("relocateMarkdownCard", () => {
   it("re-reads the path the card already has", async () => {
     const fileSystem = makeFileSystem();
 
-    const result = await relocateMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard(),
-      absolutePath: "/board/gone.md",
-    }, { fileSystem });
+    const result = await relocateMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard(),
+        absolutePath: "/board/gone.md",
+      },
+      { fileSystem },
+    );
 
     expect(result.path).toBe("gone.md");
     expect(result.fileState).toBe("available");
@@ -72,11 +78,14 @@ describe("relocateMarkdownCard", () => {
     const fileSystem = makeFileSystem({ readTextFile });
 
     const act = () =>
-      relocateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/other/moved.md",
-      }, { fileSystem });
+      relocateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/other/moved.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.outside-board-directory",
@@ -89,11 +98,14 @@ describe("relocateMarkdownCard", () => {
     const fileSystem = makeFileSystem({ readTextFile });
 
     const act = () =>
-      relocateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/board/image.png",
-      }, { fileSystem });
+      relocateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/board/image.png",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({ code: "card.not-markdown-file" });
     expect(readTextFile).not.toHaveBeenCalled();
@@ -110,11 +122,14 @@ describe("relocateMarkdownCard", () => {
     });
 
     const act = () =>
-      relocateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/board/moved.md",
-      }, { fileSystem });
+      relocateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/board/moved.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.file-not-found",
@@ -134,11 +149,14 @@ describe("relocateMarkdownCard", () => {
     });
 
     const act = () =>
-      relocateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/board/moved.md",
-      }, { fileSystem });
+      relocateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/board/moved.md",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.load-failed",

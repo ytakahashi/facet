@@ -31,54 +31,59 @@ export function MarkdownPreview({
 }: MarkdownPreviewProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   usePreviewFind(rootRef, find, onFindTextChange);
-  const components = useMemo<Components>(() => ({
-    // Card links are buttons rather than anchors so no interaction path,
-    // including modified clicks or dragging, can navigate the WebView.
-    a: ({ children, href }) => {
-      const card = href ? resolveLink?.(href) : undefined;
-      if (card && onOpenCard) {
+  const components = useMemo<Components>(
+    () => ({
+      // Card links are buttons rather than anchors so no interaction path,
+      // including modified clicks or dragging, can navigate the WebView.
+      a: ({ children, href }) => {
+        const card = href ? resolveLink?.(href) : undefined;
+        if (card && onOpenCard) {
+          return (
+            <button
+              type="button"
+              className="markdown-preview__link markdown-preview__link--card"
+              title={card.path}
+              onClick={() => onOpenCard(card)}
+            >
+              {children}
+            </button>
+          );
+        }
         return (
-          <button
-            type="button"
-            className="markdown-preview__link markdown-preview__link--card"
-            title={card.path}
-            onClick={() => onOpenCard(card)}
-          >
+          <span className="markdown-preview__link" title={href}>
             {children}
-          </button>
+          </span>
         );
-      }
-      return (
-        <span className="markdown-preview__link" title={href}>
-          {children}
+      },
+      // Resource loading stays disabled: board files are not served over HTTP,
+      // and preview content must never navigate or replace the WebView.
+      img: ({ alt, src }) => (
+        <span className="markdown-preview__image" title={src}>
+          {alt || "Image"}
         </span>
-      );
-    },
-    // Resource loading stays disabled: board files are not served over HTTP,
-    // and preview content must never navigate or replace the WebView.
-    img: ({ alt, src }) => (
-      <span className="markdown-preview__image" title={src}>
-        {alt || "Image"}
-      </span>
-    ),
-    // Only block code is wrapped: inline `code` never reaches `pre`.
-    pre: ({ children, node }) => {
-      if (!node) {
-        throw new Error("react-markdown passes the hast node to components");
-      }
-      const text = codeBlockText(node);
-      const codeBlock = onCopyCode
-        ? (
+      ),
+      // Only block code is wrapped: inline `code` never reaches `pre`.
+      pre: ({ children, node }) => {
+        if (!node) {
+          throw new Error("react-markdown passes the hast node to components");
+        }
+        const text = codeBlockText(node);
+        const codeBlock = onCopyCode ? (
           <MarkdownCodeBlock text={text} onCopy={onCopyCode}>
             {children}
           </MarkdownCodeBlock>
-        )
-        : <pre>{children}</pre>;
-      return isMermaidCodeBlock(node)
-        ? <MermaidDiagram source={text} fallback={codeBlock} />
-        : codeBlock;
-    },
-  }), [onCopyCode, onOpenCard, resolveLink]);
+        ) : (
+          <pre>{children}</pre>
+        );
+        return isMermaidCodeBlock(node) ? (
+          <MermaidDiagram source={text} fallback={codeBlock} />
+        ) : (
+          codeBlock
+        );
+      },
+    }),
+    [onCopyCode, onOpenCard, resolveLink],
+  );
 
   // Find updates change overlays, not the Markdown document. Keep the element
   // stable so react-markdown does not parse the same source on each keystroke.

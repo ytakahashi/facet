@@ -86,12 +86,10 @@ describe("saveMarkdown", () => {
     expect(result).toBe("revision-2");
   });
 
-  it.each(
-    [
-      ["revision-mismatch", "markdown.conflict"],
-      ["not-found", "markdown.file-gone"],
-    ] as const,
-  )("maps %s to %s", async (kind, code) => {
+  it.each([
+    ["revision-mismatch", "markdown.conflict"],
+    ["not-found", "markdown.file-gone"],
+  ] as const)("maps %s to %s", async (kind, code) => {
     const cause = new FileSystemError(
       kind,
       "write-file",

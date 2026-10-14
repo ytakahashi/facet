@@ -24,10 +24,10 @@ type ContentReadState =
   | { status: "idle" }
   | { status: "reading" }
   | {
-    status: "ready";
-    contents: ReadonlyMap<string, string>;
-    unreadableCount: number;
-  };
+      status: "ready";
+      contents: ReadonlyMap<string, string>;
+      unreadableCount: number;
+    };
 
 const RESULTS_ID = "card-content-search-results";
 
@@ -38,9 +38,13 @@ function optionId(index: number): string {
 // Searches a fresh snapshot of every card's file each time it opens. Query
 // and selection remain local because they only help continue a search on this
 // board; BoardScreen remounts the dialog when the board path changes.
-export function CardContentSearchDialog(
-  { board, criteria, open, onClose, onSelect }: CardContentSearchDialogProps,
-) {
+export function CardContentSearchDialog({
+  board,
+  criteria,
+  open,
+  onClose,
+  onSelect,
+}: CardContentSearchDialogProps) {
   const { read } = useCardContentReading();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,9 +63,10 @@ export function CardContentSearchDialog(
         : [],
     [board, query, readState],
   );
-  const rememberedIndex = selectedPath === undefined
-    ? -1
-    : results.findIndex((hit) => hit.card.path === selectedPath);
+  const rememberedIndex =
+    selectedPath === undefined
+      ? -1
+      : results.findIndex((hit) => hit.card.path === selectedPath);
   const activeIndex = rememberedIndex === -1 ? 0 : rememberedIndex;
 
   useEffect(() => {
@@ -70,27 +75,29 @@ export function CardContentSearchDialog(
     const generation = sequence.begin();
     const cards = board.columns.flatMap((column) => column.cards);
     setReadState({ status: "reading" });
-    void read(cards).then((readResults) => {
-      if (!sequence.isCurrent(generation)) return;
+    void read(cards)
+      .then((readResults) => {
+        if (!sequence.isCurrent(generation)) return;
 
-      const contents = new Map<string, string>();
-      let unreadableCount = 0;
-      for (const result of readResults) {
-        if (result.read) {
-          contents.set(result.path, result.content);
-        } else {
-          unreadableCount += 1;
+        const contents = new Map<string, string>();
+        let unreadableCount = 0;
+        for (const result of readResults) {
+          if (result.read) {
+            contents.set(result.path, result.content);
+          } else {
+            unreadableCount += 1;
+          }
         }
-      }
-      setReadState({ status: "ready", contents, unreadableCount });
-    }).catch(() => {
-      if (!sequence.isCurrent(generation)) return;
-      setReadState({
-        status: "ready",
-        contents: new Map(),
-        unreadableCount: cards.length,
+        setReadState({ status: "ready", contents, unreadableCount });
+      })
+      .catch(() => {
+        if (!sequence.isCurrent(generation)) return;
+        setReadState({
+          status: "ready",
+          contents: new Map(),
+          unreadableCount: cards.length,
+        });
       });
-    });
 
     return () => sequence.invalidate();
   }, [board, open, read, sequence]);
@@ -162,9 +169,9 @@ export function CardContentSearchDialog(
           role="combobox"
           aria-expanded
           aria-controls={RESULTS_ID}
-          aria-activedescendant={results.length > 0
-            ? optionId(activeIndex)
-            : undefined}
+          aria-activedescendant={
+            results.length > 0 ? optionId(activeIndex) : undefined
+          }
           aria-label="Search card contents"
           aria-busy={readState.status === "reading"}
           placeholder="Search card contents"
@@ -176,71 +183,71 @@ export function CardContentSearchDialog(
             Reading cards…
           </p>
         )}
-        {readState.status === "ready" && !queryIsEmpty &&
-          (results.length === 0
-            ? <p className="card-search-dialog__empty">No matches</p>
-            : (
-              <ul
-                id={RESULTS_ID}
-                role="listbox"
-                aria-label="Content search results"
-                className="card-search-dialog__results"
-                onMouseDown={(event) => event.preventDefault()}
-              >
-                {results.map((hit, index) => {
-                  const remainingLineCount = hit.totalLineCount -
-                    hit.lines.length;
-                  return (
-                    <li
-                      key={hit.card.path}
-                      id={optionId(index)}
-                      role="option"
-                      aria-selected={index === activeIndex}
-                      ref={index === activeIndex ? selectedRef : undefined}
-                      className={index === activeIndex
+        {readState.status === "ready" &&
+          !queryIsEmpty &&
+          (results.length === 0 ? (
+            <p className="card-search-dialog__empty">No matches</p>
+          ) : (
+            <ul
+              id={RESULTS_ID}
+              role="listbox"
+              aria-label="Content search results"
+              className="card-search-dialog__results"
+              onMouseDown={(event) => event.preventDefault()}
+            >
+              {results.map((hit, index) => {
+                const remainingLineCount =
+                  hit.totalLineCount - hit.lines.length;
+                return (
+                  <li
+                    key={hit.card.path}
+                    id={optionId(index)}
+                    role="option"
+                    aria-selected={index === activeIndex}
+                    ref={index === activeIndex ? selectedRef : undefined}
+                    className={
+                      index === activeIndex
                         ? "card-search-dialog__result card-search-dialog__result--selected"
-                        : "card-search-dialog__result"}
-                      onClick={() => selectAndClose(hit.card)}
-                    >
-                      <span className="card-search-dialog__result-title">
-                        {hit.card.displayTitle}
+                        : "card-search-dialog__result"
+                    }
+                    onClick={() => selectAndClose(hit.card)}
+                  >
+                    <span className="card-search-dialog__result-title">
+                      {hit.card.displayTitle}
+                    </span>
+                    <span className="card-search-dialog__result-meta">
+                      <span className="card-search-dialog__result-column">
+                        {hit.columnName}
                       </span>
-                      <span className="card-search-dialog__result-meta">
-                        <span className="card-search-dialog__result-column">
-                          {hit.columnName}
-                        </span>
-                        <span className="card-search-dialog__result-path">
-                          {hit.card.path}
-                        </span>
-                        {isCardFileBroken(hit.card) && (
-                          <span className="card-search-dialog__result-note card-search-dialog__result-note--missing">
-                            Missing
-                          </span>
-                        )}
-                        {isCardHidden(hit.card, hit.columnId, criteria) && (
-                          <span className="card-search-dialog__result-note">
-                            Hidden by filters
-                          </span>
-                        )}
+                      <span className="card-search-dialog__result-path">
+                        {hit.card.path}
                       </span>
-                      <div className="card-content-search-dialog__lines">
-                        {hit.lines.map((line) => (
-                          <ContentSearchLine
-                            key={line.lineNumber}
-                            hit={line}
-                          />
-                        ))}
-                      </div>
-                      {remainingLineCount > 0 && (
-                        <span className="card-content-search-dialog__more">
-                          +{remainingLineCount} more
+                      {isCardFileBroken(hit.card) && (
+                        <span className="card-search-dialog__result-note card-search-dialog__result-note--missing">
+                          Missing
                         </span>
                       )}
-                    </li>
-                  );
-                })}
-              </ul>
-            ))}
+                      {isCardHidden(hit.card, hit.columnId, criteria) && (
+                        <span className="card-search-dialog__result-note">
+                          Hidden by filters
+                        </span>
+                      )}
+                    </span>
+                    <div className="card-content-search-dialog__lines">
+                      {hit.lines.map((line) => (
+                        <ContentSearchLine key={line.lineNumber} hit={line} />
+                      ))}
+                    </div>
+                    {remainingLineCount > 0 && (
+                      <span className="card-content-search-dialog__more">
+                        +{remainingLineCount} more
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ))}
         {readState.status === "ready" && readState.unreadableCount > 0 && (
           <p className="card-content-search-dialog__unreadable">
             {readState.unreadableCount === 1

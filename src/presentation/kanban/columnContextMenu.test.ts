@@ -3,8 +3,8 @@ import type { ContextMenuEntry } from "../context/appContext.ts";
 import { buildColumnContextMenu } from "./columnContextMenu.ts";
 
 function select(entries: ContextMenuEntry[], label: string): void {
-  const entry = entries.find((candidate) =>
-    candidate.kind === "item" && candidate.label === label
+  const entry = entries.find(
+    (candidate) => candidate.kind === "item" && candidate.label === label,
   );
   if (entry?.kind !== "item") throw new Error(`no item labelled ${label}`);
   entry.onSelect();
@@ -17,8 +17,9 @@ describe("buildColumnContextMenu", () => {
       rename: vi.fn(),
     });
 
-    expect(entries.map((entry) => entry.kind === "item" && entry.enabled))
-      .toEqual([true, true]);
+    expect(
+      entries.map((entry) => entry.kind === "item" && entry.enabled),
+    ).toEqual([true, true]);
   });
 
   it("routes each item to its action", () => {

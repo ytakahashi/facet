@@ -79,13 +79,15 @@ export function createWorkspaceStore({
       if (!tab) return false;
       const boardState = tab.session.boardStore.getState();
       if (
-        (boardState.isSaving || boardState.saveError !== undefined ||
+        (boardState.isSaving ||
+          boardState.saveError !== undefined ||
           boardState.saveConflict) &&
-        !await confirmation.ask(confirmCloseBoard)
-      ) return false;
+        !(await confirmation.ask(confirmCloseBoard))
+      )
+        return false;
       // close() clears the viewer. Keep it last so declining either prompt
       // leaves the entire tab unchanged.
-      if (!await tab.session.markdownViewer.getState().close()) return false;
+      if (!(await tab.session.markdownViewer.getState().close())) return false;
 
       // Read again rather than reusing what was read before the prompts: tabs
       // can be opened, switched or closed while a question is open, and this
@@ -94,9 +96,10 @@ export function createWorkspaceStore({
       const index = tabs.findIndex((entry) => entry.id === id);
       if (index === -1) return false;
       const remaining = tabs.filter((entry) => entry.id !== id);
-      const nextActiveTabId = activeTabId === id
-        ? (remaining[index] ?? remaining[index - 1])?.id
-        : activeTabId;
+      const nextActiveTabId =
+        activeTabId === id
+          ? (remaining[index] ?? remaining[index - 1])?.id
+          : activeTabId;
       set({ tabs: remaining, activeTabId: nextActiveTabId });
       return true;
     },

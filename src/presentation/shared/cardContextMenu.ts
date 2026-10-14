@@ -15,11 +15,10 @@ export function buildCardContextMenu(
   actions: CardContextMenuActions,
 ): ContextMenuEntry[] {
   const currentColumnId = findCardLocation(board, card.path)?.columnId;
-  const destinations = currentColumnId === undefined
-    ? []
-    : board.columns.filter(
-      (column) => column.id !== currentColumnId,
-    );
+  const destinations =
+    currentColumnId === undefined
+      ? []
+      : board.columns.filter((column) => column.id !== currentColumnId);
 
   return [
     {

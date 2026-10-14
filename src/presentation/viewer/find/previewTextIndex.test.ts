@@ -64,18 +64,17 @@ describe("previewTextIndex", () => {
       boundary,
       text("second", "cd"),
     ]);
-    for (
-      const range of [
-        { start: 2, end: 3 },
-        { start: 0, end: 3 },
-        { start: -1, end: 1 },
-        { start: 1, end: 1 },
-        { start: 0, end: 6 },
-      ]
-    ) {
+    for (const range of [
+      { start: 2, end: 3 },
+      { start: 0, end: 3 },
+      { start: -1, end: 1 },
+      { start: 1, end: 1 },
+      { start: 0, end: 6 },
+    ]) {
       expect(locatePreviewRange(index, range)).toBeUndefined();
     }
-    expect(buildPreviewTextIndex([boundary, text("empty", ""), boundary]))
-      .toEqual({ text: "", nodes: [] });
+    expect(
+      buildPreviewTextIndex([boundary, text("empty", ""), boundary]),
+    ).toEqual({ text: "", nodes: [] });
   });
 });

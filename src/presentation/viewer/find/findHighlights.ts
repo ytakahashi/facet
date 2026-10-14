@@ -19,11 +19,13 @@ export function previewDomRange(
 ): Range | undefined {
   const positions = locatePreviewRange(index, match);
   if (
-    !positions || !positions.start.node.isConnected ||
+    !positions ||
+    !positions.start.node.isConnected ||
     !positions.end.node.isConnected ||
     positions.start.offset > positions.start.node.length ||
     positions.end.offset > positions.end.node.length
-  ) return undefined;
+  )
+    return undefined;
   const range = positions.start.node.ownerDocument.createRange();
   range.setStart(positions.start.node, positions.start.offset);
   range.setEnd(positions.end.node, positions.end.offset);
@@ -47,9 +49,11 @@ export function registerFindHighlights(
 ) {
   clearFindHighlights();
   if (
-    typeof CSS === "undefined" || !CSS.highlights ||
+    typeof CSS === "undefined" ||
+    !CSS.highlights ||
     typeof Highlight === "undefined"
-  ) return;
+  )
+    return;
   const all = new Highlight();
   const active = new Highlight();
   active.priority = 1;
@@ -79,14 +83,13 @@ export function visiblePreviewOffset(
       const segmenter = new Intl.Segmenter(undefined, {
         granularity: "grapheme",
       });
-      for (
-        const { index: offset, segment } of segmenter.segment(entry.node.data)
-      ) {
+      for (const { index: offset, segment } of segmenter.segment(
+        entry.node.data,
+      )) {
         range.setStart(entry.node, offset);
         range.setEnd(entry.node, offset + segment.length);
-        if (
-          Array.from(range.getClientRects()).some((box) => box.bottom > top)
-        ) return entry.start + offset;
+        if (Array.from(range.getClientRects()).some((box) => box.bottom > top))
+          return entry.start + offset;
       }
     }
   }

@@ -28,9 +28,12 @@ const columns: { key: CardTableSortKey; title: string }[] = [
   { key: "path", title: "Path" },
 ];
 
-export function CardTable(
-  { board, onDeleteCard, onRepairCard, onCardContextMenu }: CardTableProps,
-) {
+export function CardTable({
+  board,
+  onDeleteCard,
+  onRepairCard,
+  onCardContextMenu,
+}: CardTableProps) {
   const criteria = useFilterStore((state) => state.criteria);
   const tableSort = useBoardView((state) => state.tableSort);
   const cycleTableSort = useBoardView((state) => state.cycleTableSort);
@@ -76,9 +79,13 @@ export function CardTable(
                 key={key}
                 className={`card-table__heading--${key}`}
                 scope="col"
-                aria-sort={tableSort?.key === key
-                  ? tableSort.direction === "asc" ? "ascending" : "descending"
-                  : "none"}
+                aria-sort={
+                  tableSort?.key === key
+                    ? tableSort.direction === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
               >
                 <button type="button" onClick={() => cycleTableSort(key)}>
                   {title}
@@ -100,9 +107,11 @@ export function CardTable(
               <tr
                 key={card.path}
                 ref={isSelected ? selectedRowRef : undefined}
-                className={isSelected
-                  ? "card-table__row card-table__row--selected"
-                  : "card-table__row"}
+                className={
+                  isSelected
+                    ? "card-table__row card-table__row--selected"
+                    : "card-table__row"
+                }
                 onClick={() => openCard(card)}
                 onContextMenu={(event) => onCardContextMenu(card, event)}
               >

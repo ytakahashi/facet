@@ -7,6 +7,11 @@ export function resolveHelpShortcut(
   >,
 ): boolean {
   // Shift produces "?" on common layouts, so only the reported key matters.
-  return event.key === "?" && !event.metaKey && !event.ctrlKey &&
-    !event.altKey && !isImeProcessing(event);
+  return (
+    event.key === "?" &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !isImeProcessing(event)
+  );
 }

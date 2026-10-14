@@ -18,7 +18,8 @@ export class CardFileValidationError extends Error {
 }
 
 export function suggestMarkdownFileName(title: string): string {
-  const base = title.trim()
+  const base = title
+    .trim()
     .replace(/[/:]/g, "-")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
@@ -32,7 +33,9 @@ export function normalizeMarkdownFileName(input: string): string {
     throw new CardFileValidationError("file-name-required");
   }
   if (
-    fileName === "." || fileName === ".." || fileName.includes("/") ||
+    fileName === "." ||
+    fileName === ".." ||
+    fileName.includes("/") ||
     fileName.includes(":")
   ) {
     throw new CardFileValidationError("invalid-file-name");

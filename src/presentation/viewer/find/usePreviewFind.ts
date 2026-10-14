@@ -20,9 +20,10 @@ export function usePreviewFind(
   find: FindPresentation | undefined,
   onFindTextChange: ((source: FindText) => void) | undefined,
 ) {
-  const [snapshot, setSnapshot] = useState<
-    { index: ReturnType<typeof collectPreviewText>; source: FindText }
-  >();
+  const [snapshot, setSnapshot] = useState<{
+    index: ReturnType<typeof collectPreviewText>;
+    source: FindText;
+  }>();
   const revealed = useRef(0);
   const currentSource = useRef<FindText | undefined>(undefined);
   const flushMutations = useRef<() => void>(() => {});
@@ -79,7 +80,10 @@ export function usePreviewFind(
     // A snapshot is an identity, not just equal text: Mermaid replacement can
     // change every node while leaving the searchable string unchanged.
     if (
-      !root || !find || !snapshot || find.source !== snapshot.source ||
+      !root ||
+      !find ||
+      !snapshot ||
+      find.source !== snapshot.source ||
       currentSource.current !== snapshot.source
     ) {
       clearFindHighlights();
@@ -87,7 +91,8 @@ export function usePreviewFind(
     }
     setFindHighlights(snapshot.index, find.ranges, find.activeIndex);
     if (
-      find.activeIndex !== undefined && revealed.current !== find.revealToken
+      find.activeIndex !== undefined &&
+      revealed.current !== find.revealToken
     ) {
       const range = previewDomRange(
         snapshot.index,

@@ -40,32 +40,35 @@ export function useEditorFind(
     backdrop.scrollTop = textarea.scrollTop;
     backdrop.scrollLeft = textarea.scrollLeft;
   }, [textareaRef, backdropRef]);
-  const source = useMemo<FindText>(() => ({
-    text,
-    getAnchorOffset: () => textareaRef.current?.selectionStart ?? 0,
-    getSelectedQuery: () => {
-      const textarea = textareaRef.current;
-      if (!textarea || textarea.ownerDocument.activeElement !== textarea) {
-        return undefined;
-      }
-      return selectedFindQuery(
-        textarea.value,
-        textarea.selectionStart,
-        textarea.selectionEnd,
-      );
-    },
-    restoreSelection: (range) => {
-      const textarea = textareaRef.current;
-      if (!textarea?.isConnected) return;
-      textarea.focus({ preventScroll: true });
-      // Typing can precede the next source notification. Never restore offsets
-      // from the older draft into the newly edited textarea.
-      if (range && textarea.value === text) {
-        textarea.setSelectionRange(range.start, range.end);
-      }
-      syncScroll();
-    },
-  }), [text, textareaRef, syncScroll]);
+  const source = useMemo<FindText>(
+    () => ({
+      text,
+      getAnchorOffset: () => textareaRef.current?.selectionStart ?? 0,
+      getSelectedQuery: () => {
+        const textarea = textareaRef.current;
+        if (!textarea || textarea.ownerDocument.activeElement !== textarea) {
+          return undefined;
+        }
+        return selectedFindQuery(
+          textarea.value,
+          textarea.selectionStart,
+          textarea.selectionEnd,
+        );
+      },
+      restoreSelection: (range) => {
+        const textarea = textareaRef.current;
+        if (!textarea?.isConnected) return;
+        textarea.focus({ preventScroll: true });
+        // Typing can precede the next source notification. Never restore offsets
+        // from the older draft into the newly edited textarea.
+        if (range && textarea.value === text) {
+          textarea.setSelectionRange(range.start, range.end);
+        }
+        syncScroll();
+      },
+    }),
+    [text, textareaRef, syncScroll],
+  );
   useLayoutEffect(() => {
     if (!onFindTextChange) return;
     // Layout publication makes matching and painting finish before the next
@@ -78,8 +81,12 @@ export function useEditorFind(
     const backdrop = backdropRef.current;
     const node = textRef.current?.firstChild;
     if (
-      !textarea || !backdrop || !(node instanceof Text) || !find ||
-      find.source !== source || node.data !== text
+      !textarea ||
+      !backdrop ||
+      !(node instanceof Text) ||
+      !find ||
+      find.source !== source ||
+      node.data !== text
     ) {
       clearFindHighlights();
       return;
@@ -87,7 +94,8 @@ export function useEditorFind(
     const ranges = find.ranges.map((match) => mirrorRange(node, match));
     registerFindHighlights(ranges, find.activeIndex);
     if (
-      revealed.current !== find.revealToken && find.activeIndex !== undefined
+      revealed.current !== find.revealToken &&
+      find.activeIndex !== undefined
     ) {
       const range = ranges[find.activeIndex];
       if (range) {

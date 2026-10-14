@@ -121,21 +121,22 @@ export function MissingCardDialog({
     await repair(() =>
       mode === "new"
         ? recreateCard(card.path, absolutePath, titleInput)
-        : relocateCard(card.path, absolutePath)
+        : relocateCard(card.path, absolutePath),
     );
   }
 
-  const canSubmit = mode === "browse"
-    ? Boolean(selectedPath)
-    : mode === "new"
-    ? Boolean(pathInput.trim()) && Boolean(titleInput.trim())
-    : Boolean(pathInput.trim());
+  const canSubmit =
+    mode === "browse"
+      ? Boolean(selectedPath)
+      : mode === "new"
+        ? Boolean(pathInput.trim()) && Boolean(titleInput.trim())
+        : Boolean(pathInput.trim());
   // Only a card whose path resolved has somewhere to look again; an
   // unresolvable one has no target to re-read.
-  const recheckPath = card.fileState === "missing" ||
-      card.fileState === "unreadable"
-    ? card.absolutePath
-    : undefined;
+  const recheckPath =
+    card.fileState === "missing" || card.fileState === "unreadable"
+      ? card.absolutePath
+      : undefined;
 
   return (
     <dialog
@@ -152,9 +153,7 @@ export function MissingCardDialog({
         <div className="missing-card-dialog__target">
           <p className="missing-card-dialog__title">{card.displayTitle}</p>
           <p className="missing-card-dialog__path">{card.path}</p>
-          <p className="missing-card-dialog__reason">
-            {missingReason(card)}
-          </p>
+          <p className="missing-card-dialog__reason">{missingReason(card)}</p>
         </div>
         {/* One input at a time, so an error never needs placing next to one. */}
         {error && (
@@ -204,79 +203,72 @@ export function MissingCardDialog({
             Enter path
           </button>
         </div>
-        {mode === "browse"
-          ? (
-            <fieldset disabled={isSubmitting}>
-              <legend>Markdown file</legend>
-              <MarkdownFileBrowser
-                root={boardDirectory}
-                selectedPath={selectedPath}
-                onSelect={(path) => {
-                  setSelectedPath(path);
-                  setError(undefined);
-                }}
-                disabled={isSubmitting}
-              />
-            </fieldset>
-          )
-          : (
-            <>
-              {
-                /* The title becomes the new file's H1, which is where a card
-                  without an explicit title reads its own from. */
-              }
-              {mode === "new" && (
-                <label>
-                  <span>Title</span>
-                  <input
-                    type="text"
-                    value={titleInput}
-                    onChange={(event) => {
-                      setTitleInput(event.target.value);
-                      setError(undefined);
-                    }}
-                    disabled={isSubmitting}
-                    autoFocus
-                    required
-                  />
-                </label>
-              )}
+        {mode === "browse" ? (
+          <fieldset disabled={isSubmitting}>
+            <legend>Markdown file</legend>
+            <MarkdownFileBrowser
+              root={boardDirectory}
+              selectedPath={selectedPath}
+              onSelect={(path) => {
+                setSelectedPath(path);
+                setError(undefined);
+              }}
+              disabled={isSubmitting}
+            />
+          </fieldset>
+        ) : (
+          <>
+            {/* The title becomes the new file's H1, which is where a card
+                  without an explicit title reads its own from. */}
+            {mode === "new" && (
               <label>
-                <span>Path relative to the board directory</span>
+                <span>Title</span>
                 <input
                   type="text"
-                  value={pathInput}
+                  value={titleInput}
                   onChange={(event) => {
-                    setPathInput(event.target.value);
+                    setTitleInput(event.target.value);
                     setError(undefined);
                   }}
                   disabled={isSubmitting}
-                  autoFocus={mode === "path"}
+                  autoFocus
                   required
                 />
               </label>
-            </>
-          )}
-        {
-          /* The manual refresh this app has instead of watching the file
-            system: the card is only re-read when asked. */
-        }
+            )}
+            <label>
+              <span>Path relative to the board directory</span>
+              <input
+                type="text"
+                value={pathInput}
+                onChange={(event) => {
+                  setPathInput(event.target.value);
+                  setError(undefined);
+                }}
+                disabled={isSubmitting}
+                autoFocus={mode === "path"}
+                required
+              />
+            </label>
+          </>
+        )}
+        {/* The manual refresh this app has instead of watching the file
+            system: the card is only re-read when asked. */}
         {recheckPath && (
           <button
             type="button"
             className="missing-card-dialog__recheck"
             onClick={() =>
-              void repair(() => relocateCard(card.path, recheckPath))}
+              void repair(() => relocateCard(card.path, recheckPath))
+            }
             disabled={isSubmitting}
           >
             Check again
           </button>
         )}
         <div className="missing-card-dialog__actions">
-          {
-            /* Hands the card to the one delete flow rather than removing it
-              here, so the confirmation and its wording stay in one place. */
-          }
+          {/* Hands the card to the one delete flow rather than removing it
+              here, so the confirmation and its wording stay in one place. */}
           <button
             type="button"
             className="missing-card-dialog__remove"
@@ -292,10 +284,10 @@ export function MissingCardDialog({
             {isSubmitting
               ? "Updating…"
               : mode === "new"
-              ? "Create file"
-              : mode === "browse"
-              ? "Use this file"
-              : "Update path"}
+                ? "Create file"
+                : mode === "browse"
+                  ? "Use this file"
+                  : "Update path"}
           </button>
         </div>
       </form>

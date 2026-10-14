@@ -27,9 +27,9 @@ export type RemoveFileResult =
 export type RenameFileResult =
   | { renamed: true }
   | {
-    renamed: false;
-    reason: "not-found" | "already-exists" | "is-a-directory";
-  };
+      renamed: false;
+      reason: "not-found" | "already-exists" | "is-a-directory";
+    };
 
 export type RevealInFinderResult =
   | { revealed: true }

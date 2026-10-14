@@ -11,8 +11,9 @@ afterEach(() => {
 // Each test supplies the commands it exercises; the rest stay bare mocks.
 function stubHostCommands(commands: Partial<typeof hostCommands>): void {
   for (const [name, command] of Object.entries(commands)) {
-    vi.mocked(hostCommands[name as keyof typeof hostCommands])
-      .mockImplementation(command as never);
+    vi.mocked(
+      hostCommands[name as keyof typeof hostCommands],
+    ).mockImplementation(command as never);
   }
 }
 
@@ -280,10 +281,7 @@ describe("HostFileSystemAdapter", () => {
 
     await fileSystem.writeTextFile("/board/card.md", "# Card\n");
 
-    expect(writeTextFile).toHaveBeenCalledWith(
-      "/board/card.md",
-      "# Card\n",
-    );
+    expect(writeTextFile).toHaveBeenCalledWith("/board/card.md", "# Card\n");
   });
 
   it.each(["revision-mismatch", "not-found"] as const)(
@@ -295,11 +293,7 @@ describe("HostFileSystemAdapter", () => {
       const fileSystem = new HostFileSystemAdapter();
 
       const act = () =>
-        fileSystem.writeTextFile(
-          "/board/card.md",
-          "# Card\n",
-          "revision-1",
-        );
+        fileSystem.writeTextFile("/board/card.md", "# Card\n", "revision-1");
 
       await expect(act).rejects.toMatchObject({
         name: "FileSystemError",

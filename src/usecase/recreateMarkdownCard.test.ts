@@ -40,12 +40,15 @@ describe("recreateMarkdownCard", () => {
     const createTextFile = vi.fn().mockResolvedValue(undefined);
     const fileSystem = makeFileSystem({ createTextFile });
 
-    const result = await recreateMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard(),
-      absolutePath: "/board/gone.md",
-      title: "Back again",
-    }, { fileSystem });
+    const result = await recreateMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard(),
+        absolutePath: "/board/gone.md",
+        title: "Back again",
+      },
+      { fileSystem },
+    );
 
     expect(createTextFile).toHaveBeenCalledWith(
       "/board/gone.md",
@@ -63,12 +66,15 @@ describe("recreateMarkdownCard", () => {
   it("keeps a title override as the card's displayed title", async () => {
     const fileSystem = makeFileSystem();
 
-    const result = await recreateMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard({ titleOverride: "Custom title" }),
-      absolutePath: "/board/gone.md",
-      title: "Back again",
-    }, { fileSystem });
+    const result = await recreateMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard({ titleOverride: "Custom title" }),
+        absolutePath: "/board/gone.md",
+        title: "Back again",
+      },
+      { fileSystem },
+    );
 
     expect(result.displayTitle).toBe("Custom title");
   });
@@ -77,12 +83,15 @@ describe("recreateMarkdownCard", () => {
     const createTextFile = vi.fn().mockResolvedValue(undefined);
     const fileSystem = makeFileSystem({ createTextFile });
 
-    const result = await recreateMarkdownCard({
-      boardPath: "/board/development.board.yaml",
-      card: makeCard(),
-      absolutePath: "/board/ideas/fresh.md",
-      title: "Fresh",
-    }, { fileSystem });
+    const result = await recreateMarkdownCard(
+      {
+        boardPath: "/board/development.board.yaml",
+        card: makeCard(),
+        absolutePath: "/board/ideas/fresh.md",
+        title: "Fresh",
+      },
+      { fileSystem },
+    );
 
     expect(createTextFile).toHaveBeenCalledWith(
       "/board/ideas/fresh.md",
@@ -99,12 +108,15 @@ describe("recreateMarkdownCard", () => {
     });
 
     const act = () =>
-      recreateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/board/gone.md",
-        title: "Back again",
-      }, { fileSystem });
+      recreateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/board/gone.md",
+          title: "Back again",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.file-already-exists",
@@ -124,12 +136,15 @@ describe("recreateMarkdownCard", () => {
     });
 
     const act = () =>
-      recreateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/board/gone.md",
-        title: "Back again",
-      }, { fileSystem });
+      recreateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/board/gone.md",
+          title: "Back again",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.file-already-exists",
@@ -142,12 +157,15 @@ describe("recreateMarkdownCard", () => {
     const fileSystem = makeFileSystem({ createTextFile });
 
     const act = () =>
-      recreateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/other/gone.md",
-        title: "Back again",
-      }, { fileSystem });
+      recreateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/other/gone.md",
+          title: "Back again",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.outside-board-directory",
@@ -160,12 +178,15 @@ describe("recreateMarkdownCard", () => {
     const fileSystem = makeFileSystem({ createTextFile });
 
     const act = () =>
-      recreateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/board/gone.md",
-        title: "   ",
-      }, { fileSystem });
+      recreateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/board/gone.md",
+          title: "   ",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({ code: "card.title-required" });
     expect(createTextFile).not.toHaveBeenCalled();
@@ -178,12 +199,15 @@ describe("recreateMarkdownCard", () => {
     });
 
     const act = () =>
-      recreateMarkdownCard({
-        boardPath: "/board/development.board.yaml",
-        card: makeCard(),
-        absolutePath: "/board/gone.md",
-        title: "Back again",
-      }, { fileSystem });
+      recreateMarkdownCard(
+        {
+          boardPath: "/board/development.board.yaml",
+          card: makeCard(),
+          absolutePath: "/board/gone.md",
+          title: "Back again",
+        },
+        { fileSystem },
+      );
 
     await expect(act).rejects.toMatchObject({
       code: "card.create-failed",

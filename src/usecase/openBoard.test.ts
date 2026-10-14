@@ -85,9 +85,7 @@ describe("openBoard", () => {
     });
 
     expect(result).toEqual({ board, revision: "revision-1" });
-    expect(boardRepository.requestedPath).toBe(
-      "/board/development.board.yaml",
-    );
+    expect(boardRepository.requestedPath).toBe("/board/development.board.yaml");
   });
 
   it("records the opened path at the front of the recent boards history", async () => {

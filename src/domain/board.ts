@@ -56,7 +56,7 @@ export class LabelAlreadyExistsError extends Error {
 // cannot answer this - the card in the way may be one whose file is missing.
 export function containsCardPath(board: Board, path: string): boolean {
   return board.columns.some((column) =>
-    column.cards.some((card) => isSameCardPath(card.path, path))
+    column.cards.some((card) => isSameCardPath(card.path, path)),
   );
 }
 
@@ -65,8 +65,8 @@ export function containsCardPath(board: Board, path: string): boolean {
 export function findCardByPath(board: Board, path: string): Card | undefined {
   const normalizedPath = normalizeCardPath(path);
   for (const column of board.columns) {
-    const card = column.cards.find((c) =>
-      normalizeCardPath(c.path) === normalizedPath
+    const card = column.cards.find(
+      (c) => normalizeCardPath(c.path) === normalizedPath,
     );
     if (card) return card;
   }
@@ -81,7 +81,7 @@ export function findCardLocation(
 ): CardLocation | undefined {
   for (const column of board.columns) {
     const index = column.cards.findIndex((card) =>
-      isSameCardPath(card.path, path)
+      isSameCardPath(card.path, path),
     );
     if (index !== -1) return { columnId: column.id, index };
   }
@@ -97,7 +97,7 @@ export function findCardByEquivalentPath(
 ): Card | undefined {
   for (const column of board.columns) {
     const card = column.cards.find((candidate) =>
-      isSameCardPath(candidate.path, path)
+      isSameCardPath(candidate.path, path),
     );
     if (card) return card;
   }
@@ -160,8 +160,8 @@ export function replaceCard(board: Board, cardPath: string, card: Card): Board {
 
   let found = false;
   const columns = board.columns.map((column) => {
-    const index = column.cards.findIndex((c) =>
-      normalizeCardPath(c.path) === normalizedPath
+    const index = column.cards.findIndex(
+      (c) => normalizeCardPath(c.path) === normalizedPath,
     );
     if (index === -1) return column;
     found = true;
@@ -216,8 +216,8 @@ export function setCardTitle(
   const normalizedPath = normalizeCardPath(cardPath);
   let found = false;
   const columns = board.columns.map((column) => {
-    const index = column.cards.findIndex((c) =>
-      normalizeCardPath(c.path) === normalizedPath
+    const index = column.cards.findIndex(
+      (c) => normalizeCardPath(c.path) === normalizedPath,
     );
     if (index === -1) return column;
     found = true;
@@ -250,8 +250,8 @@ export function addLabelToCard(
   const normalizedPath = normalizeCardPath(cardPath);
   let found = false;
   const columns = board.columns.map((column) => {
-    const index = column.cards.findIndex((c) =>
-      normalizeCardPath(c.path) === normalizedPath
+    const index = column.cards.findIndex(
+      (c) => normalizeCardPath(c.path) === normalizedPath,
     );
     if (index === -1) return column;
     found = true;
@@ -280,8 +280,8 @@ export function removeLabelFromCard(
   const normalizedPath = normalizeCardPath(cardPath);
   let found = false;
   const columns = board.columns.map((column) => {
-    const index = column.cards.findIndex((c) =>
-      normalizeCardPath(c.path) === normalizedPath
+    const index = column.cards.findIndex(
+      (c) => normalizeCardPath(c.path) === normalizedPath,
     );
     if (index === -1) return column;
     found = true;
@@ -311,8 +311,8 @@ export function removeCard(board: Board, cardPath: string): Board {
   const normalizedPath = normalizeCardPath(cardPath);
   let found = false;
   const columns = board.columns.map((column) => {
-    const index = column.cards.findIndex((c) =>
-      normalizeCardPath(c.path) === normalizedPath
+    const index = column.cards.findIndex(
+      (c) => normalizeCardPath(c.path) === normalizedPath,
     );
     if (index === -1) return column;
     found = true;
@@ -426,21 +426,21 @@ export function renameLabelDefinition(
     throw new LabelAlreadyExistsError(nextName);
   }
   const labels = board.labels.map((label) =>
-    label.name === name ? { ...label, name: nextName } : label
+    label.name === name ? { ...label, name: nextName } : label,
   );
   const columns = board.columns.map((column) => ({
     ...column,
     cards: column.cards.map((card) =>
       card.labels.includes(name)
         ? {
-          ...card,
-          labels: [
-            ...new Set(
-              card.labels.map((label) => label === name ? nextName : label),
-            ),
-          ],
-        }
-        : card
+            ...card,
+            labels: [
+              ...new Set(
+                card.labels.map((label) => (label === name ? nextName : label)),
+              ),
+            ],
+          }
+        : card,
     ),
   }));
   return { ...board, labels, columns };
@@ -457,7 +457,7 @@ export function setLabelColor(
     throw new Error(`Unknown label: ${name}`);
   }
   const labels = board.labels.map((label) =>
-    label.name === name ? { ...label, color } : label
+    label.name === name ? { ...label, color } : label,
   );
   return { ...board, labels };
 }
@@ -477,7 +477,7 @@ export function removeLabelDefinition(board: Board, name: string): Board {
     cards: column.cards.map((card) =>
       card.labels.includes(name)
         ? { ...card, labels: card.labels.filter((label) => label !== name) }
-        : card
+        : card,
     ),
   }));
   return { ...board, labels, columns };
@@ -543,9 +543,10 @@ export function moveCard(
 
   const [card] = fromColumn.cards.splice(from.index, 1);
 
-  const insertIndex = from.columnId === to.columnId && to.index > from.index
-    ? to.index - 1
-    : to.index;
+  const insertIndex =
+    from.columnId === to.columnId && to.index > from.index
+      ? to.index - 1
+      : to.index;
   toColumn.cards.splice(insertIndex, 0, card);
 
   return { ...board, columns };

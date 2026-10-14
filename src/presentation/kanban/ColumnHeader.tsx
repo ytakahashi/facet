@@ -33,14 +33,12 @@ export function ColumnHeader({
 
   return (
     <div className="column__header">
-      {
-        /* Dragging the column starts here rather than anywhere on the column:
+      {/* Dragging the column starts here rather than anywhere on the column:
           cards are draggable inside it, and the rename input must keep its own
           text selection. Deliberately not a button - it only responds to a
           pointer drag, and a focusable control that ignores Enter would
           promise a keyboard interaction that does not exist. The column
-          registers this element as its drag handle (see Column.tsx). */
-      }
+          registers this element as its drag handle (see Column.tsx). */}
       <span
         ref={dragHandleRef}
         className="column__drag-handle"
@@ -49,26 +47,24 @@ export function ColumnHeader({
       >
         ⠿
       </span>
-      {isEditing
-        ? (
-          <ColumnNameInput
-            initialName={column.name}
-            onCommit={commit}
-            onCancel={() => onEditingChange(false)}
-          />
-        )
-        : (
-          <h2 className="column__name">
-            <button
-              type="button"
-              className="column__name-button"
-              title={column.name}
-              onClick={() => onEditingChange(true)}
-            >
-              {column.name}
-            </button>
-          </h2>
-        )}
+      {isEditing ? (
+        <ColumnNameInput
+          initialName={column.name}
+          onCommit={commit}
+          onCancel={() => onEditingChange(false)}
+        />
+      ) : (
+        <h2 className="column__name">
+          <button
+            type="button"
+            className="column__name-button"
+            title={column.name}
+            onClick={() => onEditingChange(true)}
+          >
+            {column.name}
+          </button>
+        </h2>
+      )}
       <div className="column__actions">
         <button
           type="button"
@@ -92,9 +88,11 @@ interface ColumnNameInputProps {
 
 // Mounted afresh for every edit, so the draft starts from the name the column
 // has at that moment without an effect to reset it.
-function ColumnNameInput(
-  { initialName, onCommit, onCancel }: ColumnNameInputProps,
-) {
+function ColumnNameInput({
+  initialName,
+  onCommit,
+  onCancel,
+}: ColumnNameInputProps) {
   const [draft, setDraft] = useState(initialName);
 
   return (

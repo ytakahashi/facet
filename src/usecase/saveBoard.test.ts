@@ -19,11 +19,7 @@ class FakeBoardRepository implements BoardRepository {
     throw new Error("not needed for this test");
   }
 
-  save(
-    path: string,
-    board: Board,
-    expectedRevision?: string,
-  ): Promise<string> {
+  save(path: string, board: Board, expectedRevision?: string): Promise<string> {
     this.saves.push({ path, board, expectedRevision });
     return Promise.resolve("revision-2");
   }
@@ -76,12 +72,9 @@ describe("saveBoard", () => {
     };
 
     const act = () =>
-      saveBoard(
-        "/board/development.board.yaml",
-        board,
-        "revision-1",
-        { boardRepository },
-      );
+      saveBoard("/board/development.board.yaml", board, "revision-1", {
+        boardRepository,
+      });
 
     await expect(act).rejects.toMatchObject({
       code: "board.save-failed",

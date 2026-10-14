@@ -250,11 +250,7 @@ describe("addCard", () => {
     });
 
     const act = () =>
-      addCard(
-        board,
-        "column",
-        makeCard({ path: "./notes/other/../card.md" }),
-      );
+      addCard(board, "column", makeCard({ path: "./notes/other/../card.md" }));
 
     expect(act).toThrow(CardAlreadyExistsError);
   });
@@ -415,9 +411,11 @@ describe("retitleCardOnBoard", () => {
 describe("retitleCardsOnBoard", () => {
   it("retitles multiple cards without adding absent cards", () => {
     const board = makeBoard({
-      columns: [makeColumn({
-        cards: [makeCard(), makeCard({ path: "second.md" })],
-      })],
+      columns: [
+        makeColumn({
+          cards: [makeCard(), makeCard({ path: "second.md" })],
+        }),
+      ],
     });
     const markdownByCardPath = new Map([
       ["card.md", "# Updated"],
@@ -544,9 +542,7 @@ describe("renameLabelDefinition", () => {
     const untouchedCard = makeCard({ path: "b.md", labels: ["docs"] });
     const board = makeBoard({
       labels: [renamedLabel, untouchedLabel],
-      columns: [
-        makeColumn({ cards: [taggedCard, untouchedCard] }),
-      ],
+      columns: [makeColumn({ cards: [taggedCard, untouchedCard] })],
     });
 
     const result = renameLabelDefinition(board, "ui", "interface");
@@ -997,10 +993,12 @@ describe("moveLabelDefinition", () => {
   });
 
   it("moves forward and backward using rendered positions", () => {
-    expect(moveLabelDefinition(board, "first", 3).labels.map((l) => l.name))
-      .toEqual(["middle", "last", "first"]);
-    expect(moveLabelDefinition(board, "last", 0).labels.map((l) => l.name))
-      .toEqual(["last", "first", "middle"]);
+    expect(
+      moveLabelDefinition(board, "first", 3).labels.map((l) => l.name),
+    ).toEqual(["middle", "last", "first"]);
+    expect(
+      moveLabelDefinition(board, "last", 0).labels.map((l) => l.name),
+    ).toEqual(["last", "first", "middle"]);
   });
 
   it("clamps a position past the end and leaves cards untouched", () => {

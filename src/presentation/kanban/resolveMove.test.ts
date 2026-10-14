@@ -61,10 +61,7 @@ describe("resolveMove", () => {
   it("inserts before the target card when dropped on its top edge", () => {
     const source = cardSource({ type: "card", columnId: "doing", index: 0 });
     const cardTarget = {
-      data: cardTargetData(
-        { type: "card", columnId: "done", index: 2 },
-        "top",
-      ),
+      data: cardTargetData({ type: "card", columnId: "done", index: 2 }, "top"),
     };
     const cardListTarget = {
       data: { type: "card-list", columnId: "done" } satisfies CardListDropData,

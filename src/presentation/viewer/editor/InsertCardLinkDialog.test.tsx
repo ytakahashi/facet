@@ -32,29 +32,31 @@ describe("InsertCardLinkDialog", () => {
       version: 1,
       name: "Board",
       labels: [],
-      columns: [{
-        id: "doing",
-        name: "Doing",
-        cards: [
-          makeCard({ path: "current.md", displayTitle: "Current" }),
-          makeCard({ path: "notes/target.md", displayTitle: "Target" }),
-          makeCard({
-            path: "missing.md",
-            displayTitle: "Missing target",
-            fileState: "missing",
-          }),
-          makeCard({
-            path: "../outside.md",
-            displayTitle: "Outside",
-            fileState: "unresolvable",
-          }),
-          makeCard({
-            path: "notes/reference.txt",
-            displayTitle: "Non-Markdown",
-            fileState: "available",
-          }),
-        ],
-      }],
+      columns: [
+        {
+          id: "doing",
+          name: "Doing",
+          cards: [
+            makeCard({ path: "current.md", displayTitle: "Current" }),
+            makeCard({ path: "notes/target.md", displayTitle: "Target" }),
+            makeCard({
+              path: "missing.md",
+              displayTitle: "Missing target",
+              fileState: "missing",
+            }),
+            makeCard({
+              path: "../outside.md",
+              displayTitle: "Outside",
+              fileState: "unresolvable",
+            }),
+            makeCard({
+              path: "notes/reference.txt",
+              displayTitle: "Non-Markdown",
+              fileState: "available",
+            }),
+          ],
+        },
+      ],
     });
 
     expect(output).toContain("Target");
@@ -74,11 +76,13 @@ describe("InsertCardLinkDialog", () => {
       version: 1,
       name: "Board",
       labels: [],
-      columns: [{
-        id: "column",
-        name: "Column",
-        cards: [makeCard({ path: "current.md" })],
-      }],
+      columns: [
+        {
+          id: "column",
+          name: "Column",
+          cards: [makeCard({ path: "current.md" })],
+        },
+      ],
     });
 
     expect(output).toContain("No cards to link");

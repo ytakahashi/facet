@@ -30,9 +30,13 @@ function optionId(index: number): string {
 // whether or not a filter is currently hiding it. Unlike the filter sidebar,
 // this changes nothing about the board: it is a way to reach a card, not a
 // statement about which cards belong on screen.
-export function CardSearchDialog(
-  { board, criteria, open, onClose, onSelect }: CardSearchDialogProps,
-) {
+export function CardSearchDialog({
+  board,
+  criteria,
+  open,
+  onClose,
+  onSelect,
+}: CardSearchDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const selectedRef = useRef<HTMLLIElement>(null);
   const [query, setQuery] = useState("");
@@ -120,9 +124,9 @@ export function CardSearchDialog(
           role="combobox"
           aria-expanded
           aria-controls={RESULTS_ID}
-          aria-activedescendant={results.length > 0
-            ? optionId(activeIndex)
-            : undefined}
+          aria-activedescendant={
+            results.length > 0 ? optionId(activeIndex) : undefined
+          }
           aria-label="Search cards by title"
           placeholder="Search cards by title"
           value={query}
@@ -131,61 +135,61 @@ export function CardSearchDialog(
             setSelectedIndex(0);
           }}
         />
-        {results.length === 0
-          ? <p className="card-search-dialog__empty">No cards match</p>
-          : (
-            <ul
-              id={RESULTS_ID}
-              role="listbox"
-              aria-label="Search results"
-              className="card-search-dialog__results"
-              // Nothing in the list is focusable, so a click on it would
-              // otherwise pull focus out of the input and stop what is typed
-              // next from reaching the query.
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              {results.map((hit, index) => (
-                <li
-                  key={hit.card.path}
-                  id={optionId(index)}
-                  role="option"
-                  aria-selected={index === activeIndex}
-                  ref={index === activeIndex ? selectedRef : undefined}
-                  className={index === activeIndex
+        {results.length === 0 ? (
+          <p className="card-search-dialog__empty">No cards match</p>
+        ) : (
+          <ul
+            id={RESULTS_ID}
+            role="listbox"
+            aria-label="Search results"
+            className="card-search-dialog__results"
+            // Nothing in the list is focusable, so a click on it would
+            // otherwise pull focus out of the input and stop what is typed
+            // next from reaching the query.
+            onMouseDown={(event) => event.preventDefault()}
+          >
+            {results.map((hit, index) => (
+              <li
+                key={hit.card.path}
+                id={optionId(index)}
+                role="option"
+                aria-selected={index === activeIndex}
+                ref={index === activeIndex ? selectedRef : undefined}
+                className={
+                  index === activeIndex
                     ? "card-search-dialog__result card-search-dialog__result--selected"
-                    : "card-search-dialog__result"}
-                  onClick={() => selectAndClose(hit.card)}
-                >
-                  <span className="card-search-dialog__result-title">
-                    {hit.card.displayTitle}
+                    : "card-search-dialog__result"
+                }
+                onClick={() => selectAndClose(hit.card)}
+              >
+                <span className="card-search-dialog__result-title">
+                  {hit.card.displayTitle}
+                </span>
+                <span className="card-search-dialog__result-meta">
+                  <span className="card-search-dialog__result-column">
+                    {hit.columnName}
                   </span>
-                  <span className="card-search-dialog__result-meta">
-                    <span className="card-search-dialog__result-column">
-                      {hit.columnName}
-                    </span>
-                    <span className="card-search-dialog__result-path">
-                      {hit.card.path}
-                    </span>
-                    {
-                      /* Both notes say why the board looks different from
+                  <span className="card-search-dialog__result-path">
+                    {hit.card.path}
+                  </span>
+                  {/* Both notes say why the board looks different from
                         this list: one card cannot be opened at all, the
-                        other cannot be seen where it sits. */
-                    }
-                    {isCardFileBroken(hit.card) && (
-                      <span className="card-search-dialog__result-note card-search-dialog__result-note--missing">
-                        Missing
-                      </span>
-                    )}
-                    {isCardHidden(hit.card, hit.columnId, criteria) && (
-                      <span className="card-search-dialog__result-note">
-                        Hidden by filters
-                      </span>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+                        other cannot be seen where it sits. */}
+                  {isCardFileBroken(hit.card) && (
+                    <span className="card-search-dialog__result-note card-search-dialog__result-note--missing">
+                      Missing
+                    </span>
+                  )}
+                  {isCardHidden(hit.card, hit.columnId, criteria) && (
+                    <span className="card-search-dialog__result-note">
+                      Hidden by filters
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </dialog>
   );
