@@ -1,4 +1,4 @@
-import { Menu } from "@tauri-apps/api/menu";
+import type { Menu } from "@tauri-apps/api/menu";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { FileSystemPort } from "../domain/fileSystemPort.ts";
 import {
@@ -8,7 +8,8 @@ import {
   NativeApplicationMenu,
 } from "./nativeApplicationMenu.ts";
 
-vi.mock("@tauri-apps/api/menu");
+const newMenu = vi.hoisted(() => vi.fn<typeof Menu.new>());
+vi.mock("@tauri-apps/api/menu", () => ({ Menu: { new: newMenu } }));
 
 afterEach(() => {
   vi.resetAllMocks();
@@ -36,8 +37,11 @@ function select(item: ApplicationMenuItem): void {
   item.action("");
 }
 
-function makeHandlers(): MenuSelectionHandlers {
-  return { newBoard: vi.fn(), openRecent: vi.fn() };
+function makeHandlers() {
+  return {
+    newBoard: vi.fn(),
+    openRecent: vi.fn(),
+  } satisfies MenuSelectionHandlers;
 }
 
 describe("buildApplicationMenu", () => {
@@ -137,7 +141,7 @@ describe("NativeApplicationMenu", () => {
   function stubMenus() {
     const created: FakeMenu[] = [];
     const replaced: { close: ReturnType<typeof vi.fn> }[] = [];
-    vi.mocked(Menu.new).mockImplementation(() => {
+    newMenu.mockImplementation(() => {
       const menu: FakeMenu = {
         close: vi.fn().mockResolvedValue(undefined),
         setAsAppMenu: vi.fn(() => {
@@ -153,7 +157,7 @@ describe("NativeApplicationMenu", () => {
   }
 
   function builtItems(): ApplicationMenuItem[] {
-    const options = vi.mocked(Menu.new).mock.lastCall?.[0];
+    const options = newMenu.mock.lastCall?.[0];
     return (options?.items ?? []) as ApplicationMenuItem[];
   }
 

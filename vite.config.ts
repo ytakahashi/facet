@@ -11,6 +11,16 @@ export default defineConfig({
     proseWrap: "always",
   },
   lint: {
+    options: {
+      typeAware: true,
+      typeCheck: true,
+      // `vp check` has no flag for this, so warnings fail it here, locally
+      // and in CI alike.
+      denyWarnings: true,
+    },
+    // These scripts still run under Deno. Remove this exclusion when their
+    // runtime and tests migrate to Node.
+    ignorePatterns: [".agents/skills/manage-facet-board/scripts/**"],
     plugins: ["react", "typescript", "oxc"],
     rules: {
       "react/rules-of-hooks": "error",
