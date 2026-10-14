@@ -66,7 +66,7 @@ export function LabelPickerDialog({
           </li>
         ))}
       </ul>
-      <LabelCreateForm open={open} onCreateLabel={onCreateLabel} />
+      {open && <LabelCreateForm onCreateLabel={onCreateLabel} />}
       <div className="label-picker-dialog__actions">
         <button type="button" onClick={onManageLabels}>
           Manage labels…

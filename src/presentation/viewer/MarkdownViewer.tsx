@@ -110,13 +110,17 @@ export function MarkdownViewer() {
   const viewerMode = usePaneLayout((state) => state.viewerMode);
   const setViewerMode = usePaneLayout((state) => state.setViewerMode);
   const toggleViewerMode = usePaneLayout((state) => state.toggleViewerMode);
-  // Set only when the shortcut switches to edit mode, where the user expects
-  // to type next. A button click or opening a card leaves focus where it was,
-  // so the request is dropped once the editor has mounted with it.
-  const [focusEditorOnMount, setFocusEditorOnMount] = useState(false);
-  useEffect(() => {
-    if (focusEditorOnMount) setFocusEditorOnMount(false);
-  }, [focusEditorOnMount]);
+  const editorFocusRequested = useRef(false);
+  const handleEditorMount = useCallback((editor: HTMLTextAreaElement) => {
+    if (!editorFocusRequested.current) return;
+    editorFocusRequested.current = false;
+    editor.focus();
+  }, []);
+  // Only the commit caused by the shortcut may consume this request. Child
+  // layout effects run first; discard it even if no editor mounted this time.
+  useLayoutEffect(() => {
+    editorFocusRequested.current = false;
+  });
   const handleRef = useRef<HTMLDivElement>(null);
   const [availableWidth, setAvailableWidth] = useState(globalThis.innerWidth);
 
@@ -277,7 +281,8 @@ export function MarkdownViewer() {
           return;
         case "toggle-mode":
           if (!canToggleMode) return;
-          if (toggleViewerMode() === "edit") setFocusEditorOnMount(true);
+          editorFocusRequested.current = viewerMode === "preview";
+          toggleViewerMode();
           return;
       }
     }
@@ -569,7 +574,7 @@ export function MarkdownViewer() {
                 count={find.ranges.length}
                 activeIndex={find.activeIndex}
                 focusToken={find.focusToken}
-                handledFocusToken={find.handledFocusToken}
+                consumeFocusRequest={find.consumeFocusRequest}
                 onQueryChange={find.setQuery}
                 onNext={find.next}
                 onPrevious={find.previous}
@@ -583,7 +588,7 @@ export function MarkdownViewer() {
                 onChange={updateDraft}
                 board={board}
                 fromPath={selectedPath}
-                autoFocus={focusEditorOnMount}
+                onMount={handleEditorMount}
                 readOnly={isRefreshing}
                 find={find.presentation}
                 onFindTextChange={find.onFindTextChange}

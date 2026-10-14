@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Board } from "../../domain/board.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
@@ -10,7 +10,7 @@ import { searchCardContents } from "../../domain/cardContentSearch.ts";
 import { useCardContentReading } from "../context/appContext.ts";
 import { nextSelectionIndex } from "../shared/cardSearchSelection.ts";
 import { ContentSearchLine } from "./ContentSearchLine.tsx";
-import { createContentReadSequence } from "./contentReadSequence.ts";
+import { useAsyncRead } from "../shared/useAsyncRead.ts";
 
 interface CardContentSearchDialogProps {
   board: Board;
@@ -19,15 +19,6 @@ interface CardContentSearchDialogProps {
   onClose: () => void;
   onSelect: (card: CardModel) => void;
 }
-
-type ContentReadState =
-  | { status: "idle" }
-  | { status: "reading" }
-  | {
-      status: "ready";
-      contents: ReadonlyMap<string, string>;
-      unreadableCount: number;
-    };
 
 const RESULTS_ID = "card-content-search-results";
 
@@ -49,58 +40,40 @@ export function CardContentSearchDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedRef = useRef<HTMLLIElement>(null);
-  const [sequence] = useState(createContentReadSequence);
   const [query, setQuery] = useState("");
   const [selectedPath, setSelectedPath] = useState<string>();
-  const [readState, setReadState] = useState<ContentReadState>({
-    status: "idle",
-  });
+  const readContents = useCallback(async () => {
+    const cards = board.columns.flatMap((column) => column.cards);
+    const contents = new Map<string, string>();
+    let unreadableCount = 0;
+    try {
+      for (const result of await read(cards)) {
+        if (result.read) contents.set(result.path, result.content);
+        else unreadableCount += 1;
+      }
+    } catch {
+      return {
+        contents: new Map<string, string>(),
+        unreadableCount: cards.length,
+      };
+    }
+    return { contents, unreadableCount };
+  }, [board, read]);
+  const readState = useAsyncRead(open ? readContents : undefined);
+  // readContents reports a failed read as unreadable cards, so it never
+  // settles as an error.
+  const readResult = readState.status === "ready" ? readState.value : undefined;
 
   const results = useMemo(
     () =>
-      readState.status === "ready"
-        ? searchCardContents(board, readState.contents, query)
-        : [],
-    [board, query, readState],
+      readResult ? searchCardContents(board, readResult.contents, query) : [],
+    [board, query, readResult],
   );
   const rememberedIndex =
     selectedPath === undefined
       ? -1
       : results.findIndex((hit) => hit.card.path === selectedPath);
   const activeIndex = rememberedIndex === -1 ? 0 : rememberedIndex;
-
-  useEffect(() => {
-    if (!open) return;
-
-    const generation = sequence.begin();
-    const cards = board.columns.flatMap((column) => column.cards);
-    setReadState({ status: "reading" });
-    void read(cards)
-      .then((readResults) => {
-        if (!sequence.isCurrent(generation)) return;
-
-        const contents = new Map<string, string>();
-        let unreadableCount = 0;
-        for (const result of readResults) {
-          if (result.read) {
-            contents.set(result.path, result.content);
-          } else {
-            unreadableCount += 1;
-          }
-        }
-        setReadState({ status: "ready", contents, unreadableCount });
-      })
-      .catch(() => {
-        if (!sequence.isCurrent(generation)) return;
-        setReadState({
-          status: "ready",
-          contents: new Map(),
-          unreadableCount: cards.length,
-        });
-      });
-
-    return () => sequence.invalidate();
-  }, [board, open, read, sequence]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -183,7 +156,7 @@ export function CardContentSearchDialog({
             Reading cards…
           </p>
         )}
-        {readState.status === "ready" &&
+        {readResult &&
           !queryIsEmpty &&
           (results.length === 0 ? (
             <p className="card-search-dialog__empty">No matches</p>
@@ -248,11 +221,11 @@ export function CardContentSearchDialog({
               })}
             </ul>
           ))}
-        {readState.status === "ready" && readState.unreadableCount > 0 && (
+        {readResult && readResult.unreadableCount > 0 && (
           <p className="card-content-search-dialog__unreadable">
-            {readState.unreadableCount === 1
+            {readResult.unreadableCount === 1
               ? "1 card could not be read"
-              : `${readState.unreadableCount} cards could not be read`}
+              : `${readResult.unreadableCount} cards could not be read`}
           </p>
         )}
       </div>

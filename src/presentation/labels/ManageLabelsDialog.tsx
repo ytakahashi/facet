@@ -113,7 +113,7 @@ export function ManageLabelsDialog(props: Props) {
           />
         ))}
       </ul>
-      <LabelCreateForm open={open} onCreateLabel={props.onCreateLabel} />
+      {open && <LabelCreateForm onCreateLabel={props.onCreateLabel} />}
       <div className="manage-labels-dialog__actions">
         <button type="button" onClick={onClose}>
           Close

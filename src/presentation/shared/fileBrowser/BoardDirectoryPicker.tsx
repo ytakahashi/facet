@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
-import type { DirEntry } from "../../../domain/fileSystemPort.ts";
+import { useState } from "react";
 import { useDirectoryBrowsing } from "../../context/appContext.ts";
 import type { UiError } from "../../errors/toUiError.ts";
 import { toUiError } from "../../errors/toUiError.ts";
+import { useDirectoryListing } from "./useDirectoryListing.ts";
 import {
   joinPath,
   parentWithinRoot,
@@ -21,33 +21,11 @@ export function BoardDirectoryPicker({
   value,
   onChange,
 }: BoardDirectoryPickerProps) {
-  const { listDirectory, createDirectory } = useDirectoryBrowsing();
-  const [entries, setEntries] = useState<DirEntry[]>([]);
-  const [error, setError] = useState<UiError>();
-  const [isLoading, setIsLoading] = useState(false);
+  const { createDirectory } = useDirectoryBrowsing();
+  const { entries, error, isLoading } = useDirectoryListing(value);
   const [isCreating, setIsCreating] = useState(false);
   const [newDirectoryName, setNewDirectoryName] = useState("");
   const [createError, setCreateError] = useState<UiError>();
-
-  const load = useCallback(
-    async (path: string) => {
-      setIsLoading(true);
-      setError(undefined);
-      try {
-        const nextEntries = await listDirectory(path);
-        setEntries(nextEntries);
-      } catch (navigationError) {
-        setError(toUiError(navigationError));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [listDirectory],
-  );
-
-  useEffect(() => {
-    void load(value);
-  }, [load, value]);
 
   const directories = sortDirectoryEntries(entries).filter(
     (entry) => entry.isDirectory,
@@ -81,7 +59,7 @@ export function BoardDirectoryPicker({
       </div>
       {error && <p role="alert">{error.message}</p>}
       {isLoading && <p>Loading…</p>}
-      {!isLoading && directories.length === 0 && (
+      {!isLoading && !error && directories.length === 0 && (
         <p className="board-directory-picker__empty">No subdirectories</p>
       )}
       <ul className="board-directory-picker__entries">
