@@ -1145,7 +1145,7 @@ describe("createMarkdownViewerStore", () => {
     const useMarkdownViewer = createMarkdownViewerStore(
       (path) =>
         path.endsWith("failed.md")
-          ? Promise.reject(new Error("failed"))
+          ? Promise.reject(new UseCaseError("markdown.load-failed", { path }))
           : Promise.resolve("content"),
       vi.fn(),
       alwaysDiscard,
