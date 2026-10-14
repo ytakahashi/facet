@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import type { DirEntry } from "../../../domain/fileSystemPort.ts";
-import { useDirectoryBrowsing } from "../../context/appContext.ts";
-import type { UiError } from "../../errors/toUiError.ts";
-import { toUiError } from "../../errors/toUiError.ts";
+import { useState } from "react";
+import { useDirectoryListing } from "./useDirectoryListing.ts";
 import {
   joinPath,
   parentWithinRoot,
@@ -17,41 +14,19 @@ interface MarkdownFileBrowserProps {
   disabled?: boolean;
 }
 
-export function MarkdownFileBrowser({
+export function MarkdownFileBrowser(props: MarkdownFileBrowserProps) {
+  // A different root starts a new navigation session before any child renders.
+  return <RootFileBrowser key={props.root} {...props} />;
+}
+
+function RootFileBrowser({
   root,
   selectedPath,
   onSelect,
   disabled = false,
 }: MarkdownFileBrowserProps) {
-  const { listDirectory } = useDirectoryBrowsing();
   const [currentDirectory, setCurrentDirectory] = useState(root);
-  const [entries, setEntries] = useState<DirEntry[]>([]);
-  const [error, setError] = useState<UiError>();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const load = useCallback(
-    async (path: string) => {
-      setIsLoading(true);
-      setError(undefined);
-      try {
-        setEntries(await listDirectory(path));
-      } catch (navigationError) {
-        setEntries([]);
-        setError(toUiError(navigationError));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [listDirectory],
-  );
-
-  useEffect(() => {
-    setCurrentDirectory(root);
-  }, [root]);
-
-  useEffect(() => {
-    void load(currentDirectory);
-  }, [currentDirectory, load]);
+  const { entries, error, isLoading } = useDirectoryListing(currentDirectory);
 
   const visibleEntries = sortDirectoryEntries(entries).filter(
     (entry) => entry.isDirectory || entry.name.toLowerCase().endsWith(".md"),

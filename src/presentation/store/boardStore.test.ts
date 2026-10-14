@@ -2624,7 +2624,7 @@ describe("createBoardStore", () => {
       expect(useBoardStore.getState().saveConflict).toBe(true),
     );
 
-    useBoardStore.getState().overwriteBoard();
+    await useBoardStore.getState().overwriteBoard();
     await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
 
     expect(confirmOverwriteBoard).toHaveBeenCalledOnce();
@@ -2663,7 +2663,7 @@ describe("createBoardStore", () => {
       expect(useBoardStore.getState().saveConflict).toBe(true),
     );
 
-    useBoardStore.getState().overwriteBoard();
+    await useBoardStore.getState().overwriteBoard();
     await vi.waitFor(() =>
       expect(useBoardStore.getState().conflictResolutionError).toBe(
         toUiError(overwriteError).message,
@@ -2677,7 +2677,7 @@ describe("createBoardStore", () => {
       board: expect.objectContaining({ name: "Local edit" }),
     });
 
-    useBoardStore.getState().overwriteBoard();
+    await useBoardStore.getState().overwriteBoard();
     await vi.waitFor(() =>
       expect(useBoardStore.getState().saveConflict).toBe(false),
     );
@@ -2711,7 +2711,7 @@ describe("createBoardStore", () => {
       expect(useBoardStore.getState().saveConflict).toBe(true),
     );
 
-    useBoardStore.getState().overwriteBoard();
+    await useBoardStore.getState().overwriteBoard();
     await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
     useBoardStore.getState().renameBoard("Edited during overwrite");
     overwrite.reject(overwriteError);
@@ -2746,7 +2746,7 @@ describe("createBoardStore", () => {
       expect(useBoardStore.getState().saveConflict).toBe(true),
     );
 
-    useBoardStore.getState().overwriteBoard();
+    await useBoardStore.getState().overwriteBoard();
     await vi.waitFor(() => expect(saveBoard).toHaveBeenCalledTimes(2));
     useBoardStore.getState().renameBoard("Edited during overwrite");
     overwrite.resolve("revision-overwritten");
@@ -2822,7 +2822,7 @@ describe("createBoardStore", () => {
     );
 
     await useBoardStore.getState().reloadBoard();
-    useBoardStore.getState().overwriteBoard();
+    await useBoardStore.getState().overwriteBoard();
 
     expect(confirmDiscardBoard.mock.calls).toEqual([["reload"]]);
     expect(openBoard).toHaveBeenCalledOnce();

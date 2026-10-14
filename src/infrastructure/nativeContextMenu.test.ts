@@ -1,4 +1,4 @@
-import { Menu } from "@tauri-apps/api/menu";
+import type { Menu } from "@tauri-apps/api/menu";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import {
   buildContextMenu,
@@ -7,7 +7,8 @@ import {
   NativeContextMenu,
 } from "./nativeContextMenu.ts";
 
-vi.mock("@tauri-apps/api/menu");
+const newMenu = vi.hoisted(() => vi.fn<typeof Menu.new>());
+vi.mock("@tauri-apps/api/menu", () => ({ Menu: { new: newMenu } }));
 
 afterEach(() => {
   vi.resetAllMocks();
@@ -84,7 +85,7 @@ describe("NativeContextMenu", () => {
       popup: ReturnType<typeof vi.fn>;
       close: ReturnType<typeof vi.fn>;
     }[] = [];
-    vi.mocked(Menu.new).mockImplementation(() => {
+    newMenu.mockImplementation(() => {
       const menu = {
         popup: vi.fn().mockResolvedValue(undefined),
         close: vi.fn().mockResolvedValue(undefined),
@@ -119,7 +120,7 @@ describe("NativeContextMenu", () => {
 
   it("reports a menu that cannot be shown", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.mocked(Menu.new).mockRejectedValue(new Error("no host"));
+    newMenu.mockRejectedValue(new Error("no host"));
 
     new NativeContextMenu().show([item("Only")]);
 

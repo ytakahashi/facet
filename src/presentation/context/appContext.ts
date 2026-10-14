@@ -13,14 +13,17 @@ import type { RecentBoardsState } from "../store/recentBoardsStore.ts";
 import type { ShortcutHelpState } from "../store/shortcutHelpStore.ts";
 import type { WorkspaceState } from "../store/workspaceStore.ts";
 
+// Declared as function properties rather than methods: consumers destructure
+// them, and composition supplies closures that need no receiver.
 export interface DirectoryBrowsing {
-  listDirectory(path: string): Promise<DirEntry[]>;
-  homeDirectory(): Promise<string>;
-  createDirectory(parentDirectory: string, name: string): Promise<string>;
+  listDirectory: (path: string) => Promise<DirEntry[]>;
+  homeDirectory: () => Promise<string>;
+  createDirectory: (parentDirectory: string, name: string) => Promise<string>;
 }
 
+// Function property for the same reason as DirectoryBrowsing.
 export interface CardContentReading {
-  read(cards: readonly Card[]): Promise<CardContentReadResult[]>;
+  read: (cards: readonly Card[]) => Promise<CardContentReadResult[]>;
 }
 
 export interface ClipboardWriting {

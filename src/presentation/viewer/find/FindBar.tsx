@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { resolveFindShortcut } from "../../shared/shortcuts/findShortcut.ts";
 
 interface FindBarProps {
@@ -7,9 +7,7 @@ interface FindBarProps {
   count: number;
   activeIndex: number | undefined;
   focusToken: number;
-  // Owned by useMarkdownFind so loading a card or switching modes cannot
-  // repeat an already consumed focus request when this bar mounts again.
-  handledFocusToken: RefObject<number>;
+  consumeFocusRequest: (token: number) => boolean;
   onQueryChange: (query: string) => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -22,7 +20,7 @@ export function FindBar({
   count,
   activeIndex,
   focusToken,
-  handledFocusToken,
+  consumeFocusRequest,
   onQueryChange,
   onNext,
   onPrevious,
@@ -31,11 +29,10 @@ export function FindBar({
   const input = useRef<HTMLInputElement>(null);
   const targetName = mode === "edit" ? "editor" : "preview";
   useEffect(() => {
-    if (handledFocusToken.current === focusToken || !input.current) return;
-    handledFocusToken.current = focusToken;
+    if (!input.current || !consumeFocusRequest(focusToken)) return;
     input.current.focus();
     input.current.select();
-  }, [focusToken, handledFocusToken]);
+  }, [focusToken, consumeFocusRequest]);
   return (
     <div
       className="markdown-find"

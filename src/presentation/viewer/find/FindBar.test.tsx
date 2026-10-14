@@ -15,7 +15,7 @@ function render(
       count={count}
       activeIndex={activeIndex}
       focusToken={0}
-      handledFocusToken={{ current: 0 }}
+      consumeFocusRequest={() => false}
       onQueryChange={() => {}}
       onNext={() => {}}
       onPrevious={() => {}}

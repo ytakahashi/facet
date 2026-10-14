@@ -35,6 +35,13 @@ export function useMarkdownFind(
     currentState.current = state;
   }, [state]);
   const handledFocusToken = useRef(0);
+  // The owner survives FindBar remounts, so an old request stays consumed when
+  // loading another card or switching between edit and preview.
+  const consumeFocusRequest = useCallback((token: number) => {
+    if (handledFocusToken.current === token) return false;
+    handledFocusToken.current = token;
+    return true;
+  }, []);
   const { isOpen, source, ranges, activeIndex, revealToken } = state;
   const presentation = useMemo(
     () => (isOpen ? { source, ranges, activeIndex, revealToken } : undefined),
@@ -84,7 +91,7 @@ export function useMarkdownFind(
   return {
     ...state,
     presentation,
-    handledFocusToken,
+    consumeFocusRequest,
     open,
     close,
     next,

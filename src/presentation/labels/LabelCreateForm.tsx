@@ -1,25 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { LabelColor } from "../../domain/label.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import { LabelColorSwatchGrid } from "./LabelColorSwatchGrid.tsx";
 
 export function LabelCreateForm({
   onCreateLabel,
-  open,
 }: {
   onCreateLabel: (name: string, color: LabelColor) => void;
-  open: boolean;
 }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState<LabelColor>("ruby");
   const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    if (!open) return;
-    setName("");
-    setColor("ruby");
-    setError(undefined);
-  }, [open]);
 
   return (
     <form

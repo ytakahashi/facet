@@ -254,7 +254,7 @@ describe("createMarkdownViewerStore", () => {
     useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
 
     const savingCall = useMarkdownViewer.getState().save();
-    useMarkdownViewer.getState().close();
+    await useMarkdownViewer.getState().close();
     finishSave();
     await savingCall;
 
@@ -906,7 +906,7 @@ describe("createMarkdownViewerStore", () => {
     useMarkdownViewer.getState().updateDraft("# Improve search (edited)");
 
     const savingCall = useMarkdownViewer.getState().save();
-    useMarkdownViewer.getState().close();
+    await useMarkdownViewer.getState().close();
 
     expect(isCardSaving(useMarkdownViewer.getState(), card.path)).toBe(true);
 
@@ -1145,7 +1145,7 @@ describe("createMarkdownViewerStore", () => {
     const useMarkdownViewer = createMarkdownViewerStore(
       (path) =>
         path.endsWith("failed.md")
-          ? Promise.reject(new Error("failed"))
+          ? Promise.reject(new UseCaseError("markdown.load-failed", { path }))
           : Promise.resolve("content"),
       vi.fn(),
       alwaysDiscard,
@@ -1173,7 +1173,7 @@ describe("createMarkdownViewerStore", () => {
     );
     await useMarkdownViewer.getState().selectCard(cards[0]);
     await useMarkdownViewer.getState().selectCard(cards[1]);
-    useMarkdownViewer.getState().close();
+    await useMarkdownViewer.getState().close();
     await useMarkdownViewer.getState().selectCard(cards[2]);
 
     await useMarkdownViewer.getState().goBack(makeBoard(cards));

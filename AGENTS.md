@@ -13,8 +13,11 @@ what actually happened rather than describing the change as complete.
 
 - Run package scripts through `vp run`; do not invoke them via `npm` or `pnpm`
   directly, and do not call the tools they wrap (`vitest`, `oxlint`) yourself.
-- `vp run check` lints; `vp run build` type-checks `src/` and `vite.config.ts`
-  (`tsc -b`) and builds.
+- `vp run check` checks formatting, lints with type information, and
+  type-checks; a lint warning fails it as an error does. The Deno skill scripts
+  are temporarily excluded from lint and type checking; `deno test` still checks
+  them. `vp run build` also type-checks `src/` and `vite.config.ts` (`tsc -b`)
+  and builds.
 - When `src-tauri/**` change, run `vp run fmt:rust`, `vp run lint:rust` and
   `vp run test:rust`, then `vp run desktop`. `vp run fmt` does not format Rust,
   and only `vp run desktop` builds the app with the real frontend.

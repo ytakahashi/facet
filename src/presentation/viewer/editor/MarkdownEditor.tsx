@@ -21,8 +21,9 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void;
   board: Board;
   fromPath: string;
-  // Read on mount only, as the native attribute is.
-  autoFocus?: boolean;
+  // Called again whenever its identity changes, so pass a stable callback to
+  // run it once per mount.
+  onMount?: (editor: HTMLTextAreaElement) => void;
   readOnly?: boolean;
   find?: FindPresentation;
   onFindTextChange?: (source: FindText) => void;
@@ -33,7 +34,7 @@ export function MarkdownEditor({
   onChange,
   board,
   fromPath,
-  autoFocus = false,
+  onMount,
   readOnly = false,
   find,
   onFindTextChange,
@@ -52,6 +53,10 @@ export function MarkdownEditor({
   const insertionTargetRef = useRef<LinkInsertionTarget | undefined>(undefined);
   const pendingCaretRef = useRef<number | undefined>(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    if (textareaRef.current) onMount?.(textareaRef.current);
+  }, [onMount]);
 
   useLayoutEffect(() => {
     const caret = pendingCaretRef.current;
@@ -117,7 +122,6 @@ export function MarkdownEditor({
             setIsDialogOpen(true);
           }}
           spellCheck={false}
-          autoFocus={autoFocus}
         />
       </div>
       <InsertCardLinkDialog

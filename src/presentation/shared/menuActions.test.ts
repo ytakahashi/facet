@@ -1,34 +1,14 @@
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
-import { AppProvider } from "../context/appContext.ts";
-import type { AppDependencies } from "../context/appContext.ts";
 import { toUiError } from "../errors/toUiError.ts";
-import { useMenuActions } from "./useMenuActions.ts";
+import { createMenuActions } from "./menuActions.ts";
 
-function getActions(dependencies: Partial<AppDependencies>) {
-  let actions: ReturnType<typeof useMenuActions> | undefined;
-
-  function Probe() {
-    actions = useMenuActions();
-    return null;
-  }
-
-  renderToStaticMarkup(
-    <AppProvider value={dependencies as AppDependencies}>
-      <Probe />
-    </AppProvider>,
-  );
-  if (!actions) throw new Error("The menu actions were not rendered");
-  return actions;
-}
-
-describe("useMenuActions", () => {
+describe("createMenuActions", () => {
   it("reports a clipboard failure through the app alert", async () => {
     const showAlert = vi.fn();
     const error = new UseCaseError("clipboard.write-failed");
     const copyText = vi.fn(() => Promise.reject(error));
-    const { copyText: copy } = getActions({
+    const { copyText: copy } = createMenuActions({
       clipboard: { copyText },
       finder: { reveal: vi.fn() },
       showAlert,
@@ -47,7 +27,7 @@ describe("useMenuActions", () => {
       path: "/board/card.md",
     });
     const reveal = vi.fn(() => Promise.reject(error));
-    const { reveal: revealCard } = getActions({
+    const { reveal: revealCard } = createMenuActions({
       clipboard: { copyText: vi.fn() },
       finder: { reveal },
       showAlert,
