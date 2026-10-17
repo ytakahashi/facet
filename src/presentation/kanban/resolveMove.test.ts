@@ -12,7 +12,6 @@ function cardTargetData(data: CardDragData, edge: "top" | "bottom") {
   const input = { clientX: 50, clientY: edge === "top" ? 0 : 100 };
   return attachClosestEdge(data, {
     element,
-    // deno-lint-ignore no-explicit-any
     input: input as any,
     allowedEdges: ["top", "bottom"],
   });

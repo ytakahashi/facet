@@ -12,7 +12,6 @@ function columnTargetData(data: ColumnDragData, edge: "left" | "right") {
   const input = { clientX: edge === "left" ? 0 : 100, clientY: 50 };
   return attachClosestEdge(data, {
     element,
-    // deno-lint-ignore no-explicit-any
     input: input as any,
     allowedEdges: ["left", "right"],
   });
