@@ -14,10 +14,10 @@ what actually happened rather than describing the change as complete.
 - Run package scripts through `vp run`; do not invoke them via `npm` or `pnpm`
   directly, and do not call the tools they wrap (`vitest`, `oxlint`) yourself.
 - `vp run check` checks formatting, lints with type information, and
-  type-checks; a lint warning fails it as an error does. The Deno skill scripts
-  are temporarily excluded from lint and type checking; `deno test` still checks
-  them. `vp run build` also type-checks `src/` and `vite.config.ts` (`tsc -b`)
-  and builds.
+  type-checks; a lint warning fails it as an error does. Generated YAML vendor
+  files are excluded from formatting and linting. `vp run build` also
+  type-checks `src/`, `vite.config.ts`, and the tooling and skill scripts
+  (`tsc -b`) and builds.
 - When `src-tauri/**` change, run `vp run fmt:rust`, `vp run lint:rust` and
   `vp run test:rust`, then `vp run desktop`. `vp run fmt` does not format Rust,
   and only `vp run desktop` builds the app with the real frontend.
@@ -60,8 +60,9 @@ src-tauri/src/<module>.rs → commands.rs → lib.rs
   temporary directory, and only on macOS.
   - The `tauri` crate checks at compile time that `dist/` exists, so the Rust
     tasks create an empty one first; the tests never read it.
-- `.agents/skills/manage-facet-board/scripts/` runs under `deno test`.
-- `vp run test` runs Vitest and `deno test`.
+- `.agents/skills/manage-facet-board/scripts/` runs under Vitest, including Node
+  CLI tests against real temporary files outside the repository.
+- `vp run test` runs all Vitest tests.
 
 The split is about what the code needs to be true. The host-side rules are facts
 about the file system rather than about this app, and a stubbed test would only
@@ -92,6 +93,9 @@ Plain CSS with custom properties (`src/index.css`).
     `pnpm-workspace.yaml` catalog; `package.json` refers to it as `catalog:`.
   - pnpm installs only releases at least a day old (`minimumReleaseAge`), and
     refuses a dependency's build script until it is approved in `allowBuilds`.
+- When updating `yaml`, run `vp run vendor:yaml` to regenerate the skill's
+  bundled dependency, then `vp run check:vendor` to check its version against
+  `package.json`. CI also runs the version check on every change.
 - `src-tauri/Cargo.toml` pins its direct dependencies the same way (`=x.y.z`).
   `Cargo.lock` is committed and pins everything beneath them; the Rust tasks run
   with `--locked`, so a lockfile that no longer matches fails instead of being

@@ -9,6 +9,8 @@ export default defineConfig({
     // The Markdown here is hard-wrapped at printWidth. oxfmt otherwise keeps
     // whatever wrapping a file already has, so edited paragraphs drift.
     proseWrap: "always",
+    // Vendored output must remain as emitted by the bundler.
+    ignorePatterns: [".agents/skills/manage-facet-board/scripts/vendor/**"],
   },
   lint: {
     options: {
@@ -18,9 +20,8 @@ export default defineConfig({
       // and in CI alike.
       denyWarnings: true,
     },
-    // These scripts still run under Deno. Remove this exclusion when their
-    // runtime and tests migrate to Node.
-    ignorePatterns: [".agents/skills/manage-facet-board/scripts/**"],
+    // Third-party code is not subject to this repository's lint rules.
+    ignorePatterns: [".agents/skills/manage-facet-board/scripts/vendor/**"],
     plugins: ["react", "typescript", "oxc"],
     rules: {
       "react/rules-of-hooks": "error",
@@ -308,8 +309,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    // The board-validation skill's tests run under Deno (`deno test`);
-    // picked up here they would only fail on the Deno globals they exercise.
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+      ".agents/skills/manage-facet-board/scripts/**/*.test.ts",
+    ],
   },
 });

@@ -9,7 +9,6 @@ function target(index: number, edge: "top" | "bottom") {
   return {
     data: attachClosestEdge(data, {
       element: { getBoundingClientRect: () => rect } as Element,
-      // deno-lint-ignore no-explicit-any
       input: { clientX: 50, clientY: edge === "top" ? 0 : 100 } as any,
       allowedEdges: ["top", "bottom"],
     }),

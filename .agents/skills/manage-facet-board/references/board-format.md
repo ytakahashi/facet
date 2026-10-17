@@ -75,7 +75,7 @@ it. Treat that state separately from an invalid path or duplicate Card.
 After changing a board, run:
 
 ```sh
-deno run --allow-read --allow-env <skill-directory>/scripts/validate-board.ts <board-path>
+node <skill-directory>/scripts/validate-board.mts <board-path>
 ```
 
 Schema and relationship violations are errors. Missing or unreadable Markdown

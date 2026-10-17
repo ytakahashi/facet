@@ -68,7 +68,7 @@ The domain sits on the WebView side for two further reasons:
 | `presentation/`   | `domain/`, `usecase/`     |
 | `composition/`    | everything                |
 
-Enforced by `.oxlintrc.json`.
+Enforced by the `lint` block in `vite.config.ts`.
 
 - Ports (`fileSystemPort`, `*Repository`) sit in `domain/` beside the entities
   that use them, rather than in a directory of their own.
@@ -93,8 +93,8 @@ shared/
 
 Sibling directories at the same tier do not import each other. Shared code goes
 in a lower tier. `context/`, `errors/`, and `store/` can be imported from any
-tier, but do not import feature directories themselves. `.oxlintrc.json`
-enforces these directions.
+tier, but do not import feature directories themselves. The `lint` block in
+`vite.config.ts` enforces these directions.
 
 ## The domain model
 

@@ -1,8 +1,7 @@
-#!/usr/bin/env -S deno run --allow-read --allow-env
+#!/usr/bin/env node
 
-// Keep this pin aligned with package.json. The explicit version keeps the
-// validator portable when the skill is invoked outside the Facet repository.
-import { parse, YAMLParseError } from "npm:yaml@2.9.0";
+import { readFile, stat } from "node:fs/promises";
+import { parse, YAMLParseError } from "./vendor/yaml.mjs";
 
 const LABEL_COLORS = new Set([
   "ruby",
@@ -255,31 +254,36 @@ async function inspectCardFile(
   path: string,
 ): Promise<"file" | "missing" | "unreadable" | "directory"> {
   try {
-    const info = await Deno.stat(path);
-    return info.isDirectory ? "directory" : "file";
+    const info = await stat(path);
+    return info.isDirectory() ? "directory" : "file";
   } catch (error) {
-    return error instanceof Deno.errors.NotFound ? "missing" : "unreadable";
+    return isMissingFile(error) ? "missing" : "unreadable";
   }
 }
 
+function isMissingFile(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
+}
+
 async function main(): Promise<void> {
-  if (Deno.args.length !== 1) {
-    console.error("Usage: validate-board.ts <board-path>");
-    Deno.exitCode = 2;
+  const args = process.argv.slice(2);
+  if (args.length !== 1) {
+    console.error("Usage: validate-board.mts <board-path>");
+    process.exitCode = 2;
     return;
   }
 
-  const boardPath = Deno.args[0];
+  const boardPath = args[0];
   let source: string;
   try {
-    source = await Deno.readTextFile(boardPath);
+    source = await readFile(boardPath, "utf8");
   } catch (error) {
     console.error(
       `[error] cannot read board: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
-    Deno.exitCode = 1;
+    process.exitCode = 1;
     return;
   }
 
@@ -296,7 +300,7 @@ async function main(): Promise<void> {
         error instanceof Error ? error.message : String(error)
       }`,
     );
-    Deno.exitCode = 1;
+    process.exitCode = 1;
     return;
   }
 
@@ -308,7 +312,7 @@ async function main(): Promise<void> {
   for (const error of result.errors) console.error(`[error] ${error}`);
 
   if (result.errors.length > 0) {
-    Deno.exitCode = 1;
+    process.exitCode = 1;
     return;
   }
   console.log(
