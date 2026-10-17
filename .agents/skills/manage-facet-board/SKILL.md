@@ -44,10 +44,11 @@ Read only the references needed for the current task.
 4. Keep every card path relative to the board root and keep label references in
    step with the board's label registry.
 5. Make the smallest change allowed by the repository's ownership rules.
-6. After changing a board, run the included validator:
+6. After changing a board, run the included validator with Node.js 24.11.0 or
+   later (no dependency installation is needed):
 
    ```sh
-   deno run --allow-read --allow-env <skill-directory>/scripts/validate-board.ts <board-path>
+   node <skill-directory>/scripts/validate-board.mts <board-path>
    ```
 
 7. Report changed files, validator errors or warnings, and any behavior that
