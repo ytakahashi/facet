@@ -14,6 +14,7 @@ import { canRefreshBoard } from "../store/boardStore.ts";
 import { BoardName } from "./BoardName.tsx";
 import { CardContentSearchDialog } from "../search/CardContentSearchDialog.tsx";
 import { CardSearchDialog } from "../search/CardSearchDialog.tsx";
+import { CardDirectoryView } from "../directory/CardDirectoryView.tsx";
 import { CardTable } from "../table/CardTable.tsx";
 import { buildBoardContextMenu } from "./boardContextMenus.ts";
 import { buildCardContextMenu } from "../shared/cardContextMenu.ts";
@@ -195,15 +196,24 @@ export function BoardScreen({ board }: { board: Board }) {
           </button>
         </SaveErrorBanner>
       )}
-      {mode === "board" ? (
+      {mode === "board" && (
         <KanbanBoard
           board={board}
           onDeleteCard={openDeleteCard}
           onRepairCard={openMissingCard}
           onCardContextMenu={handleCardContextMenu}
         />
-      ) : (
+      )}
+      {mode === "table" && (
         <CardTable
+          board={board}
+          onDeleteCard={openDeleteCard}
+          onRepairCard={openMissingCard}
+          onCardContextMenu={handleCardContextMenu}
+        />
+      )}
+      {mode === "directory" && (
+        <CardDirectoryView
           board={board}
           onDeleteCard={openDeleteCard}
           onRepairCard={openMissingCard}

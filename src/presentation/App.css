@@ -2734,3 +2734,123 @@ body.is-pane-resizing * {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.card-directory {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  padding: 8px;
+  font-size: 13px;
+}
+
+.card-directory ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.card-directory ul ul {
+  padding-left: 20px;
+}
+
+.card-directory__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.card-directory__row:hover,
+.card-directory__directory:hover {
+  background: var(--color-surface);
+}
+
+.card-directory__row--selected,
+.card-directory__row--selected:hover {
+  background: var(--color-accent-bg);
+}
+
+.card-directory__open,
+.card-directory__directory {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.card-directory__open {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+}
+
+.card-directory__directory {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.card-directory__filename {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-directory__subtitle {
+  display: block;
+  color: var(--color-text);
+  font-size: 12px;
+}
+
+.card-directory__column {
+  max-width: 160px;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.card-directory .card__missing,
+.card-directory .card__labels {
+  margin: 0;
+}
+
+.card-directory__delete {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.card-directory__row:hover .card-directory__delete,
+.card-directory__row:focus-within .card-directory__delete {
+  opacity: 1;
+}
+
+.card-directory__delete:hover {
+  color: var(--color-danger);
+  background: var(--color-surface);
+}
+
+.card-directory__outside,
+.card-directory__empty {
+  margin: 16px 8px;
+  color: var(--color-text);
+  font-size: 13px;
+}
