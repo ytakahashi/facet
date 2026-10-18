@@ -9,8 +9,8 @@ export type BoardViewMode = "board" | "table" | "directory";
 
 export interface BoardViewState {
   mode: BoardViewMode;
-  collapsedDirectories: ReadonlySet<string>;
-  toggleDirectory: (key: string) => void;
+  directoryExpansion: ReadonlyMap<string, boolean>;
+  setDirectoryExpanded: (key: string, expanded: boolean) => void;
   tableSort: CardTableSort | undefined;
   setMode: (mode: BoardViewMode) => void;
   cycleTableSort: (key: CardTableSortKey) => void;
@@ -21,14 +21,15 @@ export function createBoardViewStore(): UseBoundStore<
 > {
   return create<BoardViewState>((set) => ({
     mode: "board",
-    // Remember collapsed nodes so newly introduced directories start open.
-    collapsedDirectories: new Set(),
-    toggleDirectory: (key) =>
-      set((state) => {
-        const collapsedDirectories = new Set(state.collapsedDirectories);
-        if (!collapsedDirectories.delete(key)) collapsedDirectories.add(key);
-        return { collapsedDirectories };
-      }),
+    // Missing overrides follow whether the directory has card descendants.
+    directoryExpansion: new Map(),
+    setDirectoryExpanded: (key, expanded) =>
+      set((state) => ({
+        directoryExpansion: new Map(state.directoryExpansion).set(
+          key,
+          expanded,
+        ),
+      })),
     tableSort: undefined,
     setMode: (mode) => set({ mode }),
     cycleTableSort: (key) =>

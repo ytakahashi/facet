@@ -56,6 +56,8 @@ export type BoardStatus = "empty" | "loading" | "loaded" | "error";
 
 export interface BoardState {
   status: BoardStatus;
+  // Advances only when a disk load is accepted, never for local edits.
+  loadGeneration: number;
   board?: Board;
   path?: string;
   error?: string;
@@ -221,7 +223,7 @@ export function createBoardStore({
     const overwritingPaths = new Set<string>();
     let activeSavePath: string | undefined;
     let activeSaveIsOverwrite = false;
-    let loadGeneration = 0;
+    let loadRequestGeneration = 0;
     // Counts edits made to the board file's content. A refresh compares this
     // rather than the board's identity: a title re-derived from a Markdown
     // write replaces the board too, but leaves nothing to save that the disk
@@ -309,7 +311,7 @@ export function createBoardStore({
       mode: "open" | "reload" | "refresh",
       expectedEditCount?: number,
     ): Promise<void> {
-      const request = ++loadGeneration;
+      const request = ++loadRequestGeneration;
       // A newly opened session has no viewer yet, so no Markdown saves to track.
       const markdownSavedDuringLoad =
         mode === "open" ? undefined : new Map<string, string>();
@@ -333,7 +335,7 @@ export function createBoardStore({
       }
       try {
         const { board: diskBoard, revision } = await openBoard(path);
-        if (request !== loadGeneration) return;
+        if (request !== loadRequestGeneration) return;
         // An edit during refresh may already be queued for saving. Discard
         // both the disk board and its revision so that save keeps the revision
         // it started with and the local edit remains visible.
@@ -355,6 +357,7 @@ export function createBoardStore({
         revisions.set(path, revision);
         conflictedPaths.delete(path);
         set({
+          loadGeneration: get().loadGeneration + 1,
           status: "loaded",
           board,
           path,
@@ -367,7 +370,7 @@ export function createBoardStore({
           error: undefined,
         });
       } catch (error) {
-        if (request !== loadGeneration) return;
+        if (request !== loadRequestGeneration) return;
         if (mode === "open") {
           set({ status: "error", error: toUiError(error).message });
         } else if (mode === "refresh") {
@@ -445,6 +448,7 @@ export function createBoardStore({
     }
 
     return {
+      loadGeneration: 0,
       status: "empty",
       isSaving: false,
       isRefreshing: false,

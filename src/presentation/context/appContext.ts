@@ -5,6 +5,7 @@ import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import type { CardContentReadResult } from "../../usecase/readCardContents.ts";
 import type { BoardState } from "../store/boardStore.ts";
 import type { BoardViewState } from "../store/boardViewStore.ts";
+import type { DirectoryState } from "../store/directoryStore.ts";
 import type { FilterState } from "../store/filterStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import type { NewBoardDialogState } from "../store/newBoardDialogStore.ts";
@@ -64,6 +65,7 @@ export interface AppDependencies {
 }
 
 export interface BoardSession {
+  directoryStore: UseBoundStore<StoreApi<DirectoryState>>;
   boardStore: UseBoundStore<StoreApi<BoardState>>;
   markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
   filterStore: UseBoundStore<StoreApi<FilterState>>;
@@ -84,7 +86,7 @@ function useAppDependencies(): AppDependencies {
   return value;
 }
 
-function useBoardSession(): BoardSession {
+export function useBoardSession(): BoardSession {
   const value = useContext(BoardSessionContext);
   if (!value) {
     throw new Error(
@@ -160,4 +162,10 @@ export function useShortcutHelp<T>(
 
 export function useWorkspace<T>(selector: (state: WorkspaceState) => T): T {
   return useAppDependencies().workspace(selector);
+}
+
+export function useDirectoryStore<T>(
+  selector: (state: DirectoryState) => T,
+): T {
+  return useBoardSession().directoryStore(selector);
 }

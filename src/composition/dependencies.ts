@@ -31,6 +31,7 @@ import type {
 } from "../presentation/context/appContext.ts";
 import { createBoardStore } from "../presentation/store/boardStore.ts";
 import { createBoardViewStore } from "../presentation/store/boardViewStore.ts";
+import { createDirectoryStore } from "../presentation/store/directoryStore.ts";
 import { createFilterStore } from "../presentation/store/filterStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
@@ -90,6 +91,9 @@ function createBoardSession(): BoardSession {
       ),
   });
   return {
+    directoryStore: createDirectoryStore((path) =>
+      listDirectory(path, { fileSystem }),
+    ),
     boardView: createBoardViewStore(),
     boardStore,
     filterStore: createFilterStore(),

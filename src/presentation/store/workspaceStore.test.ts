@@ -1,3 +1,4 @@
+import { createDirectoryStore } from "./directoryStore.ts";
 import { create } from "zustand";
 import { describe, expect, it, vi } from "vite-plus/test";
 import type { CreateBoardInput } from "../../usecase/createBoard.ts";
@@ -22,6 +23,7 @@ function makeSession(
   } = {},
 ): BoardSession {
   return {
+    directoryStore: createDirectoryStore(async () => []),
     boardView: createBoardViewStore(),
     boardStore: create<BoardState>(
       () =>

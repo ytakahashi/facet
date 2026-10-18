@@ -75,6 +75,7 @@ describe("createBoardStore", () => {
 
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
+    expect(useBoardStore.getState().loadGeneration).toBe(1);
     expect(useBoardStore.getState().status).toBe("loaded");
     expect(useBoardStore.getState().board).toEqual(board);
   });
@@ -2115,6 +2116,7 @@ describe("createBoardStore", () => {
     );
     useBoardStore.getState().addColumn("Still local");
 
+    expect(useBoardStore.getState().loadGeneration).toBe(1);
     expect(useBoardStore.getState().board?.name).toBe("Local edit");
     expect(useBoardStore.getState().board?.columns.at(-1)?.name).toBe(
       "Still local",
@@ -2152,6 +2154,7 @@ describe("createBoardStore", () => {
     expect(confirmDiscardBoard).toHaveBeenCalledWith("reload");
     expect(useBoardStore.getState()).toMatchObject({
       board: diskBoard,
+      loadGeneration: 2,
       saveConflict: false,
       saveError: undefined,
       conflictResolutionError: undefined,
@@ -2176,7 +2179,9 @@ describe("createBoardStore", () => {
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
     await useBoardStore.getState().refreshBoard();
+    expect(useBoardStore.getState().loadGeneration).toBe(2);
     useBoardStore.getState().renameBoard("After refresh");
+    expect(useBoardStore.getState().loadGeneration).toBe(2);
 
     expect(confirmDiscardBoard).not.toHaveBeenCalled();
     expect(useBoardStore.getState().board?.name).toBe("After refresh");
@@ -2215,6 +2220,7 @@ describe("createBoardStore", () => {
 
     await useBoardStore.getState().refreshBoard();
     expect(openBoard).toHaveBeenCalledOnce();
+    expect(useBoardStore.getState().loadGeneration).toBe(1);
     expect(useBoardStore.getState().board?.name).toBe("Local edit");
 
     await useBoardStore.getState().refreshBoard();
@@ -2317,6 +2323,7 @@ describe("createBoardStore", () => {
       board,
       isRefreshing: false,
       refreshError: toUiError(refreshError).message,
+      loadGeneration: 1,
     });
   });
 
@@ -2375,6 +2382,7 @@ describe("createBoardStore", () => {
       loaded(makeBoard({ name: "From disk" }), "disk-revision"),
     );
     await refresh;
+    expect(useBoardStore.getState().loadGeneration).toBe(1);
     expect(useBoardStore.getState().board?.name).toBe("Local edit");
     expect(useBoardStore.getState().refreshError).toBe(
       toUiError(new UseCaseError("board.changed-during-refresh")).message,
