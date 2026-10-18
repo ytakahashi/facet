@@ -86,7 +86,7 @@ Within `presentation/`, imports flow down these tiers:
 ```text
 App.tsx
 board/  shell/
-kanban/  table/  search/  filter/  viewer/
+kanban/  table/  directory/  search/  filter/  viewer/
 labels/
 shared/
 ```

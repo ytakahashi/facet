@@ -139,3 +139,23 @@ describe("normalizeCardPath", () => {
     expect(result).toBe("ideas/card.md");
   });
 });
+
+describe("relative path escape validation", () => {
+  it("rejects an escape even if later segments return inside the board", () => {
+    expect(resolveCardPath("/board", "../other/../card.md")).toEqual({
+      ok: false,
+      reason: "escapes-board-directory",
+    });
+    expect(resolveCardPath("/board", "docs/../../card.md")).toEqual({
+      ok: false,
+      reason: "escapes-board-directory",
+    });
+  });
+
+  it("allows internal parent navigation and resolves from a volume root", () => {
+    expect(resolveCardPath("/", "docs/../card.md")).toEqual({
+      ok: true,
+      absolutePath: "/card.md",
+    });
+  });
+});

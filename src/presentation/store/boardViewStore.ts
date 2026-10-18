@@ -5,10 +5,12 @@ import type {
   CardTableSortKey,
 } from "../../domain/cardTable.ts";
 
-export type BoardViewMode = "board" | "table";
+export type BoardViewMode = "board" | "table" | "directory";
 
 export interface BoardViewState {
   mode: BoardViewMode;
+  collapsedDirectories: ReadonlySet<string>;
+  toggleDirectory: (key: string) => void;
   tableSort: CardTableSort | undefined;
   setMode: (mode: BoardViewMode) => void;
   cycleTableSort: (key: CardTableSortKey) => void;
@@ -19,6 +21,14 @@ export function createBoardViewStore(): UseBoundStore<
 > {
   return create<BoardViewState>((set) => ({
     mode: "board",
+    // Remember collapsed nodes so newly introduced directories start open.
+    collapsedDirectories: new Set(),
+    toggleDirectory: (key) =>
+      set((state) => {
+        const collapsedDirectories = new Set(state.collapsedDirectories);
+        if (!collapsedDirectories.delete(key)) collapsedDirectories.add(key);
+        return { collapsedDirectories };
+      }),
     tableSort: undefined,
     setMode: (mode) => set({ mode }),
     cycleTableSort: (key) =>

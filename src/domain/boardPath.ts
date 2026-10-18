@@ -15,12 +15,32 @@ export function resolveCardPath(
   boardDirectory: string,
   cardPath: string,
 ): ResolvedCardPath {
-  if (cardPath.startsWith("/")) {
+  const result = resolveRelativeCardPath(cardPath);
+  if (!result.ok) return result;
+  const segments = result.segments;
+
+  const normalizedBoardDirectory = boardDirectory.endsWith("/")
+    ? boardDirectory.slice(0, -1)
+    : boardDirectory;
+
+  return {
+    ok: true,
+    absolutePath: [normalizedBoardDirectory, ...segments].join("/"),
+  };
+}
+
+export type RelativePathResolution =
+  | { ok: true; segments: string[] }
+  | Extract<ResolvedCardPath, { ok: false }>;
+
+// Validate the original path: normalization must not erase an earlier escape.
+export function resolveRelativeCardPath(path: string): RelativePathResolution {
+  if (path.startsWith("/")) {
     return { ok: false, reason: "absolute-path" };
   }
 
   const segments: string[] = [];
-  for (const segment of cardPath.split("/")) {
+  for (const segment of path.split("/")) {
     if (segment === "" || segment === ".") {
       continue;
     }
@@ -34,14 +54,7 @@ export function resolveCardPath(
     segments.push(segment);
   }
 
-  const normalizedBoardDirectory = boardDirectory.endsWith("/")
-    ? boardDirectory.slice(0, -1)
-    : boardDirectory;
-
-  return {
-    ok: true,
-    absolutePath: [normalizedBoardDirectory, ...segments].join("/"),
-  };
+  return { ok: true, segments };
 }
 
 export function directoryOf(path: string): string {
@@ -124,10 +137,12 @@ export function isSameCardPath(a: string, b: string): boolean {
 }
 
 function canonicalCardPath(path: string): string {
-  // toLowerCase, not toLocaleLowerCase: the mapping must not depend on the
-  // user's locale (a Turkish locale maps I to a dotless ı, which would make
-  // two unrelated names compare equal).
-  return normalizeCardPath(path).normalize("NFC").toLowerCase();
+  return normalizeCardPath(path).split("/").map(pathSegmentKey).join("/");
+}
+
+export function pathSegmentKey(segment: string): string {
+  // Identity must not depend on the user's locale.
+  return segment.normalize("NFC").toLowerCase();
 }
 
 function normalizeAbsolutePath(path: string): string[] | undefined {

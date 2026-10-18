@@ -22,6 +22,13 @@ export function ViewSwitcher({ mode, onChange }: ViewSwitcherProps) {
       >
         Table
       </button>
+      <button
+        type="button"
+        aria-pressed={mode === "directory"}
+        onClick={() => onChange("directory")}
+      >
+        Files
+      </button>
     </div>
   );
 }
