@@ -121,6 +121,12 @@ workspace and window layout are app-wide. Only the active tab's board components
 are mounted; the other sessions retain their store state while their components
 are unmounted.
 
+The Files view keeps directory snapshots in a separate session store. Only
+expanded branches are read, and leaving the view stops scheduling new reads.
+Returning to Files or accepting a fresh board load starts a new scan generation;
+results from earlier generations cannot update the current listing. Explicit
+directory expansion overrides survive those refreshes.
+
 Board changes are applied optimistically and written back through
 `BoardSaveQueue`, which coalesces overlapping changes and surfaces a failure as
 a retryable error rather than rolling the board back.

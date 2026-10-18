@@ -6,6 +6,7 @@ import { AppProvider, BoardSessionProvider } from "../context/appContext.ts";
 import type { AppDependencies, BoardSession } from "../context/appContext.ts";
 import type { BoardState } from "../store/boardStore.ts";
 import { createBoardViewStore } from "../store/boardViewStore.ts";
+import { createDirectoryStore } from "../store/directoryStore.ts";
 import { createFilterStore } from "../store/filterStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import { CardDirectoryView } from "./CardDirectoryView.tsx";
@@ -15,6 +16,7 @@ function makeSession(): BoardSession {
     boardStore: create<BoardState>(
       () => ({ status: "loaded", path: "/board/board.yaml" }) as BoardState,
     ),
+    directoryStore: createDirectoryStore(async () => []),
     boardView: createBoardViewStore(),
     filterStore: createFilterStore(),
     markdownViewer: create<MarkdownViewerState>(
@@ -32,6 +34,7 @@ function markup(board: Board, session = makeSession()): string {
   const snapshot: BoardSession = {
     ...session,
     boardView: create(() => session.boardView.getState()),
+    directoryStore: create(() => session.directoryStore.getState()),
     filterStore: create(() => session.filterStore.getState()),
   };
   const dependencies = {
@@ -87,12 +90,56 @@ const board: Board = {
 };
 
 describe("CardDirectoryView", () => {
+  it("shows unregistered files without viewer controls and keeps FS-only directories collapsed", () => {
+    const session = makeSession();
+    session.directoryStore.setState({
+      snapshots: new Map([
+        [
+          "",
+          [
+            { name: "empty", isDirectory: true },
+            { name: "notes.MD", isDirectory: false },
+          ],
+        ],
+        ["empty", [{ name: "hidden-child.md", isDirectory: false }]],
+      ]),
+      scans: new Map([["", { status: "scanned" }]]),
+    });
+    const output = markup({ ...board, columns: [] }, session);
+    expect(output).toContain("notes.MD");
+    expect(output).toContain("Not on board");
+    expect(output).toContain('aria-expanded="false"');
+    expect(output).not.toContain("hidden-child.md");
+    expect(output).not.toContain("card-directory__open");
+    expect(output).not.toContain("No Markdown files or directories.");
+  });
+
+  it("shows root and branch failures alongside cards without an empty-state message", () => {
+    const session = makeSession();
+    session.directoryStore.setState({
+      scans: new Map([
+        ["", { status: "failed", message: "Root unavailable" }],
+        ["docs", { status: "failed", message: "Branch unavailable" }],
+      ]),
+    });
+    const output = markup(board, session);
+    expect(output).toContain("Root unavailable");
+    expect(output).toContain("Branch unavailable");
+    expect(output).toContain("Retry");
+    expect(output).toContain("missing.md");
+    expect(output).toContain("ready.md");
+    expect(output).not.toContain("No Markdown files or directories.");
+    expect(markup({ ...board, columns: [] }, session)).not.toContain(
+      "No Markdown files or directories.",
+    );
+  });
+
   it("renders nested disclosure lists, metadata and the selected broken card", () => {
     const output = markup(board);
     expect(output).toContain('aria-label="Files"');
     expect(output).toMatch(/aria-expanded="true"/);
-    expect(output).toMatch(/docs<\/button><ul>/);
-    expect(output).toMatch(/design<\/button><ul>/);
+    expect(output).toMatch(/docs<\/button>.*?<ul>/);
+    expect(output).toMatch(/design<\/button>.*?<ul>/);
     expect(output).toContain('class="card-directory__name">missing.md</span>');
     expect(output).toContain(
       'class="card-directory__subtitle">Broken task</span>',
@@ -110,7 +157,7 @@ describe("CardDirectoryView", () => {
 
   it("hides collapsed descendants without reporting a filter-empty state", () => {
     const session = makeSession();
-    session.boardView.getState().toggleDirectory("docs");
+    session.boardView.getState().setDirectoryExpanded("docs", false);
     const output = markup(board, session);
     expect(output).toContain('aria-expanded="false"');
     expect(output).not.toContain("missing.md");
@@ -137,8 +184,13 @@ describe("CardDirectoryView", () => {
   });
 
   it("distinguishes an empty board from filtered-out cards and prunes the outside group", () => {
-    expect(markup({ ...board, columns: [] })).toContain(
-      "No cards yet. Add cards from the Board view.",
+    expect(markup({ ...board, columns: [] })).toContain("Loading files…");
+    const scanned = makeSession();
+    scanned.directoryStore.setState({
+      scans: new Map([["", { status: "scanned" }]]),
+    });
+    expect(markup({ ...board, columns: [] }, scanned)).toContain(
+      "No Markdown files or directories.",
     );
     const session = makeSession();
     session.filterStore.setState({

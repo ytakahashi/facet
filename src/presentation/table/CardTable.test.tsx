@@ -1,3 +1,4 @@
+import { createDirectoryStore } from "../store/directoryStore.ts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { create } from "zustand";
 import { describe, expect, it, vi } from "vite-plus/test";
@@ -21,6 +22,7 @@ function makeSession(
 ): BoardSession {
   return {
     boardStore: create<BoardState>(() => ({ status: "loaded" }) as BoardState),
+    directoryStore: createDirectoryStore(async () => []),
     boardView: create<BoardViewState>(() => ({
       ...createBoardViewStore().getState(),
       tableSort: options.sort,

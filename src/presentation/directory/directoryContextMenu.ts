@@ -3,7 +3,7 @@ import type { CardTreeDirectory } from "../../domain/cardDirectoryTree.ts";
 import type { ContextMenuEntry } from "../context/appContext.ts";
 
 export function buildDirectoryContextMenu(
-  directory: CardTreeDirectory,
+  directory: Pick<CardTreeDirectory, "path">,
   boardDirectory: string,
   actions: { copyText: (text: string) => void; reveal: (path: string) => void },
 ): ContextMenuEntry[] {

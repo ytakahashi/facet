@@ -7,11 +7,7 @@ describe("buildDirectoryContextMenu", () => {
     const reveal = vi.fn();
     const entries = buildDirectoryContextMenu(
       {
-        kind: "directory",
-        key: "docs/design",
-        name: "Design",
         path: "Docs/Design",
-        children: [],
       },
       "/board/",
       { copyText, reveal },

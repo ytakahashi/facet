@@ -1,3 +1,4 @@
+import { createDirectoryStore } from "../store/directoryStore.ts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { create } from "zustand";
 import { describe, expect, it } from "vite-plus/test";
@@ -16,6 +17,7 @@ import type { BoardSession } from "./appContext.ts";
 
 function makeSession(label: string): BoardSession {
   return {
+    directoryStore: createDirectoryStore(async () => []),
     boardView: createBoardViewStore(),
     boardStore: create<BoardState>(
       () => ({ status: "empty", path: label }) as BoardState,

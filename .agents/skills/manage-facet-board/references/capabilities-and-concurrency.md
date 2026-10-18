@@ -22,6 +22,12 @@ files as Facet. It is not a complete UI manual.
 Facet does not watch Board or Markdown files. An external edit is therefore not
 shown automatically in an already open Board or editor.
 
+The Files view lists unregistered Markdown files and directories alongside Board
+Cards. It reads only expanded directories, hides unregistered entries while a
+Card filter is active, and does not watch the file system. Reopening Files,
+returning to its tab, or successfully refreshing or reloading the Board rereads
+the directory listings. These listings do not update a Card's file state.
+
 Facet records the SHA-256 hash of the file's bytes as its content revision when
 it reads a Board or Markdown file. A later conditional save compares that
 revision with the current file. Writing the same bytes again does not cause a

@@ -47,29 +47,29 @@ describe("createBoardViewStore", () => {
 });
 
 describe("directory state", () => {
-  it("toggles without mutating prior state and retains state across view switches", () => {
+  it("sets expansion without mutating prior state and retains state across view switches", () => {
     const store = createBoardViewStore();
-    const initial = store.getState().collapsedDirectories;
-    store.getState().toggleDirectory("docs");
+    const initial = store.getState().directoryExpansion;
+    store.getState().setDirectoryExpanded("docs", false);
     expect(initial.size).toBe(0);
-    expect(store.getState().collapsedDirectories.has("docs")).toBe(true);
+    expect(store.getState().directoryExpansion.get("docs")).toBe(false);
     store.getState().setMode("directory");
     store.getState().setMode("table");
     store.getState().setMode("directory");
-    expect(store.getState().collapsedDirectories.has("docs")).toBe(true);
-    expect(store.getState().collapsedDirectories.has("new-directory")).toBe(
+    expect(store.getState().directoryExpansion.get("docs")).toBe(false);
+    expect(store.getState().directoryExpansion.has("new-directory")).toBe(
       false,
     );
-    store.getState().toggleDirectory("docs");
-    expect(store.getState().collapsedDirectories.size).toBe(0);
+    store.getState().setDirectoryExpanded("docs", true);
+    expect(store.getState().directoryExpansion.get("docs")).toBe(true);
   });
 
-  it("isolates the mode and collapsed directories between sessions", () => {
+  it("isolates the mode and expansion overrides between sessions", () => {
     const first = createBoardViewStore();
     const second = createBoardViewStore();
-    first.getState().toggleDirectory("docs");
+    first.getState().setDirectoryExpanded("docs", false);
     first.getState().setMode("directory");
-    expect(second.getState().collapsedDirectories.size).toBe(0);
+    expect(second.getState().directoryExpansion.size).toBe(0);
     expect(second.getState().mode).toBe("board");
   });
 });

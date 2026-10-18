@@ -2854,3 +2854,23 @@ body.is-pane-resizing * {
   color: var(--color-text);
   font-size: 13px;
 }
+
+.card-directory__file {
+  cursor: default;
+}
+
+.card-directory__unregistered,
+.card-directory__status {
+  color: var(--color-text);
+  font-size: 12px;
+}
+
+.card-directory__status,
+.card-directory__error {
+  margin: 4px 0 4px 20px;
+}
+
+.card-directory__error {
+  color: var(--color-danger);
+  font-size: 12px;
+}
