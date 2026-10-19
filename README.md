@@ -17,7 +17,7 @@ A local-first Markdown kanban desktop app for macOS.
 - Add, rename, reorder and remove columns
 - Give a card any number of labels
 - Browse board cards, unregistered Markdown files, and directories in the Files
-  view
+  view; right-click an unregistered file to add it to a column
 - Filter by label, or hide whole columns from view
 - Search card titles or Markdown contents
 - Create and open boards from the menu bar, including recently opened ones

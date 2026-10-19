@@ -197,6 +197,7 @@ export interface BoardStoreDeps {
   renameMarkdownCard: RenameMarkdownCard;
   createBoard: CreateBoard;
   deleteMarkdown: DeleteMarkdown;
+  onFilesChanged?: (absolutePaths: readonly string[]) => void;
   confirmDiscardBoard: ConfirmDiscardBoard;
   confirmOverwriteBoard: ConfirmOverwriteBoard;
 }
@@ -211,6 +212,7 @@ export function createBoardStore({
   renameMarkdownCard,
   createBoard,
   deleteMarkdown,
+  onFilesChanged = () => {},
   confirmDiscardBoard,
   confirmOverwriteBoard,
 }: BoardStoreDeps): UseBoundStore<StoreApi<BoardState>> {
@@ -718,6 +720,7 @@ export function createBoardStore({
           title: input.title,
         });
 
+        if (card.absolutePath) onFilesChanged([card.absolutePath]);
         return appendCard(initial.path, input.columnId, card);
       },
       addExistingCard: async (input: ExistingCardInput) => {
@@ -726,6 +729,11 @@ export function createBoardStore({
           throw new Error("Open a board before adding a card.");
         }
 
+        if (
+          !initial.board.columns.some((column) => column.id === input.columnId)
+        ) {
+          throw new UseCaseError("card.board-changed");
+        }
         let target: ReturnType<typeof resolveExistingMarkdownPath>;
         try {
           target = resolveExistingMarkdownPath(
@@ -748,6 +756,11 @@ export function createBoardStore({
           boardPath: initial.path,
           absolutePath: input.absolutePath,
         });
+        if (
+          !get().board?.columns.some((column) => column.id === input.columnId)
+        ) {
+          throw new UseCaseError("card.board-changed");
+        }
         return appendCard(initial.path, input.columnId, card);
       },
       relocateCard: async (cardPath: string, absolutePath: string) => {
@@ -819,6 +832,7 @@ export function createBoardStore({
           title,
         });
 
+        if (repaired.absolutePath) onFilesChanged([repaired.absolutePath]);
         return replaceCard(initial.path, cardPath, repaired);
       },
       renameCardFile: async (
@@ -879,6 +893,11 @@ export function createBoardStore({
           fileName,
         });
 
+        onFilesChanged(
+          [card.absolutePath, moved.absolutePath].filter(
+            (path) => path !== undefined,
+          ),
+        );
         return replaceCard(initial.path, cardPath, moved);
       },
       removeCard: async (
@@ -907,6 +926,8 @@ export function createBoardStore({
           // exactly what it was before. The other order would drop the last
           // reference to a file that failed to delete.
           await deleteMarkdown(card.absolutePath);
+          // Notify after successful I/O even if later board validation fails.
+          onFilesChanged([card.absolutePath]);
         }
 
         const current = get();

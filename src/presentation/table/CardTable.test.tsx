@@ -22,6 +22,11 @@ function makeSession(
 ): BoardSession {
   return {
     boardStore: create<BoardState>(() => ({ status: "loaded" }) as BoardState),
+    fileAddition: create(() => ({
+      additions: new Map(),
+      addFile: async () => {},
+      clearFailures: () => {},
+    })),
     directoryStore: createDirectoryStore(async () => []),
     boardView: create<BoardViewState>(() => ({
       ...createBoardViewStore().getState(),

@@ -1268,6 +1268,100 @@ describe("createBoardStore", () => {
     expect(saveBoard).not.toHaveBeenCalled();
   });
 
+  it.each(["before", "during"])(
+    "rejects a Column removed %s loading an existing file",
+    async (when) => {
+      const pending = deferred<Card>();
+      const read = vi.fn(() => pending.promise);
+      const save = vi.fn();
+      const store = createBoardStore(
+        makeDeps({
+          openBoard: async () => loaded(makeBoard()),
+          addExistingMarkdownCard: read,
+          saveBoard: save,
+        }),
+      );
+      await store.getState().openBoard("/board/board.yaml");
+      const removeColumn = () =>
+        store.setState({ board: { ...store.getState().board!, columns: [] } });
+      if (when === "before") removeColumn();
+      const adding = store
+        .getState()
+        .addExistingCard({ columnId: "done", absolutePath: "/board/new.md" });
+      if (when === "during") {
+        removeColumn();
+        pending.resolve({
+          path: "new.md",
+          displayTitle: "New",
+          fileState: "available",
+          labels: [],
+        });
+      }
+      await expect(adding).rejects.toMatchObject({
+        code: "card.board-changed",
+      });
+      expect(read).toHaveBeenCalledTimes(when === "before" ? 0 : 1);
+      expect(save).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["create", "recreate", "move", "delete", "reference"])(
+    "reports only successful FS changes (%s)",
+    async (operation) => {
+      const source: Card = {
+        path: "a.md",
+        absolutePath: "/board/a.md",
+        displayTitle: "A",
+        labels: [],
+        fileState: "available",
+      };
+      const target: Card = {
+        ...source,
+        path: "docs/b.md",
+        absolutePath: "/board/docs/b.md",
+      };
+      const changed = vi.fn();
+      const store = createBoardStore(
+        makeDeps({
+          openBoard: async () =>
+            loaded(
+              makeBoard({
+                columns: [{ id: "todo", name: "Todo", cards: [source] }],
+              }),
+            ),
+          createMarkdownCard: async () => target,
+          recreateMarkdownCard: async () => target,
+          renameMarkdownCard: async () => target,
+          deleteMarkdown: async () => {},
+          onFilesChanged: changed,
+        }),
+      );
+      await store.getState().openBoard("/board/board.yaml");
+      if (operation === "create")
+        await store.getState().addNewCard({
+          columnId: "todo",
+          directory: "/board/docs",
+          fileName: "b.md",
+          title: "B",
+        });
+      if (operation === "recreate")
+        await store.getState().recreateCard("a.md", "/board/docs/b.md", "B");
+      if (operation === "move")
+        await store.getState().renameCardFile("a.md", "/board/docs", "b.md");
+      if (operation === "delete" || operation === "reference")
+        await store
+          .getState()
+          .removeCard("a.md", { deleteFile: operation === "delete" });
+      if (operation === "reference") expect(changed).not.toHaveBeenCalled();
+      else
+        expect(changed).toHaveBeenCalledExactlyOnceWith(
+          operation === "move"
+            ? ["/board/a.md", "/board/docs/b.md"]
+            : [operation === "delete" ? "/board/a.md" : "/board/docs/b.md"],
+        );
+    },
+  );
+
   it("keeps an existing card visible when saving it fails", async () => {
     const board = makeBoard();
     const card = {

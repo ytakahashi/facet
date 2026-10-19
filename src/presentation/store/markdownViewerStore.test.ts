@@ -23,6 +23,9 @@ function createMarkdownViewerStore(
     typeof createMarkdownViewerStoreImplementation
   >[3] = alwaysOverwrite,
   onSaved?: Parameters<typeof createMarkdownViewerStoreImplementation>[4],
+  onFilesChanged?: Parameters<
+    typeof createMarkdownViewerStoreImplementation
+  >[5],
 ) {
   return createMarkdownViewerStoreImplementation(
     async (path) => {
@@ -36,6 +39,7 @@ function createMarkdownViewerStore(
     confirmDiscard,
     confirmOverwrite,
     onSaved,
+    onFilesChanged,
   );
 }
 
@@ -618,6 +622,44 @@ describe("createMarkdownViewerStore", () => {
     expect(saveMarkdown).toHaveBeenCalledTimes(1);
     expect(useMarkdownViewer.getState().conflict).toBe("gone");
     expect(useMarkdownViewer.getState().draft).toBe("# Facet edit");
+  });
+
+  it("reports a file change only for an unconditional write that lands", async () => {
+    const saveMarkdown = vi
+      .fn()
+      .mockResolvedValueOnce("revision-2")
+      .mockRejectedValueOnce(
+        new UseCaseError("markdown.file-gone", {
+          path: "/board/improve-search.md",
+        }),
+      )
+      .mockResolvedValue("revision-3");
+    const onFilesChanged = vi.fn();
+    const useMarkdownViewer = createMarkdownViewerStore(
+      () => Promise.resolve("# Improve search"),
+      saveMarkdown,
+      alwaysDiscard,
+      alwaysOverwrite,
+      undefined,
+      onFilesChanged,
+    );
+    await useMarkdownViewer.getState().selectCard(makeCard());
+    useMarkdownViewer.getState().updateDraft("# Saved");
+    await useMarkdownViewer.getState().save();
+    useMarkdownViewer.getState().updateDraft("# Recreated");
+    await useMarkdownViewer.getState().save();
+    expect(onFilesChanged).not.toHaveBeenCalled();
+
+    await useMarkdownViewer.getState().overwrite();
+
+    expect(saveMarkdown).toHaveBeenLastCalledWith(
+      "/board/improve-search.md",
+      "# Recreated",
+      undefined,
+    );
+    expect(onFilesChanged).toHaveBeenCalledExactlyOnceWith([
+      "/board/improve-search.md",
+    ]);
   });
 
   it("asks for confirmation before discarding an unsaved edit on selectCard, and keeps the edit when declined", async () => {

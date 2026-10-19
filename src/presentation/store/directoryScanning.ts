@@ -7,7 +7,8 @@ import { isCardFilterActive } from "../../domain/cardFilter.ts";
 // Runs only while Files is mounted. Subscriptions make scheduling independent
 // of React rendering, including collapse events before a queued read starts.
 export function startDirectoryScanning(session: BoardSession): () => void {
-  const { boardStore, boardView, filterStore, directoryStore } = session;
+  const { boardStore, boardView, filterStore, directoryStore, fileAddition } =
+    session;
   function updateTargets() {
     const { board } = boardStore.getState();
     if (!board) return;
@@ -39,6 +40,8 @@ export function startDirectoryScanning(session: BoardSession): () => void {
     const { path } = boardStore.getState();
     if (!path) return;
     directoryStore.getState().begin(directoryOf(path) || "/");
+    // Earlier failures may no longer hold once the listings are reread.
+    fileAddition.getState().clearFailures();
     updateTargets();
   }
   begin();

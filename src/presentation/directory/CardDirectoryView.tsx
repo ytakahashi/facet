@@ -3,7 +3,7 @@ import type { MouseEvent } from "react";
 import type { Board } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
-import { directoryOf } from "../../domain/boardPath.ts";
+import { canonicalCardPath, directoryOf } from "../../domain/boardPath.ts";
 import { buildDirectoryTree } from "../../domain/cardDirectoryTree.ts";
 import type {
   CardTreeCard,
@@ -17,6 +17,7 @@ import {
   useBoardView,
   useContextMenu,
   useDirectoryStore,
+  useFileAddition,
   useFilterStore,
   useMarkdownViewer,
 } from "../context/appContext.ts";
@@ -24,6 +25,7 @@ import { buildLabelDisplay } from "../labels/labelDisplay.ts";
 import { missingHint } from "../shared/cardFileStateHint.ts";
 import { useMenuActions } from "../shared/useMenuActions.ts";
 import { buildDirectoryContextMenu } from "./directoryContextMenu.ts";
+import { buildFileContextMenu } from "./fileContextMenu.ts";
 import { useDirectoryScanning } from "./useDirectoryScanning.ts";
 
 interface CardDirectoryViewProps {
@@ -46,6 +48,8 @@ export function CardDirectoryView({
   const snapshots = useDirectoryStore((state) => state.snapshots);
   const scans = useDirectoryStore((state) => state.scans);
   const retry = useDirectoryStore((state) => state.retry);
+  const additions = useFileAddition((state) => state.additions);
+  const addFile = useFileAddition((state) => state.addFile);
   const boardPath = useBoardStore((state) => state.path);
   const selectedPath = useMarkdownViewer((state) => state.selectedPath);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
@@ -174,20 +178,42 @@ export function CardDirectoryView({
       <ul>
         {nodes.map((node) => {
           if (node.kind === "card") return renderCard(node);
-          if (node.kind === "file")
+          if (node.kind === "file") {
+            const addition = additions.get(canonicalCardPath(node.path));
             return (
               <li key={`file:${node.path}`}>
                 <div
                   className="card-directory__row card-directory__file"
                   title={node.path}
+                  aria-busy={addition?.status === "adding"}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (boardPath)
+                      contextMenu.show(
+                        buildFileContextMenu(
+                          board,
+                          addition?.status === "adding",
+                          (columnId) => {
+                            void addFile(boardPath, node.path, columnId);
+                          },
+                        ),
+                      );
+                  }}
                 >
                   <span className="card-directory__name">{node.name}</span>
                   <span className="card-directory__unregistered">
-                    Not on board
+                    {addition?.status === "adding" ? "Adding…" : "Not on board"}
                   </span>
                 </div>
+                {addition?.status === "failed" && (
+                  <p className="card-directory__error" role="alert">
+                    {addition.message}
+                  </p>
+                )}
               </li>
             );
+          }
           const expanded = expansion.get(node.key) ?? node.hasCardDescendants;
           return (
             <li key={`directory:${node.key}`}>

@@ -6,6 +6,7 @@ import type { CardContentReadResult } from "../../usecase/readCardContents.ts";
 import type { BoardState } from "../store/boardStore.ts";
 import type { BoardViewState } from "../store/boardViewStore.ts";
 import type { DirectoryState } from "../store/directoryStore.ts";
+import type { FileAdditionState } from "../store/fileAdditionStore.ts";
 import type { FilterState } from "../store/filterStore.ts";
 import type { MarkdownViewerState } from "../store/markdownViewerStore.ts";
 import type { NewBoardDialogState } from "../store/newBoardDialogStore.ts";
@@ -65,6 +66,7 @@ export interface AppDependencies {
 }
 
 export interface BoardSession {
+  fileAddition: UseBoundStore<StoreApi<FileAdditionState>>;
   directoryStore: UseBoundStore<StoreApi<DirectoryState>>;
   boardStore: UseBoundStore<StoreApi<BoardState>>;
   markdownViewer: UseBoundStore<StoreApi<MarkdownViewerState>>;
@@ -168,4 +170,10 @@ export function useDirectoryStore<T>(
   selector: (state: DirectoryState) => T,
 ): T {
   return useBoardSession().directoryStore(selector);
+}
+
+export function useFileAddition<T>(
+  selector: (state: FileAdditionState) => T,
+): T {
+  return useBoardSession().fileAddition(selector);
 }

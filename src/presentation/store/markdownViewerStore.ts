@@ -87,6 +87,7 @@ export type ConfirmDiscard = () => Promise<boolean>;
 // moved away from: the file changed either way, and whatever is derived from
 // it - the card's title on the board - has to follow.
 export type MarkdownSaved = (cardPath: string, content: string) => void;
+export type MarkdownFilesChanged = (absolutePaths: readonly string[]) => void;
 export type ConfirmOverwrite = (conflict: MarkdownConflict) => Promise<boolean>;
 
 // Exported because "has the draft diverged from what is on disk" is asked
@@ -177,6 +178,7 @@ export function createMarkdownViewerStore(
   confirmDiscard: ConfirmDiscard,
   confirmOverwrite: ConfirmOverwrite,
   onSaved: MarkdownSaved = () => {},
+  onFilesChanged: MarkdownFilesChanged = () => {},
 ): UseBoundStore<StoreApi<MarkdownViewerState>> {
   // Identifies which selection/save the viewer is currently showing. Every
   // async result checks it before writing state back, so a load or save that
@@ -312,6 +314,8 @@ export function createMarkdownViewerStore(
           draft,
           expectedRevision,
         );
+        // An unconditional write can recreate a file that had disappeared.
+        if (expectedRevision === undefined) onFilesChanged([absolutePath]);
         onSaved(selectedPath, draft);
         if (request !== generation) return;
         set({

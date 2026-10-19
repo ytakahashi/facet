@@ -16,6 +16,67 @@ function deferred() {
 const entries: DirEntry[] = [{ name: "notes.md", isDirectory: false }];
 
 describe("directory store", () => {
+  it("invalidates only affected parents, including both ends of a move", async () => {
+    const read = vi.fn().mockResolvedValue(entries);
+    const store = createDirectoryStore(read);
+    store.getState().begin("/board");
+    store.getState().setTargets(
+      new Map([
+        ["", ""],
+        ["docs", "Docs"],
+        ["other", "other"],
+      ]),
+    );
+    await vi.waitFor(() => expect(store.getState().snapshots.size).toBe(3));
+    read.mockClear();
+    store
+      .getState()
+      .invalidateFiles([
+        "/board/a.md",
+        "/board/Docs/b.md",
+        "/outside/ignored.md",
+      ]);
+    expect(read.mock.calls).toEqual([["/board"], ["/board/Docs"]]);
+    // Listings stay visible while their rereads run.
+    expect(store.getState().snapshots.size).toBe(3);
+    await vi.waitFor(() =>
+      expect(
+        ["", "docs"].map((key) => store.getState().scans.get(key)?.status),
+      ).toEqual(["scanned", "scanned"]),
+    );
+    read.mockClear();
+    store.getState().setTargets(new Map([["", ""]]));
+    store.getState().invalidateFiles(["/board/Docs/a.md", "/board/Docs/b.md"]);
+    expect(store.getState().snapshots.get("docs")).toEqual(entries);
+    expect(store.getState().scans.has("docs")).toBe(false);
+    expect(read).not.toHaveBeenCalled();
+    store.getState().setTargets(new Map([["docs", "Docs"]]));
+    expect(read.mock.calls).toEqual([["/board/Docs"]]);
+  });
+
+  it.each(["success", "failure"])(
+    "discards a read started before invalidation (%s)",
+    async (outcome) => {
+      const old = deferred();
+      const read = vi
+        .fn()
+        .mockReturnValueOnce(old.promise)
+        .mockResolvedValue([]);
+      const store = createDirectoryStore(read);
+      store.getState().begin("/board");
+      store.getState().setTargets(new Map([["", ""]]));
+      store.getState().invalidateFiles(["/board/deleted.md"]);
+      await vi.waitFor(() =>
+        expect(store.getState().snapshots.get("")).toEqual([]),
+      );
+      if (outcome === "success") old.resolve(entries);
+      else old.reject(new UseCaseError("directory.browse-failed"));
+      await old.promise.catch(() => {});
+      expect(store.getState().snapshots.get("")).toEqual([]);
+      expect(store.getState().scans.get("")?.status).toBe("scanned");
+    },
+  );
+
   it("deduplicates reads, caches closed directories, and isolates sessions", async () => {
     const read = vi.fn().mockResolvedValue(entries);
     const store = createDirectoryStore(read);

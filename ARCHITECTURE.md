@@ -125,7 +125,11 @@ The Files view keeps directory snapshots in a separate session store. Only
 expanded branches are read, and leaving the view stops scheduling new reads.
 Returning to Files or accepting a fresh board load starts a new scan generation;
 results from earlier generations cannot update the current listing. Explicit
-directory expansion overrides survive those refreshes.
+directory expansion overrides survive those refreshes. Successful file
+operations notify the directory store of affected file paths, so only their
+parent listings are invalidated. Per-directory read versions also discard
+results started before that invalidation. File addition status belongs to the
+session, allowing native menu actions to finish after the view unmounts.
 
 Board changes are applied optimistically and written back through
 `BoardSaveQueue`, which coalesces overlapping changes and surfaces a failure as
