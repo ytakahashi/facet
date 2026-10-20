@@ -10,6 +10,11 @@ import {
   type LinkInsertionTarget,
   resolveLinkInsertionTarget,
 } from "./cardLinkInsertion.ts";
+import {
+  applyIndentation,
+  type IndentDirection,
+  resolveIndentation,
+} from "./editorIndentation.ts";
 import { resolveEditorShortcut } from "../../shared/shortcuts/editorShortcut.ts";
 import { InsertCardLinkDialog } from "./InsertCardLinkDialog.tsx";
 import type { FindPresentation, FindText } from "../find/findPresentation.ts";
@@ -51,7 +56,9 @@ export function MarkdownEditor({
     onFindTextChange,
   );
   const insertionTargetRef = useRef<LinkInsertionTarget | undefined>(undefined);
-  const pendingCaretRef = useRef<number | undefined>(undefined);
+  const pendingSelectionRef = useRef<
+    { start: number; end: number } | undefined
+  >(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useLayoutEffect(() => {
@@ -59,16 +66,16 @@ export function MarkdownEditor({
   }, [onMount]);
 
   useLayoutEffect(() => {
-    const caret = pendingCaretRef.current;
+    const selection = pendingSelectionRef.current;
     const textarea = textareaRef.current;
-    if (caret === undefined || !textarea) return;
+    if (selection === undefined || !textarea) return;
 
     // The fallback updates a controlled value through React. Restore the
     // caret only after that value reaches the DOM, or the old value can clamp
     // the requested position before the inserted text exists.
-    pendingCaretRef.current = undefined;
+    pendingSelectionRef.current = undefined;
     textarea.focus();
-    textarea.setSelectionRange(caret, caret);
+    textarea.setSelectionRange(selection.start, selection.end);
   }, [value]);
 
   function insertCardLink(card: Card) {
@@ -88,8 +95,37 @@ export function MarkdownEditor({
     if (document.execCommand("insertText", false, markdown)) return;
 
     const result = applyLinkInsertion(value, target, markdown);
-    pendingCaretRef.current = result.caret;
+    pendingSelectionRef.current = { start: result.caret, end: result.caret };
     onChange(result.value);
+  }
+
+  function indent(textarea: HTMLTextAreaElement, direction: IndentDirection) {
+    const edit = resolveIndentation(
+      textarea.value,
+      textarea.selectionStart,
+      textarea.selectionEnd,
+      direction,
+    );
+    if (!edit) return;
+
+    textarea.setSelectionRange(edit.start, edit.end);
+    // Go through the native editing commands, as card link insertion does,
+    // so the change joins the WebView's undo ring. WebKit does not reliably
+    // treat inserting an empty string as deleting the selection.
+    const applied =
+      edit.text === ""
+        ? document.execCommand("delete")
+        : document.execCommand("insertText", false, edit.text);
+    if (applied) {
+      textarea.setSelectionRange(edit.selectionStart, edit.selectionEnd);
+      return;
+    }
+
+    pendingSelectionRef.current = {
+      start: edit.selectionStart,
+      end: edit.selectionEnd,
+    };
+    onChange(applyIndentation(textarea.value, edit));
   }
 
   return (
@@ -109,7 +145,16 @@ export function MarkdownEditor({
           onChange={(event) => onChange(event.target.value)}
           onScroll={syncScroll}
           onKeyDown={(event) => {
-            if (!resolveEditorShortcut(event.nativeEvent)) return;
+            const shortcut = resolveEditorShortcut(event.nativeEvent);
+            if (!shortcut) return;
+            if (shortcut === "indent" || shortcut === "outdent") {
+              // A read-only editor leaves Tab to move focus, since there is
+              // nothing to indent.
+              if (readOnly) return;
+              event.preventDefault();
+              indent(event.currentTarget, shortcut);
+              return;
+            }
             // Claim the app shortcut once recognised, even when this card's
             // path cannot produce a link and the palette therefore stays shut.
             event.preventDefault();

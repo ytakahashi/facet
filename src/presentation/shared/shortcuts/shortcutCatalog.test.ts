@@ -55,6 +55,8 @@ const expectations: Record<ShortcutId, readonly Expectation[]> = {
   ],
   "close-find": [{ resolve: resolveFindShortcut, result: "close" }],
   "insert-link": [{ resolve: resolveEditorShortcut, result: "insert-link" }],
+  indent: [{ resolve: resolveEditorShortcut, result: "indent" }],
+  outdent: [{ resolve: resolveEditorShortcut, result: "outdent" }],
   "move-selection": ["handled-inline", "handled-inline"],
   confirm: ["handled-inline"],
   "cancel-rename": ["handled-inline"],
@@ -91,6 +93,7 @@ describe("formatKeyCombo", () => {
   it.each([
     ["Escape", "⎋"],
     ["Enter", "↩"],
+    ["Tab", "⇥"],
     ["ArrowUp", "↑"],
     ["ArrowDown", "↓"],
     ["[", "["],

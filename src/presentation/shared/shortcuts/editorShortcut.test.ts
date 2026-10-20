@@ -37,3 +37,25 @@ describe("resolveEditorShortcut", () => {
     expect(shortcut({ key: "k", keyCode: 229 })).toBeUndefined();
   });
 });
+
+describe("resolveEditorShortcut indentation", () => {
+  function tab(overrides: Partial<KeyboardEvent> = {}) {
+    return shortcut({ key: "Tab", metaKey: false, ...overrides });
+  }
+
+  it("recognises Tab and Shift-Tab", () => {
+    expect(tab()).toBe("indent");
+    expect(tab({ shiftKey: true })).toBe("outdent");
+  });
+
+  it("leaves Tab with Command, Control or Option to the system", () => {
+    expect(tab({ metaKey: true })).toBeUndefined();
+    expect(tab({ ctrlKey: true })).toBeUndefined();
+    expect(tab({ altKey: true })).toBeUndefined();
+  });
+
+  it("ignores Tab while an IME is composing", () => {
+    expect(tab({ isComposing: true })).toBeUndefined();
+    expect(tab({ keyCode: 229 })).toBeUndefined();
+  });
+});
