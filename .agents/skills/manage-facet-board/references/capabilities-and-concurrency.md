@@ -27,6 +27,11 @@ Cards. It reads only expanded directories, hides unregistered entries while a
 Card filter is active, and does not watch the file system. Reopening Files,
 returning to its tab, or successfully refreshing or reloading the Board rereads
 the directory listings. These listings do not update a Card's file state.
+Unregistered Markdown files can be added to a chosen Column from their context
+menu, without previewing or editing them first. Successful file creation,
+deletion, and moves in the same Board tab invalidate the affected parent
+listings; a move invalidates both its source and destination parents. Other tabs
+still need a refresh or another visit to Files.
 
 Facet records the SHA-256 hash of the file's bytes as its content revision when
 it reads a Board or Markdown file. A later conditional save compares that

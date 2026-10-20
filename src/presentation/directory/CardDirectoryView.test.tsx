@@ -16,6 +16,11 @@ function makeSession(): BoardSession {
     boardStore: create<BoardState>(
       () => ({ status: "loaded", path: "/board/board.yaml" }) as BoardState,
     ),
+    fileAddition: create(() => ({
+      additions: new Map(),
+      addFile: async () => {},
+      clearFailures: () => {},
+    })),
     directoryStore: createDirectoryStore(async () => []),
     boardView: createBoardViewStore(),
     filterStore: createFilterStore(),
@@ -35,6 +40,7 @@ function markup(board: Board, session = makeSession()): string {
     ...session,
     boardView: create(() => session.boardView.getState()),
     directoryStore: create(() => session.directoryStore.getState()),
+    fileAddition: create(() => session.fileAddition.getState()),
     filterStore: create(() => session.filterStore.getState()),
   };
   const dependencies = {
@@ -90,6 +96,29 @@ const board: Board = {
 };
 
 describe("CardDirectoryView", () => {
+  it("shows addition progress and errors beside the unregistered file", () => {
+    const session = makeSession();
+    session.directoryStore.setState({
+      snapshots: new Map([["", [{ name: "notes.md", isDirectory: false }]]]),
+      scans: new Map([["", { status: "scanned" }]]),
+    });
+    session.fileAddition.setState({
+      additions: new Map([["notes.md", { status: "adding" }]]),
+    });
+    expect(markup({ ...board, columns: [] }, session)).toContain("Adding…");
+    expect(markup({ ...board, columns: [] }, session)).toContain(
+      'aria-busy="true"',
+    );
+    session.fileAddition.setState({
+      additions: new Map([
+        ["notes.md", { status: "failed", message: "Cannot add file" }],
+      ]),
+    });
+    const output = markup({ ...board, columns: [] }, session);
+    expect(output).toContain("Cannot add file");
+    expect(output).toContain("notes.md");
+    expect(output).not.toContain("card-directory__open");
+  });
   it("shows unregistered files without viewer controls and keeps FS-only directories collapsed", () => {
     const session = makeSession();
     session.directoryStore.setState({

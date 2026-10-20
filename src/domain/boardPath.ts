@@ -136,7 +136,7 @@ export function isSameCardPath(a: string, b: string): boolean {
   return canonicalCardPath(a) === canonicalCardPath(b);
 }
 
-function canonicalCardPath(path: string): string {
+export function canonicalCardPath(path: string): string {
   return normalizeCardPath(path).split("/").map(pathSegmentKey).join("/");
 }
 

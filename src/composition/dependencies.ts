@@ -32,6 +32,7 @@ import type {
 import { createBoardStore } from "../presentation/store/boardStore.ts";
 import { createBoardViewStore } from "../presentation/store/boardViewStore.ts";
 import { createDirectoryStore } from "../presentation/store/directoryStore.ts";
+import { createFileAdditionStore } from "../presentation/store/fileAdditionStore.ts";
 import { createFilterStore } from "../presentation/store/filterStore.ts";
 import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
@@ -59,7 +60,11 @@ async function refreshRecentMenu(): Promise<void> {
 }
 
 function createBoardSession(): BoardSession {
+  const directoryStore = createDirectoryStore((path) =>
+    listDirectory(path, { fileSystem }),
+  );
   const boardStore = createBoardStore({
+    onFilesChanged: (paths) => directoryStore.getState().invalidateFiles(paths),
     openBoard: async (path) => {
       const loadedBoard = await openBoardUseCase(path, {
         boardRepository,
@@ -91,9 +96,8 @@ function createBoardSession(): BoardSession {
       ),
   });
   return {
-    directoryStore: createDirectoryStore((path) =>
-      listDirectory(path, { fileSystem }),
-    ),
+    directoryStore,
+    fileAddition: createFileAdditionStore(boardStore),
     boardView: createBoardViewStore(),
     boardStore,
     filterStore: createFilterStore(),
@@ -112,6 +116,7 @@ function createBoardSession(): BoardSession {
       // keeps its title until that board is refreshed.
       (cardPath, content) =>
         boardStore.getState().syncCardTitle(cardPath, content),
+      (paths) => directoryStore.getState().invalidateFiles(paths),
     ),
   };
 }

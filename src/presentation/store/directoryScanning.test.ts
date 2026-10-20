@@ -8,6 +8,7 @@ import type { MarkdownViewerState } from "./markdownViewerStore.ts";
 import { createBoardViewStore } from "./boardViewStore.ts";
 import { createFilterStore } from "./filterStore.ts";
 import { createDirectoryStore } from "./directoryStore.ts";
+import { createFileAdditionStore } from "./fileAdditionStore.ts";
 import { startDirectoryScanning } from "./directoryScanning.ts";
 
 function session(read: (path: string) => Promise<DirEntry[]>): BoardSession {
@@ -30,12 +31,14 @@ function session(read: (path: string) => Promise<DirEntry[]>): BoardSession {
       },
     ],
   };
+  const boardStore = create<BoardState>(
+    () =>
+      ({ board, path: "/board/board.yaml", loadGeneration: 1 }) as BoardState,
+  );
   return {
-    boardStore: create<BoardState>(
-      () =>
-        ({ board, path: "/board/board.yaml", loadGeneration: 1 }) as BoardState,
-    ),
+    boardStore,
     boardView: createBoardViewStore(),
+    fileAddition: createFileAdditionStore(boardStore),
     directoryStore: createDirectoryStore(read),
     filterStore: createFilterStore(),
     markdownViewer: create<MarkdownViewerState>(
@@ -92,6 +95,25 @@ describe("directory scanning lifecycle", () => {
     stop = startDirectoryScanning(s);
     expect(read).toHaveBeenCalledTimes(3);
     expect(s.boardView.getState().directoryExpansion.get("docs")).toBe(false);
+    stop();
+  });
+
+  it("clears addition failures, but not pending additions, when a new scan begins", () => {
+    const s = session(vi.fn().mockResolvedValue([]));
+    const additions = new Map([
+      ["failed.md", { status: "failed", message: "Cannot add file" }],
+      ["pending.md", { status: "adding" }],
+    ] as const);
+    s.fileAddition.setState({ additions: new Map(additions) });
+    const stop = startDirectoryScanning(s);
+    expect([...s.fileAddition.getState().additions.keys()]).toEqual([
+      "pending.md",
+    ]);
+    s.fileAddition.setState({ additions: new Map(additions) });
+    s.boardStore.setState({ loadGeneration: 2 });
+    expect([...s.fileAddition.getState().additions.keys()]).toEqual([
+      "pending.md",
+    ]);
     stop();
   });
 

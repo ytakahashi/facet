@@ -23,6 +23,11 @@ function makeSession(
   } = {},
 ): BoardSession {
   return {
+    fileAddition: create(() => ({
+      additions: new Map(),
+      addFile: async () => {},
+      clearFailures: () => {},
+    })),
     directoryStore: createDirectoryStore(async () => []),
     boardView: createBoardViewStore(),
     boardStore: create<BoardState>(
