@@ -13,6 +13,8 @@ export type ShortcutId =
   | "previous-match"
   | "close-find"
   | "insert-link"
+  | "indent"
+  | "outdent"
   | "move-selection"
   | "confirm"
   | "cancel-rename";
@@ -138,6 +140,16 @@ export const shortcutGroups: readonly ShortcutGroup[] = [
         description: "Insert card link",
         combos: [{ key: "k", command: true }],
       },
+      {
+        id: "indent",
+        description: "Indent",
+        combos: [{ key: "Tab" }],
+      },
+      {
+        id: "outdent",
+        description: "Outdent",
+        combos: [{ key: "Tab", shift: true }],
+      },
     ],
   },
   {
@@ -164,6 +176,7 @@ export const shortcutGroups: readonly ShortcutGroup[] = [
 
 const keySymbols: Readonly<Record<string, string>> = {
   Escape: "⎋",
+  Tab: "⇥",
   Enter: "↩",
   ArrowUp: "↑",
   ArrowDown: "↓",

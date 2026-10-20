@@ -11,20 +11,28 @@ type ShortcutEvent = Pick<
   | "isComposing"
 >;
 
-// Command-K is the conventional link shortcut and does not collide with the
-// board or viewer shortcuts. Check both cases because Caps Lock can change the
-// reported key without adding the Shift modifier.
+export type EditorShortcut = "insert-link" | "indent" | "outdent";
+
 export function resolveEditorShortcut(
   event: ShortcutEvent,
-): "insert-link" | undefined {
-  if (
-    isImeProcessing(event) ||
-    !event.metaKey ||
-    event.ctrlKey ||
-    event.altKey ||
-    event.shiftKey
-  ) {
+): EditorShortcut | undefined {
+  if (isImeProcessing(event) || event.ctrlKey || event.altKey) {
     return undefined;
   }
-  return event.key === "k" || event.key === "K" ? "insert-link" : undefined;
+  // Only bare Tab and Shift-Tab are claimed, so Control-Tab and Option-Tab
+  // still move focus out of the editor without a pointer.
+  if (event.key === "Tab" && !event.metaKey) {
+    return event.shiftKey ? "outdent" : "indent";
+  }
+  // Command-K is the conventional link shortcut and does not collide with the
+  // board or viewer shortcuts. Check both cases because Caps Lock can change
+  // the reported key without adding the Shift modifier.
+  if (
+    event.metaKey &&
+    !event.shiftKey &&
+    (event.key === "k" || event.key === "K")
+  ) {
+    return "insert-link";
+  }
+  return undefined;
 }
