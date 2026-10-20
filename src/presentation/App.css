@@ -1639,13 +1639,26 @@ body.is-pane-resizing * {
   margin-top: 4px;
 }
 
+/* A nested list is part of its item, not a separate block, so it drops the
+   block gap below and keeps only the spacing between items. */
+.markdown-preview li > ul,
+.markdown-preview li > ol {
+  margin: 4px 0 0;
+}
+
 .markdown-preview .contains-task-list,
 .markdown-preview .task-list-item {
   list-style: none;
 }
 
+/* remark-gfm marks every list holding a task item, nested ones included; only
+   the outermost sits flush so nested task lists keep their indent. */
 .markdown-preview .contains-task-list {
   padding-left: 0;
+}
+
+.markdown-preview .contains-task-list .contains-task-list {
+  padding-left: 24px;
 }
 
 .markdown-preview blockquote {
