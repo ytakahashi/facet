@@ -14,7 +14,6 @@ export function FilterSidebar({ board }: { board: Board }) {
   const setLabelColor = useBoardStore((state) => state.setLabelColor);
   const removeLabel = useBoardStore((state) => state.removeLabel);
   const moveLabel = useBoardStore((state) => state.moveLabel);
-  const boardPath = useBoardStore((state) => state.path);
   const criteria = useFilterStore((state) => state.criteria);
   const isSidebarOpen = useFilterStore((state) => state.isSidebarOpen);
   const toggleSidebar = useFilterStore((state) => state.toggleSidebar);
@@ -24,10 +23,6 @@ export function FilterSidebar({ board }: { board: Board }) {
   );
   const syncLabels = useFilterStore((state) => state.syncLabels);
   const clear = useFilterStore((state) => state.clear);
-
-  useEffect(() => {
-    clear();
-  }, [boardPath, clear]);
 
   // board.labels only gets a new array reference when the registry itself
   // changes (create/rename/recolor/delete/reorder) - other board updates (add
