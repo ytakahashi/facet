@@ -4,6 +4,7 @@ import {
   type CardHistory,
   emptyCardHistory,
   findPreviousCard,
+  listRecentCards,
   recordCardVisit,
   removeFromCardHistory,
   retargetCardHistory,
@@ -13,87 +14,123 @@ function record(paths: readonly string[]): CardHistory {
   return paths.reduce(recordCardVisit, emptyCardHistory());
 }
 
-function backPaths(
-  history: CardHistory,
-  isOnBoard: (path: string) => boolean = () => true,
-): string[] {
-  const paths: string[] = [];
-  let current = history;
-  for (let step = 0; step < CARD_HISTORY_LIMIT; step++) {
-    const previous = findPreviousCard(current, isOnBoard);
-    if (!previous) return paths;
-    paths.push(previous.path);
-    current = previous.history;
-  }
-  throw new Error("Going back did not reduce card history");
+const onBoard = () => true;
+
+function recent(history: CardHistory) {
+  return listRecentCards(history, onBoard);
 }
 
 describe("card history", () => {
-  it("returns visits in reverse order without repeating adjacent identities", () => {
+  it("moves visits to the front and removes equivalent identities throughout the list", () => {
     const history = record([
       "a.md",
-      "folder/../A.md",
+      "café.md",
       "b.md",
+      "folder/../A.md",
       "cafe\u0301.md",
-      "caf\u00e9.md",
-      "c.md",
     ]);
 
-    expect(backPaths(history)).toEqual(["cafe\u0301.md", "b.md", "a.md"]);
+    expect(recent(history)).toEqual([
+      "cafe\u0301.md",
+      "folder/../A.md",
+      "b.md",
+    ]);
   });
 
-  it("keeps only the most recent visits when the limit is exceeded", () => {
-    const paths = Array.from(
-      { length: CARD_HISTORY_LIMIT + 2 },
-      (_, index) => `${index}.md`,
-    );
-
+  it("counts the current card toward the ten-entry limit and drops the oldest", () => {
+    const paths = Array.from({ length: 12 }, (_, index) => `${index}.md`);
     const history = record(paths);
-    const result = backPaths(history);
 
-    expect(result).toHaveLength(CARD_HISTORY_LIMIT - 1);
-    expect(result.at(-1)).toBe("2.md");
+    expect(CARD_HISTORY_LIMIT).toBe(10);
+    expect(recent(history)).toEqual(paths.slice(2).reverse());
+    expect(recent(recordCardVisit(history, "5.md"))).toEqual([
+      "5.md",
+      ...paths
+        .slice(2)
+        .reverse()
+        .filter((path) => path !== "5.md"),
+    ]);
   });
 
-  it("has nowhere to go back from an empty or single-entry history", () => {
-    expect(findPreviousCard(emptyCardHistory(), () => true)).toBeUndefined();
-    expect(findPreviousCard(record(["a.md"]), () => true)).toBeUndefined();
-  });
-
-  it("drops the current entry before skipping cards no longer on the board", () => {
-    const history = record(["a.md", "gone.md", "b.md", "current.md"]);
-    const isOnBoard = (path: string) => path === "a.md" || path === "b.md";
-
-    expect(backPaths(history, isOnBoard)).toEqual(["b.md", "a.md"]);
-  });
-
-  it("can return from a current card that is no longer on the board", () => {
-    const history = record(["a.md", "removed-current.md"]);
-
-    expect(findPreviousCard(history, (path) => path === "a.md")?.path).toBe(
-      "a.md",
-    );
-  });
-
-  it("returns undefined when no earlier card remains on the board", () => {
-    const history = record(["gone.md", "current.md"]);
-
+  it("lists only cards on the board without changing the stored history", () => {
+    const history = record(["a.md", "gone.md", "b.md", "removed-current.md"]);
     expect(
-      findPreviousCard(history, (path) => path === "current.md"),
+      listRecentCards(history, (path) => path === "a.md" || path === "b.md"),
+    ).toEqual(["b.md", "a.md"]);
+    expect(recent(history)).toEqual([
+      "removed-current.md",
+      "b.md",
+      "gone.md",
+      "a.md",
+    ]);
+  });
+
+  it("has no destination with empty history or only the current card", () => {
+    expect(
+      findPreviousCard(emptyCardHistory(), undefined, onBoard),
+    ).toBeUndefined();
+    expect(findPreviousCard(record(["a.md"]), "a.md", onBoard)).toBeUndefined();
+    expect(
+      findPreviousCard(record(["a.md"]), undefined, () => false),
     ).toBeUndefined();
   });
 
-  it("retargets every visit and collapses adjacent identities", () => {
-    const history = record(["a.md", "old.md", "b.md", "OLD.md", "next.md"]);
-    const retargeted = retargetCardHistory(history, "old.md", "b.md");
-
-    expect(backPaths(retargeted)).toEqual(["b.md", "a.md"]);
+  it("reopens the most recent remaining card when the viewer is closed", () => {
+    const history = record(["a.md", "b.md", "gone.md"]);
+    expect(
+      findPreviousCard(history, undefined, (path) => path !== "gone.md"),
+    ).toBe("b.md");
+    expect(findPreviousCard(record(["a.md"]), undefined, onBoard)).toBe("a.md");
   });
 
-  it("removes every visit and collapses the entries it joins", () => {
-    const history = record(["a.md", "remove.md", "A.md", "current.md"]);
-    const removed = removeFromCardHistory(history, "REMOVE.md");
+  it("excludes the current card by identity wherever it appears in history", () => {
+    const history = record(["a.md", "café.md", "b.md"]);
+    expect(findPreviousCard(history, "folder/../B.md", onBoard)).toBe(
+      "café.md",
+    );
+    expect(findPreviousCard(history, "cafe\u0301.md", onBoard)).toBe("b.md");
+    expect(findPreviousCard(history, "unrecorded.md", onBoard)).toBe("b.md");
+  });
 
-    expect(backPaths(removed)).toEqual(["a.md"]);
+  it("skips removed cards, including a removed current card", () => {
+    const history = record(["a.md", "gone.md", "b.md", "current.md"]);
+    const retained = (path: string) => path === "a.md" || path === "b.md";
+    expect(findPreviousCard(history, "current.md", retained)).toBe("b.md");
+    expect(findPreviousCard(history, "b.md", retained)).toBe("a.md");
+    expect(
+      findPreviousCard(history, "current.md", (path) => path === "current.md"),
+    ).toBeUndefined();
+  });
+
+  it("toggles between the last two cards by recording each destination", () => {
+    let history = record(["a.md", "b.md", "c.md"]);
+    const previous = findPreviousCard(history, "c.md", onBoard)!;
+    history = recordCardVisit(history, previous);
+    expect(recent(history)).toEqual(["b.md", "c.md", "a.md"]);
+    expect(findPreviousCard(history, previous, onBoard)).toBe("c.md");
+  });
+
+  it("retargets equivalent paths and keeps the most recent of nonadjacent collisions", () => {
+    const history = record(["old.md", "a.md", "next.md", "b.md"]);
+    const retargeted = retargetCardHistory(history, "OLD.md", "NEXT.md");
+    expect(recent(retargeted)).toEqual(["b.md", "next.md", "a.md"]);
+    expect(
+      recent(
+        retargetCardHistory(
+          record(["next.md", "a.md", "old.md"]),
+          "old.md",
+          "NEXT.md",
+        ),
+      ),
+    ).toEqual(["NEXT.md", "a.md"]);
+    expect(recent(history)).toEqual(["b.md", "next.md", "a.md", "old.md"]);
+  });
+
+  it("removes an equivalent path without changing the order of remaining cards", () => {
+    const history = record(["a.md", "remove.md", "b.md"]);
+    expect(
+      recent(removeFromCardHistory(history, "folder/../REMOVE.md")),
+    ).toEqual(["b.md", "a.md"]);
+    expect(recent(history)).toEqual(["b.md", "remove.md", "a.md"]);
   });
 });

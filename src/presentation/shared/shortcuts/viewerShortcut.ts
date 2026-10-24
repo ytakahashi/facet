@@ -1,7 +1,6 @@
 import { isImeProcessing } from "../isImeProcessing.ts";
 
 export type ViewerShortcut =
-  | "back"
   | "save"
   | "close"
   | "toggle-mode"
@@ -37,7 +36,6 @@ export function resolveViewerShortcut(
   }
   if (event.shiftKey) return undefined;
   if (event.key === "f" || event.key === "F") return "find";
-  if (event.key === "[") return "back";
   // Caps Lock can change the reported case without adding Shift.
   if (event.key === "s" || event.key === "S") return "save";
   return event.key === "e" || event.key === "E" ? "toggle-mode" : undefined;
