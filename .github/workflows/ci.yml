@@ -21,11 +21,8 @@ jobs:
       - name: Setup repo
         uses: actions/checkout@v7
 
-      # Pinned to a commit: the action's moving v1 tag is frozen and no longer
-      # updated. Node, pnpm and Vite+ follow the versions the project pins
-      # (package.json devEngines, pnpm-workspace.yaml catalog).
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
+        uses: voidzero-dev/setup-vp@v1.22.0
         with:
           cache: true
           run-install: true
@@ -48,7 +45,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
+        uses: voidzero-dev/setup-vp@v1.22.0
         with:
           cache: true
           run-install: true
