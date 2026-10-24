@@ -9,12 +9,8 @@ import {
   useState,
 } from "react";
 import type { MouseEvent } from "react";
-import {
-  findCardByEquivalentPath,
-  findCardByPath,
-} from "../../domain/board.ts";
+import { findCardByPath } from "../../domain/board.ts";
 import { resolveCardLink } from "../../domain/cardLink.ts";
-import { findPreviousCard } from "../../domain/cardHistory.ts";
 import type { Card } from "../../domain/card.ts";
 import { orderCardLabels } from "../../domain/label.ts";
 import {
@@ -100,8 +96,6 @@ export function MarkdownViewer() {
   const reloadFromDisk = useMarkdownViewer((state) => state.reloadFromDisk);
   const overwrite = useMarkdownViewer((state) => state.overwrite);
   const close = useMarkdownViewer((state) => state.close);
-  const history = useMarkdownViewer((state) => state.history);
-  const goBack = useMarkdownViewer((state) => state.goBack);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
 
   const width = usePaneLayout((state) => state.viewerWidth);
@@ -199,17 +193,6 @@ export function MarkdownViewer() {
     () => buildLabelDisplay(board?.labels ?? []),
     [board?.labels],
   );
-  const backDestination = useMemo(() => {
-    if (!board) return undefined;
-    const previous = findPreviousCard(
-      history,
-      (path) => findCardByEquivalentPath(board, path) !== undefined,
-    );
-    if (!previous) return undefined;
-    const destination = findCardByEquivalentPath(board, previous.path);
-    return destination ? { board, card: destination } : undefined;
-  }, [board, history]);
-
   const [isLabelPickerOpen, setIsLabelPickerOpen] = useState(false);
   const [isManageLabelsOpen, setIsManageLabelsOpen] = useState(false);
   // The card is taken into state when the dialog opens rather than read from
@@ -259,8 +242,8 @@ export function MarkdownViewer() {
         void close();
         return;
       }
-      // The viewer owns this shortcut while open, even when there is no back
-      // destination, saving is unavailable, or a modal prevents acting on it.
+      // The viewer owns this shortcut while open, even when saving is
+      // unavailable or a modal prevents acting on it.
       event.preventDefault();
       if (isModalOpen) return;
       switch (shortcut) {
@@ -272,9 +255,6 @@ export function MarkdownViewer() {
           return;
         case "find-previous":
           previousFind();
-          return;
-        case "back":
-          if (board) void goBack(board);
           return;
         case "save":
           if (canSave) void save();
@@ -290,7 +270,6 @@ export function MarkdownViewer() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [
-    board,
     canSave,
     canToggleMode,
     find.isOpen,
@@ -300,7 +279,6 @@ export function MarkdownViewer() {
     nextFind,
     previousFind,
     close,
-    goBack,
     save,
     toggleViewerMode,
   ]);
@@ -349,22 +327,6 @@ export function MarkdownViewer() {
       >
         <div className="markdown-viewer__header">
           <div className="markdown-viewer__header-main">
-            <button
-              type="button"
-              className="markdown-viewer__back"
-              aria-label="Back"
-              title={
-                backDestination
-                  ? `Back to ${backDestination.card.displayTitle} (⌘[)`
-                  : "Back (⌘[)"
-              }
-              disabled={!backDestination}
-              onClick={() => {
-                if (backDestination) void goBack(backDestination.board);
-              }}
-            >
-              ←
-            </button>
             {card && (
               <CardTitle key={card.path} card={card} onRename={renameCard} />
             )}

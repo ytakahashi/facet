@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import type { Board } from "../../domain/board.ts";
+import { listRecentCards } from "../../domain/cardHistory.ts";
 import type { Card } from "../../domain/card.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
@@ -51,15 +51,6 @@ function makeCard(overrides: Partial<Card> = {}): Card {
     labels: [],
     displayTitle: "Improve search",
     ...overrides,
-  };
-}
-
-function makeBoard(cards: Card[]): Board {
-  return {
-    version: 1,
-    name: "Board",
-    labels: [],
-    columns: [{ id: "column", name: "Column", cards }],
   };
 }
 
@@ -685,18 +676,9 @@ describe("createMarkdownViewerStore", () => {
     );
     expect(viewMarkdown).toHaveBeenCalledTimes(1);
 
-    // Once the edit is clean, visit another card and go back. The declined
-    // destination must not appear between it and the original card.
-    const thirdCard = makeCard({
-      path: "write-documentation.md",
-      absolutePath: "/board/write-documentation.md",
-    });
-    useMarkdownViewer.getState().updateDraft("# Improve search");
-    await useMarkdownViewer.getState().selectCard(thirdCard);
-    await useMarkdownViewer
-      .getState()
-      .goBack(makeBoard([card, otherCard, thirdCard]));
-    expect(useMarkdownViewer.getState().selectedPath).toBe(card.path);
+    expect(
+      listRecentCards(useMarkdownViewer.getState().history, () => true),
+    ).toEqual([card.path]);
   });
 
   it("does not open the next card when the viewer changed while asking to discard", async () => {
@@ -1125,52 +1107,52 @@ describe("createMarkdownViewerStore", () => {
     expect(useMarkdownViewer.getState().absolutePath).toBe(card.absolutePath);
   });
 
-  it("goes back through cards in visit order without recording the back destination again", async () => {
-    const cards = [
-      makeCard({ path: "a.md", absolutePath: "/board/a.md" }),
-      makeCard({ path: "b.md", absolutePath: "/board/b.md" }),
-      makeCard({ path: "c.md", absolutePath: "/board/c.md" }),
-    ];
-    const useMarkdownViewer = createMarkdownViewerStore(
-      (path) => Promise.resolve(`# ${path}`),
+  it("records revisited cards at the front without duplicate entries", async () => {
+    const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
+    const b = makeCard({ path: "b.md", absolutePath: "/board/b.md" });
+    const store = createMarkdownViewerStore(
+      () => Promise.resolve("content"),
       vi.fn(),
       alwaysDiscard,
     );
-    for (const card of cards) {
-      await useMarkdownViewer.getState().selectCard(card);
-    }
+    await store.getState().selectCard(a);
+    await store.getState().selectCard(b);
+    await store.getState().selectCard(a);
 
-    await useMarkdownViewer.getState().goBack(makeBoard(cards));
-    expect(useMarkdownViewer.getState().selectedPath).toBe("b.md");
-
-    await useMarkdownViewer.getState().goBack(makeBoard(cards));
-    expect(useMarkdownViewer.getState().selectedPath).toBe("a.md");
-
-    await useMarkdownViewer.getState().goBack(makeBoard(cards));
-    expect(useMarkdownViewer.getState().selectedPath).toBe("a.md");
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      a.path,
+      b.path,
+    ]);
+    expect(store.getState().selectedPath).toBe(a.path);
   });
 
-  it("keeps history unchanged when discarding a dirty draft for back is declined", async () => {
+  it("preserves selection, draft and history when revisiting a card is declined", async () => {
     const confirmDiscard = vi.fn(() => Promise.resolve(false));
     const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
     const b = makeCard({ path: "b.md", absolutePath: "/board/b.md" });
-    const board = makeBoard([a, b]);
-    const useMarkdownViewer = createMarkdownViewerStore(
-      (path) => Promise.resolve(`# ${path}`),
+    const store = createMarkdownViewerStore(
+      () => Promise.resolve("content"),
       vi.fn(),
       confirmDiscard,
     );
-    await useMarkdownViewer.getState().selectCard(a);
-    await useMarkdownViewer.getState().selectCard(b);
-    useMarkdownViewer.getState().updateDraft("dirty");
+    await store.getState().selectCard(a);
+    await store.getState().selectCard(b);
+    store.getState().updateDraft("dirty");
+    const history = store.getState().history;
 
-    await useMarkdownViewer.getState().goBack(board);
-    expect(useMarkdownViewer.getState().selectedPath).toBe("b.md");
+    await store.getState().selectCard(a);
+
+    expect(store.getState().selectedPath).toBe(b.path);
+    expect(store.getState().draft).toBe("dirty");
+    expect(store.getState().history).toBe(history);
     expect(confirmDiscard).toHaveBeenCalledOnce();
 
-    useMarkdownViewer.getState().updateDraft("# /board/b.md");
-    await useMarkdownViewer.getState().goBack(board);
-    expect(useMarkdownViewer.getState().selectedPath).toBe("a.md");
+    store.getState().updateDraft("content");
+    await store.getState().selectCard(a);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      a.path,
+      b.path,
+    ]);
   });
 
   it("records cards that fail to load or have no absolute path", async () => {
@@ -1183,8 +1165,7 @@ describe("createMarkdownViewerStore", () => {
       path: "unresolved.md",
       absolutePath: undefined,
     });
-    const board = makeBoard([a, failed, unresolved]);
-    const useMarkdownViewer = createMarkdownViewerStore(
+    const store = createMarkdownViewerStore(
       (path) =>
         path.endsWith("failed.md")
           ? Promise.reject(new UseCaseError("markdown.load-failed", { path }))
@@ -1192,116 +1173,92 @@ describe("createMarkdownViewerStore", () => {
       vi.fn(),
       alwaysDiscard,
     );
-
-    await useMarkdownViewer.getState().selectCard(a);
-    await useMarkdownViewer.getState().selectCard(failed);
-    await useMarkdownViewer.getState().selectCard(unresolved);
-    await useMarkdownViewer.getState().goBack(board);
-    expect(useMarkdownViewer.getState().selectedPath).toBe("failed.md");
-    await useMarkdownViewer.getState().goBack(board);
-    expect(useMarkdownViewer.getState().selectedPath).toBe("a.md");
+    await store.getState().selectCard(a);
+    await store.getState().selectCard(failed);
+    expect(store.getState().status).toBe("error");
+    await store.getState().selectCard(unresolved);
+    expect(store.getState().status).toBe("error");
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      unresolved.path,
+      failed.path,
+      a.path,
+    ]);
   });
 
-  it("keeps history after close and continues it with the next selected card", async () => {
-    const cards = [
-      makeCard({ path: "a.md", absolutePath: "/board/a.md" }),
-      makeCard({ path: "b.md", absolutePath: "/board/b.md" }),
-      makeCard({ path: "c.md", absolutePath: "/board/c.md" }),
-    ];
-    const useMarkdownViewer = createMarkdownViewerStore(
-      () => Promise.resolve("content"),
-      vi.fn(),
-      alwaysDiscard,
-    );
-    await useMarkdownViewer.getState().selectCard(cards[0]);
-    await useMarkdownViewer.getState().selectCard(cards[1]);
-    await useMarkdownViewer.getState().close();
-    await useMarkdownViewer.getState().selectCard(cards[2]);
-
-    await useMarkdownViewer.getState().goBack(makeBoard(cards));
-    expect(useMarkdownViewer.getState().selectedPath).toBe("b.md");
-  });
-
-  it("skips cards removed from the board when going back", async () => {
-    const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
-    const removed = makeCard({
-      path: "removed.md",
-      absolutePath: "/board/removed.md",
-    });
-    const current = makeCard({
-      path: "current.md",
-      absolutePath: "/board/current.md",
-    });
-    const useMarkdownViewer = createMarkdownViewerStore(
-      () => Promise.resolve("content"),
-      vi.fn(),
-      alwaysDiscard,
-    );
-    await useMarkdownViewer.getState().selectCard(a);
-    await useMarkdownViewer.getState().selectCard(removed);
-    await useMarkdownViewer.getState().selectCard(current);
-
-    await useMarkdownViewer.getState().goBack(makeBoard([a, current]));
-    expect(useMarkdownViewer.getState().selectedPath).toBe("a.md");
-  });
-
-  it("removes an unopened discarded card from history", async () => {
+  it("keeps history after close and continues it on reopening", async () => {
     const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
     const b = makeCard({ path: "b.md", absolutePath: "/board/b.md" });
-    const c = makeCard({ path: "c.md", absolutePath: "/board/c.md" });
-    const useMarkdownViewer = createMarkdownViewerStore(
+    const store = createMarkdownViewerStore(
       () => Promise.resolve("content"),
       vi.fn(),
       alwaysDiscard,
     );
-    await useMarkdownViewer.getState().selectCard(a);
-    await useMarkdownViewer.getState().selectCard(b);
-    await useMarkdownViewer.getState().selectCard(c);
+    await store.getState().selectCard(a);
+    await store.getState().selectCard(b);
+    const history = store.getState().history;
+    await store.getState().close();
+    expect(store.getState().selectedPath).toBeUndefined();
+    expect(store.getState().history).toBe(history);
 
-    useMarkdownViewer.getState().discardCard(b.path);
-    await useMarkdownViewer.getState().goBack(makeBoard([a, c]));
-    expect(useMarkdownViewer.getState().selectedPath).toBe("a.md");
+    await store.getState().selectCard(b);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      b.path,
+      a.path,
+    ]);
+    expect(store.getState().selectedPath).toBe(b.path);
   });
 
-  it("retargets an unopened card everywhere in history", async () => {
+  it("removes discarded cards from history whether or not they are selected", async () => {
     const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
     const b = makeCard({ path: "b.md", absolutePath: "/board/b.md" });
-    const c = makeCard({ path: "c.md", absolutePath: "/board/c.md" });
+    const store = createMarkdownViewerStore(
+      () => Promise.resolve("content"),
+      vi.fn(),
+      alwaysDiscard,
+    );
+    await store.getState().selectCard(a);
+    await store.getState().selectCard(b);
+    store.getState().discardCard(a.path);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      b.path,
+    ]);
+    expect(store.getState().selectedPath).toBe(b.path);
+
+    store.getState().discardCard(b.path);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([]);
+    expect(store.getState().selectedPath).toBeUndefined();
+  });
+
+  it("retargets selected and unopened cards without reordering history", async () => {
+    const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
+    const b = makeCard({ path: "b.md", absolutePath: "/board/b.md" });
     const moved = makeCard({
       path: "moved.md",
       absolutePath: "/board/moved.md",
     });
-    const useMarkdownViewer = createMarkdownViewerStore(
+    const store = createMarkdownViewerStore(
       () => Promise.resolve("content"),
       vi.fn(),
       alwaysDiscard,
     );
-    await useMarkdownViewer.getState().selectCard(a);
-    await useMarkdownViewer.getState().selectCard(b);
-    await useMarkdownViewer.getState().selectCard(c);
+    await store.getState().selectCard(a);
+    await store.getState().selectCard(b);
+    store.getState().retargetCard(a.path, moved);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      b.path,
+      moved.path,
+    ]);
+    expect(store.getState().selectedPath).toBe(b.path);
 
-    useMarkdownViewer.getState().retargetCard(b.path, moved);
-    await useMarkdownViewer.getState().goBack(makeBoard([a, moved, c]));
-    expect(useMarkdownViewer.getState().selectedPath).toBe("moved.md");
+    store.getState().retargetCard(b.path, a);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      a.path,
+      moved.path,
+    ]);
+    expect(store.getState().selectedPath).toBe(a.path);
   });
 
-  it("resets history without changing the card being shown", async () => {
-    const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
-    const b = makeCard({ path: "b.md", absolutePath: "/board/b.md" });
-    const useMarkdownViewer = createMarkdownViewerStore(
-      () => Promise.resolve("content"),
-      vi.fn(),
-      alwaysDiscard,
-    );
-    await useMarkdownViewer.getState().selectCard(a);
-    await useMarkdownViewer.getState().selectCard(b);
-
-    useMarkdownViewer.getState().resetHistory();
-    await useMarkdownViewer.getState().goBack(makeBoard([a, b]));
-    expect(useMarkdownViewer.getState().selectedPath).toBe("b.md");
-  });
-
-  it("retargets every visit and reloads a repaired card without losing history", async () => {
+  it("reloads a repaired card and retargets its unique visit without reordering history", async () => {
     const a = makeCard({ path: "a.md", absolutePath: "/board/a.md" });
     const old = makeCard({ path: "old.md", absolutePath: "/board/old.md" });
     const c = makeCard({ path: "c.md", absolutePath: "/board/c.md" });
@@ -1310,27 +1267,31 @@ describe("createMarkdownViewerStore", () => {
       absolutePath: "/board/repaired.md",
     });
     const viewMarkdown = vi.fn(() => Promise.resolve("content"));
-    const useMarkdownViewer = createMarkdownViewerStore(
+    const store = createMarkdownViewerStore(
       viewMarkdown,
       vi.fn(),
       alwaysDiscard,
     );
-    await useMarkdownViewer.getState().selectCard(a);
-    await useMarkdownViewer.getState().selectCard(old);
-    await useMarkdownViewer.getState().selectCard(c);
-    await useMarkdownViewer.getState().selectCard(old);
+    for (const card of [a, old, c, old])
+      await store.getState().selectCard(card);
 
-    await useMarkdownViewer.getState().reopenRepairedCard(old.path, repaired);
-    expect(useMarkdownViewer.getState().selectedPath).toBe(repaired.path);
+    await store.getState().reopenRepairedCard(old.path, repaired);
+
+    expect(store.getState().selectedPath).toBe(repaired.path);
     expect(viewMarkdown).toHaveBeenLastCalledWith(repaired.absolutePath);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      repaired.path,
+      c.path,
+      a.path,
+    ]);
 
-    const board = makeBoard([a, repaired, c]);
-    await useMarkdownViewer.getState().goBack(board);
-    expect(useMarkdownViewer.getState().selectedPath).toBe(c.path);
-    await useMarkdownViewer.getState().goBack(board);
-    expect(useMarkdownViewer.getState().selectedPath).toBe(repaired.path);
-    await useMarkdownViewer.getState().goBack(board);
-    expect(useMarkdownViewer.getState().selectedPath).toBe(a.path);
+    await store.getState().reopenRepairedCard(a.path, old);
+    expect(store.getState().selectedPath).toBe(repaired.path);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      repaired.path,
+      c.path,
+      old.path,
+    ]);
   });
 
   it("preserves history when repairing the selected card at the same path", async () => {
@@ -1338,25 +1299,19 @@ describe("createMarkdownViewerStore", () => {
     const repaired = makeCard({
       path: "broken.md",
       absolutePath: "/board/broken.md",
-      fileState: "available",
     });
-    const useMarkdownViewer = createMarkdownViewerStore(
+    const store = createMarkdownViewerStore(
       () => Promise.resolve("content"),
       vi.fn(),
       alwaysDiscard,
     );
-    await useMarkdownViewer.getState().selectCard(a);
-    await useMarkdownViewer.getState().selectCard({
-      ...repaired,
-      fileState: "missing",
-    });
-
-    await useMarkdownViewer
-      .getState()
-      .reopenRepairedCard(repaired.path, repaired);
-    await useMarkdownViewer.getState().goBack(makeBoard([a, repaired]));
-
-    expect(useMarkdownViewer.getState().selectedPath).toBe(a.path);
+    await store.getState().selectCard(a);
+    await store.getState().selectCard({ ...repaired, fileState: "missing" });
+    await store.getState().reopenRepairedCard(repaired.path, repaired);
+    expect(listRecentCards(store.getState().history, () => true)).toEqual([
+      repaired.path,
+      a.path,
+    ]);
   });
 
   describe("refreshMarkdown", () => {

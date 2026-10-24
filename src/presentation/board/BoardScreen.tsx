@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { MouseEvent } from "react";
-import type { Board } from "../../domain/board.ts";
+import { type Board, findCardByEquivalentPath } from "../../domain/board.ts";
+import { findPreviousCard } from "../../domain/cardHistory.ts";
 import type { Card } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
 import {
+  useBoardSession,
   useBoardStore,
   useBoardView,
   useContextMenu,
@@ -25,6 +27,10 @@ import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { KanbanBoard } from "../kanban/KanbanBoard.tsx";
 import { MissingCardDialog } from "./MissingCardDialog.tsx";
 import { ViewSwitcher } from "./ViewSwitcher.tsx";
+import {
+  canSwitchCardFrom,
+  resolvePreviousCardShortcut,
+} from "../shared/shortcuts/previousCardShortcut.ts";
 import { resolveBoardSearchShortcut } from "../shared/shortcuts/boardSearchShortcut.ts";
 import {
   EXTERNAL_CHANGE_CONFLICT_DETAIL,
@@ -55,6 +61,7 @@ export function BoardScreen({ board }: { board: Board }) {
   const setMode = useBoardView((state) => state.setMode);
   const criteria = useFilterStore((state) => state.criteria);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
+  const { markdownViewer } = useBoardSession();
   const [isTitleSearchOpen, setIsTitleSearchOpen] = useState(false);
   const [isContentSearchOpen, setIsContentSearchOpen] = useState(false);
   // Keep targets after closing so the dialogs stay mounted for native focus
@@ -64,20 +71,64 @@ export function BoardScreen({ board }: { board: Board }) {
   const [repairTarget, setRepairTarget] = useState<Card>();
   const [isMissingCardOpen, setIsMissingCardOpen] = useState(false);
 
+  const openMissingCard = useCallback((card: Card) => {
+    setRepairTarget(card);
+    setIsMissingCardOpen(true);
+  }, []);
+
+  const handleCardSelection = useCallback(
+    (card: Card) => {
+      // A search dialog hands over after closing itself, and Command-[ only
+      // acts while no dialog is open. Clear both drivers anyway so a handoff
+      // cannot leave one shortcut swallowed by stale open state.
+      setIsTitleSearchOpen(false);
+      setIsContentSearchOpen(false);
+      // The same split the card tile makes on click: a broken card has nothing
+      // to show in the viewer, so it goes to the repair dialog.
+      if (isCardFileBroken(card)) {
+        openMissingCard(card);
+        return;
+      }
+      // selectCard owns the unsaved-draft confirmation; declining it leaves the
+      // board exactly as it was.
+      void selectCard(card);
+    },
+    [openMissingCard, selectCard],
+  );
+
   // The native menu carries no accelerators (see nativeApplicationMenu.ts), so
-  // search keys pressed anywhere in the window can only be caught here. The
-  // pure resolver owns the modifier split between title and content search.
+  // board keys pressed anywhere in the window can only be caught here. Pure
+  // resolvers distinguish card switching, title search and content search.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
+      const previousCard = resolvePreviousCardShortcut(event);
       const shortcut = resolveBoardSearchShortcut(event);
-      if (!shortcut) return;
+      if (!previousCard && !shortcut) return;
       // Claimed as soon as the combination is recognised, before deciding
-      // whether to act on it: the app owns both search keys, so neither falls
+      // whether to act on it: the app owns these keys, so none falls
       // through to a default action when an existing modal makes it decline.
       event.preventDefault();
-      // Search shortcuts do not open another modal while one is active.
+      // Board shortcuts do not navigate or open a modal while one is active.
       // Asking the DOM covers dialogs owned by other components too.
       if (document.querySelector("dialog[open]")) return;
+      if (previousCard) {
+        if (!canSwitchCardFrom(event.target)) return;
+        // Read at key time rather than subscribing, so switching cards does
+        // not re-register this listener on every visit.
+        const { history, selectedPath } = markdownViewer.getState();
+        const path = findPreviousCard(
+          history,
+          selectedPath,
+          (candidate) =>
+            findCardByEquivalentPath(board, candidate) !== undefined,
+        );
+        const card =
+          path === undefined
+            ? undefined
+            : findCardByEquivalentPath(board, path);
+        if (card) handleCardSelection(card);
+        return;
+      }
       if (shortcut === "title") {
         setIsTitleSearchOpen(true);
       } else {
@@ -87,16 +138,11 @@ export function BoardScreen({ board }: { board: Board }) {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [board, markdownViewer, handleCardSelection]);
 
   function openDeleteCard(card: Card) {
     setDeleteTarget(card);
     setIsDeleteCardOpen(true);
-  }
-
-  function openMissingCard(card: Card) {
-    setRepairTarget(card);
-    setIsMissingCardOpen(true);
   }
 
   function handleCardContextMenu(card: Card, event: MouseEvent<HTMLElement>) {
@@ -125,22 +171,6 @@ export function BoardScreen({ board }: { board: Board }) {
         refresh: () => void refreshBoard(),
       }),
     );
-  }
-
-  function handleSearchSelect(card: Card) {
-    // Each search dialog has already closed itself by now. Clear both drivers
-    // so this handoff cannot leave one shortcut swallowed by stale open state.
-    setIsTitleSearchOpen(false);
-    setIsContentSearchOpen(false);
-    // The same split the card tile makes on click: a broken card has nothing
-    // to show in the viewer, so it goes to the repair dialog.
-    if (isCardFileBroken(card)) {
-      openMissingCard(card);
-      return;
-    }
-    // selectCard owns the unsaved-draft confirmation; declining it leaves the
-    // board exactly as it was.
-    void selectCard(card);
   }
 
   return (
@@ -227,7 +257,7 @@ export function BoardScreen({ board }: { board: Board }) {
         criteria={criteria}
         open={isTitleSearchOpen}
         onClose={() => setIsTitleSearchOpen(false)}
-        onSelect={handleSearchSelect}
+        onSelect={handleCardSelection}
       />
       <CardContentSearchDialog
         key={`content-search-${boardPath}`}
@@ -235,7 +265,7 @@ export function BoardScreen({ board }: { board: Board }) {
         criteria={criteria}
         open={isContentSearchOpen}
         onClose={() => setIsContentSearchOpen(false)}
-        onSelect={handleSearchSelect}
+        onSelect={handleCardSelection}
       />
       {/* Mounted before DeleteCardDialog so that when one hands over to the
           other, the effect that closes this dialog runs before the effect that

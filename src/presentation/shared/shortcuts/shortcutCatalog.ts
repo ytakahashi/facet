@@ -5,7 +5,7 @@ export type ShortcutId =
   | "search-contents"
   | "toggle-filters"
   | "close-viewer"
-  | "go-back"
+  | "previous-card"
   | "toggle-mode"
   | "save"
   | "find"
@@ -60,6 +60,11 @@ export const shortcutGroups: readonly ShortcutGroup[] = [
     title: "Board",
     entries: [
       {
+        id: "previous-card",
+        description: "Switch to previous card",
+        combos: [{ key: "[", command: true }],
+      },
+      {
         id: "search-titles",
         description: "Search card titles",
         combos: [{ key: "p", command: true }],
@@ -83,11 +88,6 @@ export const shortcutGroups: readonly ShortcutGroup[] = [
         id: "close-viewer",
         description: "Close viewer",
         combos: [{ key: "Escape" }],
-      },
-      {
-        id: "go-back",
-        description: "Go back",
-        combos: [{ key: "[", command: true }],
       },
       {
         id: "toggle-mode",

@@ -2,16 +2,15 @@ import { isSameCardPath } from "./boardPath.ts";
 
 const entries: unique symbol = Symbol("entries");
 
-// The representation stays private because adding forward navigation would
-// change how visits are stored. Consumers should only ask the operations below
-// rather than depend on the current entry being the last element of an array.
+// Only these operations know the storage order. Consumers ask for navigation
+// destinations or a recent-card list rather than inspecting the representation.
 export interface CardHistory {
   readonly [entries]: readonly string[];
 }
 
-// Fifty visits is enough to retrace a useful navigation session while keeping
-// every operation over this in-memory path list predictably small.
-export const CARD_HISTORY_LIMIT = 50;
+// The recent-card list includes the current card. Ten entries leave room for
+// the board's full card list below it in the search dialog.
+export const CARD_HISTORY_LIMIT = 10;
 
 export function emptyCardHistory(): CardHistory {
   return { [entries]: [] };
@@ -21,31 +20,31 @@ export function recordCardVisit(
   history: CardHistory,
   path: string,
 ): CardHistory {
-  const current = history[entries];
-  if (current.length > 0 && isSameCardPath(current[current.length - 1], path)) {
-    return history;
-  }
-
   return {
-    [entries]: [...current, path].slice(-CARD_HISTORY_LIMIT),
+    [entries]: [
+      path,
+      ...history[entries].filter((entry) => !isSameCardPath(entry, path)),
+    ].slice(0, CARD_HISTORY_LIMIT),
   };
+}
+
+export function listRecentCards(
+  history: CardHistory,
+  isOnBoard: (path: string) => boolean,
+): readonly string[] {
+  return history[entries].filter(isOnBoard);
 }
 
 export function findPreviousCard(
   history: CardHistory,
+  currentPath: string | undefined,
   isOnBoard: (path: string) => boolean,
-): { path: string; history: CardHistory } | undefined {
-  // The final entry describes the card currently shown, even when a board
-  // reload has since removed it. It is never itself a back destination.
-  const candidates = history[entries].slice(0, -1);
-  const retained = candidates.filter(isOnBoard);
-  if (retained.length === 0) return undefined;
-
-  const normalized = collapseAdjacent(retained);
-  return {
-    path: normalized.at(-1)!,
-    history: { [entries]: normalized },
-  };
+): string | undefined {
+  // Reloads can leave the current card anywhere in history, or off the board.
+  // Exclude it by identity instead of assuming it is the first entry.
+  return listRecentCards(history, isOnBoard).find(
+    (path) => currentPath === undefined || !isSameCardPath(path, currentPath),
+  );
 }
 
 export function retargetCardHistory(
@@ -54,7 +53,7 @@ export function retargetCardHistory(
   nextPath: string,
 ): CardHistory {
   return {
-    [entries]: collapseAdjacent(
+    [entries]: uniquePaths(
       history[entries].map((path) =>
         isSameCardPath(path, previousPath) ? nextPath : path,
       ),
@@ -67,14 +66,13 @@ export function removeFromCardHistory(
   path: string,
 ): CardHistory {
   return {
-    [entries]: collapseAdjacent(
-      history[entries].filter((entry) => !isSameCardPath(entry, path)),
-    ),
+    [entries]: history[entries].filter((entry) => !isSameCardPath(entry, path)),
   };
 }
 
-function collapseAdjacent(paths: readonly string[]): readonly string[] {
+function uniquePaths(paths: readonly string[]): readonly string[] {
   return paths.filter(
-    (path, index) => index === 0 || !isSameCardPath(paths[index - 1], path),
+    (path, index) =>
+      !paths.slice(0, index).some((other) => isSameCardPath(other, path)),
   );
 }

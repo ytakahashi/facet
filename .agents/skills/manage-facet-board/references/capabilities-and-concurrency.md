@@ -3,24 +3,13 @@
 This reference covers application behavior that affects tools editing the same
 files as Facet. It is not a complete UI manual.
 
-## Board and Card navigation
-
-- Multiple Boards can be open in tabs in one window. Opening a Board already
-  open by the same path activates its existing tab.
-- Title search opens with Command-P.
-- Markdown content search opens with Command-Shift-F. It reads a fresh snapshot
-  of the files referenced by the current Board and shows matching lines.
-- A followed Card link, Card selection on a Board, or search selection is
-  recorded in that Board tab's bounded viewing history. Command-[ returns to the
-  previous Card in the active tab.
-- Command-K in the editor inserts a relative link to another Card on the current
-  Board.
-- Command-S saves a changed Markdown draft while the Card is open.
-
 ## External changes
 
 Facet does not watch Board or Markdown files. An external edit is therefore not
 shown automatically in an already open Board or editor.
+
+Markdown content search reads a fresh snapshot of the files referenced by the
+current Board. This does not refresh the Markdown already open in the editor.
 
 The Files view lists unregistered Markdown files and directories alongside Board
 Cards. It reads only expanded directories, hides unregistered entries while a

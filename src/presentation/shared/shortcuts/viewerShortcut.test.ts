@@ -42,8 +42,8 @@ describe("resolveViewerShortcut", () => {
       expect(shortcut({ key, keyCode: 229 })).toBeUndefined();
     }
   });
-  it("recognises Command-[ as back", () => {
-    expect(shortcut({ key: "[" })).toBe("back");
+  it("leaves Command-[ to the board", () => {
+    expect(shortcut({ key: "[" })).toBeUndefined();
   });
 
   it("recognises Command-S as save with either letter case", () => {

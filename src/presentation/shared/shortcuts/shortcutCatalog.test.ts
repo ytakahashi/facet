@@ -7,6 +7,7 @@ import { resolveHelpShortcut } from "./helpShortcut.ts";
 import { formatKeyCombo, shortcutGroups } from "./shortcutCatalog.ts";
 import type { KeyCombo, ShortcutId } from "./shortcutCatalog.ts";
 import { resolveTabShortcut } from "./tabShortcut.ts";
+import { resolvePreviousCardShortcut } from "./previousCardShortcut.ts";
 import { resolveViewerShortcut } from "./viewerShortcut.ts";
 
 function eventFor(combo: KeyCombo) {
@@ -41,7 +42,7 @@ const expectations: Record<ShortcutId, readonly Expectation[]> = {
   ],
   "toggle-filters": [{ resolve: resolveFilterSidebarShortcut, result: true }],
   "close-viewer": [{ resolve: resolveViewerShortcut, result: "close" }],
-  "go-back": [{ resolve: resolveViewerShortcut, result: "back" }],
+  "previous-card": [{ resolve: resolvePreviousCardShortcut, result: true }],
   "toggle-mode": [{ resolve: resolveViewerShortcut, result: "toggle-mode" }],
   save: [{ resolve: resolveViewerShortcut, result: "save" }],
   find: [{ resolve: resolveViewerShortcut, result: "find" }],

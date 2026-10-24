@@ -1,10 +1,8 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
-import { type Board, findCardByEquivalentPath } from "../../domain/board.ts";
 import {
   type CardHistory,
   emptyCardHistory,
-  findPreviousCard,
   recordCardVisit,
   removeFromCardHistory,
   retargetCardHistory,
@@ -45,8 +43,6 @@ export interface MarkdownViewerState {
   conflictResolutionError?: string;
   conflictResolution?: "reloading" | "overwriting";
   selectCard: (card: Card) => Promise<void>;
-  goBack: (board: Board) => Promise<void>;
-  resetHistory: () => void;
   updateDraft: (content: string) => void;
   save: () => Promise<void>;
   refreshMarkdown: () => Promise<void>;
@@ -416,24 +412,6 @@ export function createMarkdownViewerStore(
         const state = get();
         await openCard(card, recordCardVisit(state.history, card.path));
       },
-      goBack: async (board: Board) => {
-        const previous = findPreviousCard(
-          get().history,
-          (path) => findCardByEquivalentPath(board, path) !== undefined,
-        );
-        if (!previous) return;
-        const card = findCardByEquivalentPath(board, previous.path);
-        // The same board and predicate produced this path immediately above.
-        // A missing card here would mean the board changed during synchronous
-        // execution, which cannot happen.
-        if (!card) {
-          throw new Error(
-            `History points to an unknown card: ${previous.path}`,
-          );
-        }
-        await openCard(card, previous.history);
-      },
-      resetHistory: () => set({ history: emptyCardHistory() }),
       reopenRepairedCard: async (previousPath: string, card: Card) => {
         const state = get();
         const history = retargetCardHistory(
