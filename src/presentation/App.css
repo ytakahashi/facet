@@ -2187,6 +2187,27 @@ body.is-pane-resizing * {
   overflow-y: auto;
 }
 
+.card-search-dialog__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  & + & {
+    margin-top: 6px;
+  }
+}
+
+/* Quieter than any row: it names the group, and is never a place the
+   selection can land. */
+.card-search-dialog__group-heading {
+  padding: 4px 10px 2px;
+  color: var(--color-text);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .card-search-dialog__result {
   display: flex;
   flex-direction: column;
@@ -2206,6 +2227,15 @@ body.is-pane-resizing * {
 .card-search-dialog__result--selected,
 .card-search-dialog__result--selected:hover {
   background: var(--color-accent-bg);
+}
+
+/* Listed but not selectable, so it gives no pointer or hover cue. */
+.card-search-dialog__result--current {
+  cursor: default;
+
+  &:hover {
+    background: none;
+  }
 }
 
 .card-search-dialog__result-title {
@@ -2252,6 +2282,12 @@ body.is-pane-resizing * {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* Only the first note pushes the notes to the end of the row. Were every note
+   auto-margined, the free width would be shared out between them too. */
+.card-search-dialog__result-note + .card-search-dialog__result-note {
+  margin-left: 0;
 }
 
 /* Matches the badge a card tile carries for the same state. */

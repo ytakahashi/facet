@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
 import { type Board, findCardByEquivalentPath } from "../../domain/board.ts";
-import { findPreviousCard } from "../../domain/cardHistory.ts";
+import { findPreviousCard, listRecentCards } from "../../domain/cardHistory.ts";
 import type { Card } from "../../domain/card.ts";
 import { isCardFileBroken } from "../../domain/card.ts";
+import type { CardFilterCriteria } from "../../domain/cardFilter.ts";
+import { listRecentCardHits } from "../../domain/cardSearch.ts";
 import {
   useBoardSession,
   useBoardStore,
@@ -36,6 +38,12 @@ import {
   EXTERNAL_CHANGE_CONFLICT_DETAIL,
   SaveErrorBanner,
 } from "../shared/SaveErrorBanner.tsx";
+
+// Command-[ and the recent list in the title search both read history through
+// this test, so the first recent card offered is the one Command-[ opens.
+function isOnBoard(board: Board): (path: string) => boolean {
+  return (path) => findCardByEquivalentPath(board, path) !== undefined;
+}
 
 export function BoardScreen({ board }: { board: Board }) {
   const renameBoard = useBoardStore((state) => state.renameBoard);
@@ -116,12 +124,7 @@ export function BoardScreen({ board }: { board: Board }) {
         // Read at key time rather than subscribing, so switching cards does
         // not re-register this listener on every visit.
         const { history, selectedPath } = markdownViewer.getState();
-        const path = findPreviousCard(
-          history,
-          selectedPath,
-          (candidate) =>
-            findCardByEquivalentPath(board, candidate) !== undefined,
-        );
+        const path = findPreviousCard(history, selectedPath, isOnBoard(board));
         const card =
           path === undefined
             ? undefined
@@ -252,7 +255,7 @@ export function BoardScreen({ board }: { board: Board }) {
       )}
       {/* A broken search hit hands over to the repair dialog, so search
           dialogs must close before that dialog opens. */}
-      <CardSearchDialog
+      <TitleSearch
         board={board}
         criteria={criteria}
         open={isTitleSearchOpen}
@@ -290,5 +293,41 @@ export function BoardScreen({ board }: { board: Board }) {
         />
       )}
     </div>
+  );
+}
+
+// Subscribes to the visit history on its own, so opening a card re-renders the
+// search dialog rather than the whole board beneath it.
+function TitleSearch({
+  board,
+  criteria,
+  open,
+  onClose,
+  onSelect,
+}: {
+  board: Board;
+  criteria: CardFilterCriteria;
+  open: boolean;
+  onClose: () => void;
+  onSelect: (card: Card) => void;
+}) {
+  const history = useMarkdownViewer((state) => state.history);
+  const currentPath = useMarkdownViewer((state) => state.selectedPath);
+  // Recomputed from the latest board, so a rename, move or reload shows here
+  // without the history itself being rewritten.
+  const recent = useMemo(
+    () => listRecentCardHits(board, listRecentCards(history, isOnBoard(board))),
+    [board, history],
+  );
+  return (
+    <CardSearchDialog
+      board={board}
+      criteria={criteria}
+      recent={recent}
+      currentPath={currentPath}
+      open={open}
+      onClose={onClose}
+      onSelect={onSelect}
+    />
   );
 }

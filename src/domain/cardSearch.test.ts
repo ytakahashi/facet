@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Board, Column } from "./board.ts";
 import type { Card } from "./card.ts";
-import { searchCardsByTitle } from "./cardSearch.ts";
+import { listRecentCardHits, searchCardsByTitle } from "./cardSearch.ts";
 
 // "がめん" spelled two ways: the dakuten as its own combining character, as
 // a file name read back from macOS arrives, and as a single character, as
@@ -112,5 +112,74 @@ describe("searchCardsByTitle", () => {
     const result = searchCardsByTitle(board, "onboarding");
 
     expect(result).toEqual([]);
+  });
+});
+
+describe("listRecentCardHits", () => {
+  it("keeps the order of the given paths rather than board order", () => {
+    const first = makeCard("First");
+    const second = makeCard("Second");
+    const third = makeCard("Third");
+    const board = makeBoard([
+      makeColumn("todo", [first, second]),
+      makeColumn("done", [third]),
+    ]);
+
+    const result = listRecentCardHits(board, [
+      "Third.md",
+      "First.md",
+      "Second.md",
+    ]);
+
+    expect(result).toEqual([
+      { card: third, columnId: "done", columnName: "done" },
+      { card: first, columnId: "todo", columnName: "todo" },
+      { card: second, columnId: "todo", columnName: "todo" },
+    ]);
+  });
+
+  it("reports the column the card sits in now", () => {
+    const moved = makeCard("Moved");
+    const board = makeBoard([
+      makeColumn("todo"),
+      { id: "doing", name: "In progress", cards: [moved] },
+    ]);
+
+    const result = listRecentCardHits(board, ["Moved.md"]);
+
+    expect(result).toEqual([
+      { card: moved, columnId: "doing", columnName: "In progress" },
+    ]);
+  });
+
+  it("resolves an equivalent path to the card as the board spells it", () => {
+    const card = makeCard("Notes", "Notes/Plan.md");
+    const board = makeBoard([makeColumn("todo", [card])]);
+
+    const result = listRecentCardHits(board, ["notes/plan.md"]);
+
+    expect(result).toEqual([{ card, columnId: "todo", columnName: "todo" }]);
+  });
+
+  it("skips a path the board no longer holds", () => {
+    const kept = makeCard("Kept");
+    const board = makeBoard([makeColumn("todo", [kept])]);
+
+    const result = listRecentCardHits(board, ["Removed.md", "Kept.md"]);
+
+    expect(result).toEqual([
+      { card: kept, columnId: "todo", columnName: "todo" },
+    ]);
+  });
+
+  it("keeps a card whose file is missing", () => {
+    const missing: Card = { ...makeCard("Gone"), fileState: "missing" };
+    const board = makeBoard([makeColumn("todo", [missing])]);
+
+    const result = listRecentCardHits(board, ["Gone.md"]);
+
+    expect(result).toEqual([
+      { card: missing, columnId: "todo", columnName: "todo" },
+    ]);
   });
 });
