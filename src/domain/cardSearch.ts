@@ -26,21 +26,28 @@ export function searchCardsByTitle(
   board: Board,
   query: string,
 ): CardSearchHit[] {
-  const normalizedQuery = canonicalSearchQuery(query);
   const hits: CardSearchHit[] = [];
   for (const column of board.columns) {
     for (const card of column.cards) {
-      if (
-        normalizedQuery === "" ||
-        // Keeping whitespace at the title's edges does not affect containment:
-        // the query's own edge whitespace has already been removed above.
-        canonicalSearchText(card.displayTitle).includes(normalizedQuery)
-      ) {
-        hits.push({ card, columnId: column.id, columnName: column.name });
-      }
+      hits.push({ card, columnId: column.id, columnName: column.name });
     }
   }
-  return hits;
+  return filterCardHitsByTitle(hits, query);
+}
+
+// Filtering preserves the caller's order, including MRU order for recent cards.
+export function filterCardHitsByTitle(
+  hits: readonly CardSearchHit[],
+  query: string,
+): CardSearchHit[] {
+  const normalizedQuery = canonicalSearchQuery(query);
+  return hits.filter(
+    (hit) =>
+      normalizedQuery === "" ||
+      // Keeping whitespace at the title's edges does not affect containment:
+      // the query's own edge whitespace has already been removed above.
+      canonicalSearchText(hit.card.displayTitle).includes(normalizedQuery),
+  );
 }
 
 // Resolves recently opened paths against the board as it is now: a history

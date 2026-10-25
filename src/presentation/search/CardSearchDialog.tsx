@@ -16,11 +16,13 @@ import {
 } from "../shared/cardSearchSelection.ts";
 import {
   buildCardSearchModel,
+  type CardSearchMode,
   type CardSearchRow,
   type CardSearchSectionKind,
 } from "./cardSearchModel.ts";
 
 interface CardSearchDialogProps {
+  mode: CardSearchMode;
   board: Board;
   criteria: CardFilterCriteria;
   // Most recent first, resolved on the board, current card included.
@@ -33,12 +35,11 @@ interface CardSearchDialogProps {
 
 const RESULTS_ID = "card-search-results";
 
-// The plain list has no heading: with nothing above it, a label would only
-// restate that these are the results.
-const SECTION_LABELS: Record<CardSearchSectionKind, string | undefined> = {
+// Shown only for sections the model marks as labelled.
+const SECTION_LABELS: Record<CardSearchSectionKind, string> = {
   recent: "Recent",
   all: "All cards",
-  results: undefined,
+  results: "Results",
 };
 
 // Finds a card by title and opens it, wherever it sits on the board and
@@ -46,6 +47,7 @@ const SECTION_LABELS: Record<CardSearchSectionKind, string | undefined> = {
 // this changes nothing about the board: it is a way to reach a card, not a
 // statement about which cards belong on screen.
 export function CardSearchDialog({
+  mode,
   board,
   criteria,
   recent,
@@ -59,12 +61,12 @@ export function CardSearchDialog({
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const results = useMemo(
-    () => searchCardsByTitle(board, query),
-    [board, query],
+    () => (mode === "search" ? searchCardsByTitle(board, query) : []),
+    [board, query, mode],
   );
   const model = useMemo(
-    () => buildCardSearchModel({ query, results, recent, currentPath }),
-    [query, results, recent, currentPath],
+    () => buildCardSearchModel({ mode, query, results, recent, currentPath }),
+    [mode, query, results, recent, currentPath],
   );
   // The stored index can fall outside the list: the results shrink as the
   // query grows, and the board or the history can change while the dialog is
@@ -88,10 +90,21 @@ export function CardSearchDialog({
   }, [open]);
 
   // The result list scrolls, so moving past its edge with the arrow keys
-  // would otherwise leave the selection somewhere off-screen.
+  // would otherwise leave the selection somewhere off-screen. Reopening needs
+  // the same: scrolling does nothing while the dialog is closed, and an
+  // unchanged model would not run this again once it opens.
   useEffect(() => {
     selectedRef.current?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex, model]);
+  }, [activeIndex, model, open]);
+
+  const inputLabel =
+    mode === "recent" ? "Filter recent cards" : "Search cards by title";
+  const emptyMessage =
+    mode === "search"
+      ? "No cards match"
+      : recent.length === 0
+        ? "No recent cards"
+        : "No recent cards match";
 
   // Closes the dialog through the element itself rather than leaving it to
   // the open prop coming back as false. What the caller does with the card
@@ -130,6 +143,7 @@ export function CardSearchDialog({
     <dialog
       ref={dialogRef}
       className="card-search-dialog"
+      aria-labelledby={mode === "recent" ? "card-search-title" : undefined}
       // Held on the dialog rather than on the input so the keys keep working
       // if focus ever leaves the input, and Escape stays with onCancel.
       onKeyDown={handleKeyDown}
@@ -140,6 +154,11 @@ export function CardSearchDialog({
       onClose={onClose}
     >
       <div className="card-search-dialog__body">
+        {mode === "recent" && (
+          <h2 id="card-search-title" className="card-search-dialog__title">
+            Recent cards
+          </h2>
+        )}
         <input
           type="text"
           className="card-search-dialog__input"
@@ -147,8 +166,8 @@ export function CardSearchDialog({
           aria-expanded
           aria-controls={RESULTS_ID}
           aria-activedescendant={activeOption?.id}
-          aria-label="Search cards by title"
-          placeholder="Search cards by title"
+          aria-label={inputLabel}
+          placeholder={inputLabel}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -156,12 +175,12 @@ export function CardSearchDialog({
           }}
         />
         {model.sections.length === 0 ? (
-          <p className="card-search-dialog__empty">No cards match</p>
+          <p className="card-search-dialog__empty">{emptyMessage}</p>
         ) : (
           <div
             id={RESULTS_ID}
             role="listbox"
-            aria-label="Search results"
+            aria-label={mode === "recent" ? "Recent cards" : "Search results"}
             className="card-search-dialog__results"
             // Nothing in the list is focusable, so a click on it would
             // otherwise pull focus out of the input and stop what is typed
@@ -179,8 +198,7 @@ export function CardSearchDialog({
                   onSelect={selectAndClose}
                 />
               ));
-              const label = SECTION_LABELS[section.kind];
-              if (label === undefined) return rows;
+              if (!section.labelled) return rows;
               const headingId = `card-search-${section.kind}-heading`;
               return (
                 <div
@@ -196,7 +214,7 @@ export function CardSearchDialog({
                     role="presentation"
                     className="card-search-dialog__group-heading"
                   >
-                    {label}
+                    {SECTION_LABELS[section.kind]}
                   </div>
                   {rows}
                 </div>

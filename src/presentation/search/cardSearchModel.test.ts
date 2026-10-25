@@ -51,6 +51,7 @@ function build(
   query = "",
 ) {
   return buildCardSearchModel({
+    mode: "search",
     query,
     results: searchCardsByTitle(board, query),
     recent,
@@ -142,8 +143,18 @@ describe("buildCardSearchModel", () => {
     ]);
   });
 
+  it("labels sections only when recent cards sit above the board", () => {
+    const labelled = (model: ReturnType<typeof build>) =>
+      model.sections.map((section) => section.labelled);
+
+    expect(labelled(build(recentOf(c, b), c.path))).toEqual([true, true]);
+    expect(labelled(build([], undefined))).toEqual([false]);
+    expect(labelled(build(recentOf(c, b), c.path, "c"))).toEqual([false]);
+  });
+
   it("shows nothing for an empty board", () => {
     const model = buildCardSearchModel({
+      mode: "search",
       query: "",
       results: [],
       recent: [],
@@ -224,5 +235,97 @@ describe("buildCardSearchModel", () => {
     expect(model.options[0]?.hit.card.path).toBe(
       findPreviousCard(history, c.path, isOnBoard),
     );
+  });
+});
+
+describe("buildCardSearchModel in recent mode", () => {
+  function buildRecent(
+    recent: CardSearchHit[],
+    currentPath?: string,
+    query = "",
+  ) {
+    return buildCardSearchModel({
+      mode: "recent",
+      query,
+      results: searchCardsByTitle(board, query),
+      recent,
+      currentPath,
+    });
+  }
+
+  it("shows only recent cards, in MRU order, even with whitespace input", () => {
+    const model = buildRecent(recentOf(c, b), "c.MD", "  ");
+
+    expect(sectionPaths(model)).toEqual([
+      { kind: "recent", rows: ["current:C.md", "option:B.md"] },
+    ]);
+    expect(optionPaths(model)).toEqual(["B.md"]);
+    expect(model.options[0]).toBe(model.sections[0]?.rows[1]);
+  });
+
+  it("leaves its single list unlabelled", () => {
+    const model = buildRecent(recentOf(c, b), c.path);
+
+    expect(model.sections.map((section) => section.labelled)).toEqual([false]);
+  });
+
+  it("does not fall back to all cards when there is no history", () => {
+    expect(buildRecent([])).toEqual({ sections: [], options: [] });
+  });
+
+  it("keeps the current card without offering another card as a fallback", () => {
+    const model = buildRecent(recentOf(c), c.path);
+
+    expect(sectionPaths(model)).toEqual([
+      { kind: "recent", rows: ["current:C.md"] },
+    ]);
+    expect(model.options).toEqual([]);
+  });
+
+  it("selects the most recent card when the viewer is closed", () => {
+    expect(optionPaths(buildRecent(recentOf(c, b)))).toEqual(["C.md", "B.md"]);
+  });
+
+  it("filters titles without changing MRU order or making current selectable", () => {
+    const recent = recentOf(c, b, a).map((hit) => ({
+      ...hit,
+      card: { ...hit.card, displayTitle: `${hit.card.displayTitle} notes` },
+    }));
+    const model = buildRecent(recent, "b.MD", " NOTES ");
+
+    expect(sectionPaths(model)).toEqual([
+      { kind: "recent", rows: ["option:C.md", "current:B.md", "option:A.md"] },
+    ]);
+    expect(optionPaths(model)).toEqual(["C.md", "A.md"]);
+    expect(model.options.map((row) => row.optionIndex)).toEqual([0, 1]);
+  });
+
+  it("shows no rows when only a card outside history matches", () => {
+    expect(buildRecent(recentOf(c, b), c.path, "A")).toEqual({
+      sections: [],
+      options: [],
+    });
+  });
+
+  it("keeps a current-only match with no selectable option", () => {
+    const model = buildRecent(recentOf(c, b), c.path, "c");
+
+    expect(sectionPaths(model)).toEqual([
+      { kind: "recent", rows: ["current:C.md"] },
+    ]);
+    expect(model.options).toEqual([]);
+  });
+
+  it("shows nothing when the board has no cards", () => {
+    const emptyBoard = { ...board, columns: [] };
+    expect(
+      buildCardSearchModel({
+        mode: "recent",
+        query: "",
+        results: [],
+        recent: listRecentCardHits(emptyBoard, [c.path]),
+        currentPath: c.path,
+      }),
+    ).toEqual({ sections: [], options: [] });
   });
 });
