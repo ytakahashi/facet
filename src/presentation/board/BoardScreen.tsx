@@ -18,6 +18,7 @@ import { canRefreshBoard } from "../store/boardStore.ts";
 import { BoardName } from "./BoardName.tsx";
 import { CardContentSearchDialog } from "../search/CardContentSearchDialog.tsx";
 import { CardSearchDialog } from "../search/CardSearchDialog.tsx";
+import type { CardSearchMode } from "../search/cardSearchModel.ts";
 import { CardDirectoryView } from "../directory/CardDirectoryView.tsx";
 import { CardTable } from "../table/CardTable.tsx";
 import { buildBoardContextMenu } from "./boardContextMenus.ts";
@@ -70,7 +71,7 @@ export function BoardScreen({ board }: { board: Board }) {
   const criteria = useFilterStore((state) => state.criteria);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
   const { markdownViewer } = useBoardSession();
-  const [isTitleSearchOpen, setIsTitleSearchOpen] = useState(false);
+  const [titleSearchMode, setTitleSearchMode] = useState<CardSearchMode>();
   const [isContentSearchOpen, setIsContentSearchOpen] = useState(false);
   // Keep targets after closing so the dialogs stay mounted for native focus
   // restoration and remain renderable while a successful delete closes.
@@ -89,7 +90,7 @@ export function BoardScreen({ board }: { board: Board }) {
       // A search dialog hands over after closing itself, and Command-[ only
       // acts while no dialog is open. Clear both drivers anyway so a handoff
       // cannot leave one shortcut swallowed by stale open state.
-      setIsTitleSearchOpen(false);
+      setTitleSearchMode(undefined);
       setIsContentSearchOpen(false);
       // The same split the card tile makes on click: a broken card has nothing
       // to show in the viewer, so it goes to the repair dialog.
@@ -133,7 +134,7 @@ export function BoardScreen({ board }: { board: Board }) {
         return;
       }
       if (shortcut === "title") {
-        setIsTitleSearchOpen(true);
+        setTitleSearchMode("search");
       } else {
         setIsContentSearchOpen(true);
       }
@@ -181,6 +182,28 @@ export function BoardScreen({ board }: { board: Board }) {
       <div className="board-screen__header">
         <BoardName name={board.name} onRename={renameBoard} />
         <ViewSwitcher mode={mode} onChange={setMode} />
+        <button
+          type="button"
+          className="board-screen__recent-button"
+          aria-label="Recent cards"
+          title="Recent cards"
+          onClick={() => setTitleSearchMode("recent")}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </svg>
+        </button>
       </div>
       {saveError && (
         <SaveErrorBanner
@@ -258,8 +281,8 @@ export function BoardScreen({ board }: { board: Board }) {
       <TitleSearch
         board={board}
         criteria={criteria}
-        open={isTitleSearchOpen}
-        onClose={() => setIsTitleSearchOpen(false)}
+        mode={titleSearchMode}
+        onClose={() => setTitleSearchMode(undefined)}
         onSelect={handleCardSelection}
       />
       <CardContentSearchDialog
@@ -301,13 +324,13 @@ export function BoardScreen({ board }: { board: Board }) {
 function TitleSearch({
   board,
   criteria,
-  open,
+  mode,
   onClose,
   onSelect,
 }: {
   board: Board;
   criteria: CardFilterCriteria;
-  open: boolean;
+  mode: CardSearchMode | undefined;
   onClose: () => void;
   onSelect: (card: Card) => void;
 }) {
@@ -325,7 +348,8 @@ function TitleSearch({
       criteria={criteria}
       recent={recent}
       currentPath={currentPath}
-      open={open}
+      mode={mode ?? "search"}
+      open={mode !== undefined}
       onClose={onClose}
       onSelect={onSelect}
     />

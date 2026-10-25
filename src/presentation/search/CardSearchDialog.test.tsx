@@ -8,6 +8,7 @@ import {
 } from "../../domain/cardFilter.ts";
 import { listRecentCardHits } from "../../domain/cardSearch.ts";
 import { CardSearchDialog } from "./CardSearchDialog.tsx";
+import type { CardSearchMode } from "./cardSearchModel.ts";
 
 function makeCard(overrides: Partial<Card>): Card {
   return {
@@ -38,11 +39,13 @@ const board: Board = {
 };
 
 function render({
+  mode = "search",
   board: shown = board,
   recentPaths = [],
   currentPath,
   criteria = EMPTY_CARD_FILTER,
 }: {
+  mode?: CardSearchMode;
   board?: Board;
   recentPaths?: string[];
   currentPath?: string;
@@ -50,6 +53,7 @@ function render({
 }): string {
   return renderToStaticMarkup(
     <CardSearchDialog
+      mode={mode}
       board={shown}
       criteria={criteria}
       recent={listRecentCardHits(shown, recentPaths)}
@@ -160,5 +164,53 @@ describe("CardSearchDialog", () => {
 
     expect(output).toContain("No cards match");
     expect(activeDescendant(output)).toBeUndefined();
+  });
+});
+
+describe("CardSearchDialog in recent mode", () => {
+  it("names the dialog and filter input without duplicating the heading", () => {
+    const output = render({ ...WITH_HISTORY, mode: "recent" });
+
+    expect(output).toContain('aria-labelledby="card-search-title"');
+    expect(output).toContain(
+      '<h2 id="card-search-title" class="card-search-dialog__title">Recent cards</h2>',
+    );
+    expect(output).toContain('aria-label="Filter recent cards"');
+    expect(output).toContain('placeholder="Filter recent cards"');
+    expect(output).not.toContain('role="group"');
+    expect(output).not.toContain("All cards");
+    expect(options(output).map(({ id }) => id)).toEqual([
+      "card-search-recent-0",
+      "card-search-recent-1",
+    ]);
+    expect(activeDescendant(output)).toBe("card-search-recent-1");
+  });
+
+  it("shows an empty history instead of all cards", () => {
+    const output = render({ mode: "recent" });
+
+    expect(output).toContain("No recent cards");
+    expect(options(output)).toEqual([]);
+    expect(activeDescendant(output)).toBeUndefined();
+  });
+
+  it("keeps the current-only row without an active descendant", () => {
+    const output = render({
+      mode: "recent",
+      recentPaths: ["current.md"],
+      currentPath: "current.md",
+    });
+
+    expect(options(output)).toHaveLength(1);
+    expect(options(output)[0]?.attributes).toContain('aria-disabled="true"');
+    expect(output).not.toContain("No recent cards");
+    expect(activeDescendant(output)).toBeUndefined();
+  });
+
+  it("ignores history entries removed from the board", () => {
+    const output = render({ mode: "recent", recentPaths: ["removed.md"] });
+
+    expect(output).toContain("No recent cards");
+    expect(options(output)).toEqual([]);
   });
 });

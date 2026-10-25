@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Board, Column } from "./board.ts";
 import type { Card } from "./card.ts";
-import { listRecentCardHits, searchCardsByTitle } from "./cardSearch.ts";
+import {
+  filterCardHitsByTitle,
+  listRecentCardHits,
+  searchCardsByTitle,
+} from "./cardSearch.ts";
 
 // "がめん" spelled two ways: the dakuten as its own combining character, as
 // a file name read back from macOS arrives, and as a single character, as
@@ -112,6 +116,27 @@ describe("searchCardsByTitle", () => {
     const result = searchCardsByTitle(board, "onboarding");
 
     expect(result).toEqual([]);
+  });
+});
+
+describe("filterCardHitsByTitle", () => {
+  it("preserves the supplied order and hit metadata when filtering", () => {
+    const first = makeCard("First review");
+    const second = makeCard("Second review");
+    const board = makeBoard([
+      makeColumn("todo", [first, second, makeCard("Other")]),
+    ]);
+    const hits = listRecentCardHits(board, [
+      second.path,
+      "Other.md",
+      first.path,
+    ]);
+
+    const filtered = filterCardHitsByTitle(hits, "review");
+
+    expect(filtered).toEqual([hits[0], hits[2]]);
+    expect(filtered[0]).toBe(hits[0]);
+    expect(hits).toHaveLength(3);
   });
 });
 
