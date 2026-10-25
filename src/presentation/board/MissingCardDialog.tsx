@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { findCardAtAbsolutePath } from "../../domain/board.ts";
 import {
   directoryOf,
   hasTrailingPathSeparator,
+  isSameCardPath,
   resolveCardPath,
 } from "../../domain/boardPath.ts";
 import type { Card } from "../../domain/card.ts";
@@ -41,6 +43,7 @@ export function MissingCardDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const relocateCard = useBoardStore((state) => state.relocateCard);
   const recreateCard = useBoardStore((state) => state.recreateCard);
+  const board = useBoardStore((state) => state.board);
   const reopenRepairedCard = useMarkdownViewer(
     (state) => state.reopenRepairedCard,
   );
@@ -123,6 +126,14 @@ export function MissingCardDialog({
         ? recreateCard(card.path, absolutePath, titleInput)
         : relocateCard(card.path, absolutePath),
     );
+  }
+
+  // Another card's file is refused when the card is replaced; this card's own
+  // file is not, since pointing the card back at it is how it gets re-read.
+  function isOnBoardAsAnotherCard(path: string): boolean {
+    if (!board) return false;
+    const found = findCardAtAbsolutePath(board, boardDirectory, path);
+    return found !== undefined && !isSameCardPath(found.path, card.path);
   }
 
   const canSubmit =
@@ -213,6 +224,7 @@ export function MissingCardDialog({
                 setSelectedPath(path);
                 setError(undefined);
               }}
+              isOnBoard={isOnBoardAsAnotherCard}
               disabled={isSubmitting}
             />
           </fieldset>

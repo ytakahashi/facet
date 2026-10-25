@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { findCardAtAbsolutePath } from "../../domain/board.ts";
 import { directoryOf } from "../../domain/boardPath.ts";
 import { suggestMarkdownFileName } from "../../domain/cardFile.ts";
 import { useBoardStore, useMarkdownViewer } from "../context/appContext.ts";
@@ -25,6 +26,7 @@ export function AddCardDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const addNewCard = useBoardStore((state) => state.addNewCard);
   const addExistingCard = useBoardStore((state) => state.addExistingCard);
+  const board = useBoardStore((state) => state.board);
   const selectCard = useMarkdownViewer((state) => state.selectCard);
   const boardDirectory = directoryOf(boardPath);
   const [title, setTitle] = useState("");
@@ -59,6 +61,15 @@ export function AddCardDialog({
     if (!fileNameEdited) {
       setFileName(nextTitle.trim() ? suggestMarkdownFileName(nextTitle) : "");
     }
+  }
+
+  // Display only: addExistingCard still refuses a file that reached the board
+  // while this dialog was open.
+  function isOnBoard(path: string): boolean {
+    return (
+      board !== undefined &&
+      findCardAtAbsolutePath(board, boardDirectory, path) !== undefined
+    );
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -191,6 +202,7 @@ export function AddCardDialog({
                 setSelectedPath(path);
                 setError(undefined);
               }}
+              isOnBoard={isOnBoard}
               disabled={isSubmitting}
             />
           </fieldset>

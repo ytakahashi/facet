@@ -9,6 +9,7 @@ import {
   containsCardPath,
   countCardsByLabel,
   createEmptyBoard,
+  findCardAtAbsolutePath,
   findCardByEquivalentPath,
   findCardByPath,
   findCardLocation,
@@ -84,6 +85,37 @@ describe("findCardByEquivalentPath", () => {
     });
 
     expect(findCardByEquivalentPath(board, "b.md")).toBeUndefined();
+  });
+});
+
+describe("findCardAtAbsolutePath", () => {
+  it("finds the card for a file under the board directory", () => {
+    const card = makeCard({ path: "./Notes/caf\u00e9.md" });
+    const board = makeBoard({ columns: [makeColumn({ cards: [card] })] });
+
+    expect(
+      findCardAtAbsolutePath(board, "/boards", "/boards/notes/cafe\u0301.md"),
+    ).toBe(card);
+  });
+
+  it("returns undefined for a file the board has no card for", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "a.md" })] })],
+    });
+
+    expect(
+      findCardAtAbsolutePath(board, "/boards", "/boards/b.md"),
+    ).toBeUndefined();
+  });
+
+  it("returns undefined for a file outside the board directory", () => {
+    const board = makeBoard({
+      columns: [makeColumn({ cards: [makeCard({ path: "a.md" })] })],
+    });
+
+    expect(
+      findCardAtAbsolutePath(board, "/boards", "/elsewhere/a.md"),
+    ).toBeUndefined();
   });
 });
 
