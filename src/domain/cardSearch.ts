@@ -1,4 +1,5 @@
 import type { Board } from "./board.ts";
+import { isSameCardPath } from "./boardPath.ts";
 import type { Card } from "./card.ts";
 import { canonicalSearchQuery, canonicalSearchText } from "./searchText.ts";
 
@@ -40,4 +41,33 @@ export function searchCardsByTitle(
     }
   }
   return hits;
+}
+
+// Resolves recently opened paths against the board as it is now: a history
+// entry keeps the spelling and column a card had when it was opened, and both
+// can have changed since. A path the board no longer holds is skipped; a card
+// whose file is missing is still on the board, so it stays.
+//
+// Deduplication and the length limit belong to cardHistory.ts. The history is
+// short enough that scanning the board once per path needs no index.
+export function listRecentCardHits(
+  board: Board,
+  paths: readonly string[],
+): CardSearchHit[] {
+  const hits: CardSearchHit[] = [];
+  for (const path of paths) {
+    const hit = findCardHit(board, path);
+    if (hit) hits.push(hit);
+  }
+  return hits;
+}
+
+function findCardHit(board: Board, path: string): CardSearchHit | undefined {
+  for (const column of board.columns) {
+    const card = column.cards.find((candidate) =>
+      isSameCardPath(candidate.path, path),
+    );
+    if (card) return { card, columnId: column.id, columnName: column.name };
+  }
+  return undefined;
 }
