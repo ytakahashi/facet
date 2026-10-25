@@ -1340,6 +1340,30 @@ body.is-pane-resizing * {
   gap: 6px;
 }
 
+/* A card label that toggles the board's label filter. It keeps the badge
+   look of .card__label and only sheds the button defaults. */
+.markdown-viewer__label-toggle {
+  border: none;
+  font-family: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.markdown-viewer__label-toggle:hover {
+  outline: 1px dashed currentColor;
+  outline-offset: -1px;
+}
+
+.markdown-viewer__label-toggle[aria-pressed="true"] {
+  outline: 1px solid currentColor;
+  outline-offset: -1px;
+}
+
+.markdown-viewer__label-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
 /* Same look as the labels button above it: two buttons in the same meta band
    that both open a dialog should not read as two different kinds of control. */
 .markdown-viewer__labels-button,

@@ -17,6 +17,7 @@ import {
   useBoardStore,
   useClipboard,
   useContextMenu,
+  useFilterStore,
   useMarkdownViewer,
   usePaneLayout,
   useShowAlert,
@@ -32,6 +33,7 @@ import {
 } from "../store/markdownViewerStore.ts";
 import { CardTitle } from "./CardTitle.tsx";
 import { CardBoardPosition } from "./CardBoardPosition.tsx";
+import { CardLabelChips } from "./CardLabelChips.tsx";
 import { buildLabelDisplay } from "../labels/labelDisplay.ts";
 import { LabelPickerDialog } from "../labels/LabelPickerDialog.tsx";
 import { ManageLabelsDialog } from "../labels/ManageLabelsDialog.tsx";
@@ -155,6 +157,8 @@ export function MarkdownViewer() {
   const setLabelColor = useBoardStore((state) => state.setLabelColor);
   const removeLabel = useBoardStore((state) => state.removeLabel);
   const moveLabel = useBoardStore((state) => state.moveLabel);
+  const filteredLabels = useFilterStore((state) => state.criteria.labels);
+  const toggleLabelFilter = useFilterStore((state) => state.toggleLabel);
   const resolveLink = useCallback(
     (href: string) => {
       if (!board || !selectedPath) return undefined;
@@ -355,18 +359,12 @@ export function MarkdownViewer() {
         {card && (
           <div className="markdown-viewer__meta">
             <div className="markdown-viewer__labels">
-              {orderCardLabels(card.labels, labelDisplay.positions).map(
-                (label) => (
-                  <span
-                    className={`card__label card__label--${
-                      labelDisplay.colors.get(label) ?? "neutral"
-                    }`}
-                    key={label}
-                  >
-                    {label}
-                  </span>
-                ),
-              )}
+              <CardLabelChips
+                labels={orderCardLabels(card.labels, labelDisplay.positions)}
+                colors={labelDisplay.colors}
+                selected={filteredLabels}
+                onToggle={toggleLabelFilter}
+              />
               <button
                 type="button"
                 className="markdown-viewer__labels-button"
