@@ -2148,8 +2148,35 @@ body.is-pane-resizing * {
   text-align: left;
 }
 
+.markdown-file-browser__entries button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.markdown-file-browser__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Amethyst: the file already holds a place on this board. */
+.markdown-file-browser__badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .board-directory-picker__entries button:hover,
-.markdown-file-browser__entries button:hover,
+.markdown-file-browser__entries button:hover:not(:disabled),
 .markdown-file-browser__entries button.is-selected {
   background: var(--color-accent-bg);
 }

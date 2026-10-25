@@ -11,6 +11,9 @@ interface MarkdownFileBrowserProps {
   root: string;
   selectedPath?: string;
   onSelect: (path: string) => void;
+  // Files the caller could not use anyway are shown but not offered, so the
+  // reason appears before choosing rather than as an error after submitting.
+  isOnBoard?: (path: string) => boolean;
   disabled?: boolean;
 }
 
@@ -23,6 +26,7 @@ function RootFileBrowser({
   root,
   selectedPath,
   onSelect,
+  isOnBoard = () => false,
   disabled = false,
 }: MarkdownFileBrowserProps) {
   const [currentDirectory, setCurrentDirectory] = useState(root);
@@ -58,6 +62,7 @@ function RootFileBrowser({
       <ul className="markdown-file-browser__entries">
         {visibleEntries.map((entry) => {
           const path = joinPath(currentDirectory, entry.name);
+          const onBoard = !entry.isDirectory && isOnBoard(path);
           return (
             <li key={entry.name}>
               <button
@@ -66,10 +71,15 @@ function RootFileBrowser({
                 onClick={() =>
                   entry.isDirectory ? setCurrentDirectory(path) : onSelect(path)
                 }
-                disabled={disabled}
+                disabled={disabled || onBoard}
               >
-                {entry.name}
-                {entry.isDirectory ? "/" : ""}
+                <span className="markdown-file-browser__name">
+                  {entry.name}
+                  {entry.isDirectory ? "/" : ""}
+                </span>
+                {onBoard && (
+                  <span className="markdown-file-browser__badge">On board</span>
+                )}
               </button>
             </li>
           );

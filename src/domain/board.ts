@@ -1,7 +1,11 @@
 import type { Card } from "./card.ts";
 import { retitleCard } from "./card.ts";
 import type { LabelColor, LabelDefinition } from "./label.ts";
-import { isSameCardPath, normalizeCardPath } from "./boardPath.ts";
+import {
+  isSameCardPath,
+  normalizeCardPath,
+  toRelativeCardPath,
+} from "./boardPath.ts";
 
 export interface Column {
   id: string;
@@ -102,6 +106,19 @@ export function findCardByEquivalentPath(
     if (card) return card;
   }
   return undefined;
+}
+
+// The same identity question for a file named by its absolute path, as a file
+// picker lists it. A path outside the board directory names no card.
+export function findCardAtAbsolutePath(
+  board: Board,
+  boardDirectory: string,
+  absolutePath: string,
+): Card | undefined {
+  const relative = toRelativeCardPath(boardDirectory, absolutePath);
+  return relative.ok
+    ? findCardByEquivalentPath(board, relative.path)
+    : undefined;
 }
 
 export function findLabelDefinition(
