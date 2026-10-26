@@ -7,6 +7,7 @@ export type ShortcutId =
   | "close-viewer"
   | "previous-card"
   | "toggle-mode"
+  | "toggle-labels"
   | "save"
   | "find"
   | "next-match"
@@ -93,6 +94,11 @@ export const shortcutGroups: readonly ShortcutGroup[] = [
         id: "toggle-mode",
         description: "Toggle edit / preview",
         combos: [{ key: "e", command: true }],
+      },
+      {
+        id: "toggle-labels",
+        description: "Open / close labels",
+        combos: [{ key: "l", command: true }],
       },
       {
         id: "save",

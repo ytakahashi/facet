@@ -4,6 +4,7 @@ export type ViewerShortcut =
   | "save"
   | "close"
   | "toggle-mode"
+  | "toggle-labels"
   | "find"
   | "find-next"
   | "find-previous";
@@ -38,5 +39,6 @@ export function resolveViewerShortcut(
   if (event.key === "f" || event.key === "F") return "find";
   // Caps Lock can change the reported case without adding Shift.
   if (event.key === "s" || event.key === "S") return "save";
+  if (event.key === "l" || event.key === "L") return "toggle-labels";
   return event.key === "e" || event.key === "E" ? "toggle-mode" : undefined;
 }

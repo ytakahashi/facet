@@ -44,6 +44,9 @@ const expectations: Record<ShortcutId, readonly Expectation[]> = {
   "close-viewer": [{ resolve: resolveViewerShortcut, result: "close" }],
   "previous-card": [{ resolve: resolvePreviousCardShortcut, result: true }],
   "toggle-mode": [{ resolve: resolveViewerShortcut, result: "toggle-mode" }],
+  "toggle-labels": [
+    { resolve: resolveViewerShortcut, result: "toggle-labels" },
+  ],
   save: [{ resolve: resolveViewerShortcut, result: "save" }],
   find: [{ resolve: resolveViewerShortcut, result: "find" }],
   "next-match": [

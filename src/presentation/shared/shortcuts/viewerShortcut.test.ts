@@ -56,6 +56,11 @@ describe("resolveViewerShortcut", () => {
     expect(shortcut({ key: "E" })).toBe("toggle-mode");
   });
 
+  it("recognises Command-L as toggle-labels with either letter case", () => {
+    expect(shortcut({ key: "l" })).toBe("toggle-labels");
+    expect(shortcut({ key: "L" })).toBe("toggle-labels");
+  });
+
   it("recognises a bare Escape as close", () => {
     expect(escape()).toBe("close");
   });
@@ -78,6 +83,10 @@ describe("resolveViewerShortcut", () => {
     expect(shortcut({ key: "e", ctrlKey: true })).toBeUndefined();
     expect(shortcut({ key: "e", altKey: true })).toBeUndefined();
     expect(shortcut({ key: "e", shiftKey: true })).toBeUndefined();
+    expect(shortcut({ key: "l", metaKey: false })).toBeUndefined();
+    expect(shortcut({ key: "l", ctrlKey: true })).toBeUndefined();
+    expect(shortcut({ key: "l", altKey: true })).toBeUndefined();
+    expect(shortcut({ key: "l", shiftKey: true })).toBeUndefined();
   });
 
   it("rejects Escape with any modifier", () => {
@@ -91,11 +100,13 @@ describe("resolveViewerShortcut", () => {
     expect(shortcut({ key: "[", isComposing: true })).toBeUndefined();
     expect(shortcut({ key: "s", isComposing: true })).toBeUndefined();
     expect(shortcut({ key: "e", isComposing: true })).toBeUndefined();
+    expect(shortcut({ key: "l", isComposing: true })).toBeUndefined();
     expect(escape({ isComposing: true })).toBeUndefined();
   });
 
   it("ignores a key the IME consumed after composition has ended", () => {
     expect(escape({ keyCode: 229 })).toBeUndefined();
     expect(shortcut({ key: "s", keyCode: 229 })).toBeUndefined();
+    expect(shortcut({ key: "l", keyCode: 229 })).toBeUndefined();
   });
 });
