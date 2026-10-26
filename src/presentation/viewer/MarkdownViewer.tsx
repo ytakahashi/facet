@@ -208,6 +208,8 @@ export function MarkdownViewer() {
 
   // Matches when the Edit/Preview switch is shown below.
   const canToggleMode = status === "loaded" && draft !== undefined;
+  // Matches when the Labels… button is shown below.
+  const canOpenLabelPicker = card !== undefined;
   const find = useMarkdownFind(selectedPath, canToggleMode, viewerMode);
   const {
     open: openFind,
@@ -249,6 +251,18 @@ export function MarkdownViewer() {
       // The viewer owns this shortcut while open, even when saving is
       // unavailable or a modal prevents acting on it.
       event.preventDefault();
+      if (shortcut === "toggle-labels") {
+        // Checked before the modal guard so the picker can close itself.
+        // Only while it is the topmost modal: Manage Labels stacks over it,
+        // and closing the picker underneath would act on a dialog Escape
+        // cannot reach either.
+        if (isLabelPickerOpen) {
+          if (!isManageLabelsOpen) setIsLabelPickerOpen(false);
+          return;
+        }
+        if (!isModalOpen && canOpenLabelPicker) setIsLabelPickerOpen(true);
+        return;
+      }
       if (isModalOpen) return;
       switch (shortcut) {
         case "find":
@@ -276,6 +290,9 @@ export function MarkdownViewer() {
   }, [
     canSave,
     canToggleMode,
+    canOpenLabelPicker,
+    isLabelPickerOpen,
+    isManageLabelsOpen,
     find.isOpen,
     openFind,
     closeFind,
@@ -368,6 +385,7 @@ export function MarkdownViewer() {
               <button
                 type="button"
                 className="markdown-viewer__labels-button"
+                title="Labels (⌘L)"
                 onClick={() => setIsLabelPickerOpen(true)}
               >
                 Labels…
