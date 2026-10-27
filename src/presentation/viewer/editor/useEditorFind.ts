@@ -1,10 +1,4 @@
-import {
-  type RefObject,
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from "react";
+import { type RefObject, useLayoutEffect, useMemo, useRef } from "react";
 import type { TextRange } from "../../../domain/textMatch.ts";
 import type { FindPresentation, FindText } from "../find/findPresentation.ts";
 import {
@@ -30,16 +24,10 @@ export function useEditorFind(
   textRef: RefObject<HTMLSpanElement | null>,
   find: FindPresentation | undefined,
   onFindTextChange: ((source: FindText) => void) | undefined,
+  syncScroll: () => void,
 ) {
   const text = useMemo(() => editorFindText(value), [value]);
   const revealed = useRef(0);
-  const syncScroll = useCallback(() => {
-    const textarea = textareaRef.current;
-    const backdrop = backdropRef.current;
-    if (!textarea || !backdrop) return;
-    backdrop.scrollTop = textarea.scrollTop;
-    backdrop.scrollLeft = textarea.scrollLeft;
-  }, [textareaRef, backdropRef]);
   const source = useMemo<FindText>(
     () => ({
       text,
@@ -117,5 +105,5 @@ export function useEditorFind(
     revealed.current = find.revealToken;
     return clearFindHighlights;
   }, [find, source, text, textareaRef, backdropRef, textRef, syncScroll]);
-  return { text, syncScroll };
+  return { text };
 }

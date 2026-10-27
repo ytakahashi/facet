@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Board } from "../../../domain/board.ts";
 import {
   cardLinkMarkdown,
@@ -20,6 +20,10 @@ import { InsertCardLinkDialog } from "./InsertCardLinkDialog.tsx";
 import type { FindPresentation, FindText } from "../find/findPresentation.ts";
 import { EditorFindBackdrop } from "./EditorFindBackdrop.tsx";
 import { useEditorFind } from "./useEditorFind.ts";
+import { EditorLineNumbers } from "./EditorLineNumbers.tsx";
+import { useEditorScrollSync } from "./useEditorScrollSync.ts";
+import { EditorLineMirror } from "./EditorLineMirror.tsx";
+import { useEditorLineLayout } from "./useEditorLineLayout.ts";
 
 interface MarkdownEditorProps {
   value: string;
@@ -47,13 +51,28 @@ export function MarkdownEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
-  const { text, syncScroll } = useEditorFind(
+  const gutterContentRef = useRef<HTMLDivElement>(null);
+  const syncScroll = useEditorScrollSync(
+    textareaRef,
+    backdropRef,
+    gutterContentRef,
+  );
+  const { text } = useEditorFind(
     value,
     textareaRef,
     backdropRef,
     textRef,
     find,
     onFindTextChange,
+    syncScroll,
+  );
+  const lines = useMemo(() => text.split("\n"), [text]);
+  // Measure at the common parent: a child's layout effect can run before
+  // the later textarea sibling has attached its ref on the initial mount.
+  const { mirrorRef, layout } = useEditorLineLayout(
+    lines,
+    textareaRef,
+    syncScroll,
   );
   const insertionTargetRef = useRef<LinkInsertionTarget | undefined>(undefined);
   const pendingSelectionRef = useRef<
@@ -131,43 +150,51 @@ export function MarkdownEditor({
   return (
     <>
       <div className="markdown-editor-frame">
-        <EditorFindBackdrop
-          text={text}
-          backdropRef={backdropRef}
-          textRef={textRef}
+        <EditorLineNumbers
+          lineCount={lines.length}
+          layout={layout}
+          contentRef={gutterContentRef}
         />
-        <textarea
-          ref={textareaRef}
-          className="markdown-editor"
-          data-markdown-editor
-          value={value}
-          readOnly={readOnly}
-          onChange={(event) => onChange(event.target.value)}
-          onScroll={syncScroll}
-          onKeyDown={(event) => {
-            const shortcut = resolveEditorShortcut(event.nativeEvent);
-            if (!shortcut) return;
-            if (shortcut === "indent" || shortcut === "outdent") {
-              // A read-only editor leaves Tab to move focus, since there is
-              // nothing to indent.
-              if (readOnly) return;
+        <div className="markdown-editor-viewport">
+          <EditorLineMirror lines={lines} mirrorRef={mirrorRef} />
+          <EditorFindBackdrop
+            text={text}
+            backdropRef={backdropRef}
+            textRef={textRef}
+          />
+          <textarea
+            ref={textareaRef}
+            className="markdown-editor"
+            data-markdown-editor
+            value={value}
+            readOnly={readOnly}
+            onChange={(event) => onChange(event.target.value)}
+            onScroll={syncScroll}
+            onKeyDown={(event) => {
+              const shortcut = resolveEditorShortcut(event.nativeEvent);
+              if (!shortcut) return;
+              if (shortcut === "indent" || shortcut === "outdent") {
+                // A read-only editor leaves Tab to move focus, since there is
+                // nothing to indent.
+                if (readOnly) return;
+                event.preventDefault();
+                indent(event.currentTarget, shortcut);
+                return;
+              }
+              // Claim the app shortcut once recognised, even when this card's
+              // path cannot produce a link and the palette therefore stays shut.
               event.preventDefault();
-              indent(event.currentTarget, shortcut);
-              return;
-            }
-            // Claim the app shortcut once recognised, even when this card's
-            // path cannot produce a link and the palette therefore stays shut.
-            event.preventDefault();
-            if (readOnly || !isLinkableCardPath(fromPath)) return;
-            insertionTargetRef.current = resolveLinkInsertionTarget(
-              value,
-              event.currentTarget.selectionStart,
-              event.currentTarget.selectionEnd,
-            );
-            setIsDialogOpen(true);
-          }}
-          spellCheck={false}
-        />
+              if (readOnly || !isLinkableCardPath(fromPath)) return;
+              insertionTargetRef.current = resolveLinkInsertionTarget(
+                value,
+                event.currentTarget.selectionStart,
+                event.currentTarget.selectionEnd,
+              );
+              setIsDialogOpen(true);
+            }}
+            spellCheck={false}
+          />
+        </div>
       </div>
       <InsertCardLinkDialog
         board={board}
