@@ -1445,15 +1445,49 @@ body.is-pane-resizing * {
 
 .markdown-editor-frame {
   position: relative;
+  display: flex;
   flex: 1;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
   background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
 }
 
+.markdown-editor-viewport {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* All text layers must share metrics and wrapping, including the line mirror.
+   The gutter shares font metrics so its digits align with the text baseline. */
 .markdown-editor,
-.markdown-editor-backdrop {
+.markdown-editor-backdrop,
+.markdown-editor-line-mirror,
+.markdown-editor-gutter {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  letter-spacing: 0.18px;
+  tab-size: 8;
+}
+
+.markdown-editor,
+.markdown-editor-backdrop,
+.markdown-editor-line-mirror {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Share the viewport box in CSS so the mirror retains fractional widths and
+   the same padding and scrollbar space, without integer JS width rounding. */
+.markdown-editor,
+.markdown-editor-backdrop,
+.markdown-editor-line-mirror {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1461,18 +1495,38 @@ body.is-pane-resizing * {
   margin: 0;
   padding: 8px;
   box-sizing: border-box;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.55;
-  letter-spacing: 0.18px;
-  tab-size: 8;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  word-break: normal;
+  border: none;
+  border-radius: 0;
   overflow: auto;
   scrollbar-gutter: stable;
+}
+
+.markdown-editor-gutter {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.markdown-editor-gutter-content {
+  position: relative;
+}
+
+.markdown-editor-line-number {
+  position: absolute;
+  left: 0;
+  right: 8px;
+  text-align: right;
+}
+
+.markdown-editor-line-mirror {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
 }
 
 .markdown-editor {
@@ -1480,6 +1534,11 @@ body.is-pane-resizing * {
   resize: none;
   background: transparent;
   color: var(--color-text-strong);
+}
+
+.markdown-editor:focus-visible {
+  /* Keep the textarea focus ring inside the frame's clipped bounds. */
+  outline-offset: -2px;
 }
 
 .markdown-editor-backdrop {
