@@ -14,6 +14,7 @@ import {
   clampSelectionIndex,
   nextSelectionIndex,
 } from "../shared/cardSearchSelection.ts";
+import { resolveResultListShortcut } from "../shared/shortcuts/resultListShortcut.ts";
 import {
   buildCardSearchModel,
   type CardSearchMode,
@@ -118,25 +119,21 @@ export function CardSearchDialog({
   }
 
   function handleKeyDown(event: React.KeyboardEvent) {
-    // An IME is mid-conversion: Enter is confirming a candidate and the
-    // arrow keys are moving through them, so none of it is aimed here.
-    if (event.nativeEvent.isComposing) return;
+    const shortcut = resolveResultListShortcut(event.nativeEvent);
+    if (shortcut === undefined) return;
 
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      setSelectedIndex(
-        nextSelectionIndex(
-          activeIndex,
-          model.options.length,
-          event.key === "ArrowDown" ? 1 : -1,
-        ),
-      );
+    event.preventDefault();
+    if (shortcut === "confirm") {
+      if (activeOption) selectAndClose(activeOption.hit.card);
       return;
     }
-    if (event.key === "Enter") {
-      event.preventDefault();
-      if (activeOption) selectAndClose(activeOption.hit.card);
-    }
+    setSelectedIndex(
+      nextSelectionIndex(
+        activeIndex,
+        model.options.length,
+        shortcut === "next" ? 1 : -1,
+      ),
+    );
   }
 
   return (
