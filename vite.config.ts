@@ -1,8 +1,24 @@
+import { execFileSync } from "node:child_process";
 import { defineConfig, lazyPlugins } from "vite-plus";
 import react from "@vitejs/plugin-react";
 
+// A source archive has no Git metadata, and that must not fail the build.
+function readBuildRevision(): string {
+  try {
+    return execFileSync("git", ["describe", "--tags", "--always", "--dirty"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __BUILD_REVISION__: JSON.stringify(readBuildRevision()),
+  },
   fmt: {
     // The width this codebase is written to; oxfmt defaults to 100.
     printWidth: 80,

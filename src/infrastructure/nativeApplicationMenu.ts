@@ -1,3 +1,4 @@
+import { getVersion } from "@tauri-apps/api/app";
 import {
   Menu,
   type MenuItemOptions,
@@ -16,6 +17,11 @@ export interface MenuSelectionHandlers {
   openRecent(path: string): void;
 }
 
+export interface ApplicationBuild {
+  version: string;
+  revision: string;
+}
+
 // Plain option objects for Tauri's Menu.new(), so the menu's shape can be
 // checked without a host. Each item carries its own action: a click arrives
 // as a call, not as an id to look up, so a click can never be routed to a
@@ -23,6 +29,7 @@ export interface MenuSelectionHandlers {
 export function buildApplicationMenu(
   recentBoardPaths: readonly string[],
   homeDirectory: string,
+  build: ApplicationBuild,
   handlers: MenuSelectionHandlers,
 ): ApplicationMenuItem[] {
   const recentItems: ApplicationMenuItem[] =
@@ -38,7 +45,20 @@ export function buildApplicationMenu(
       // On macOS the first submenu becomes the app menu and its label is
       // replaced with the app name, so "Facet" here is never actually shown.
       text: "Facet",
-      items: [{ item: "Quit" }],
+      items: [
+        {
+          item: {
+            // The macOS panel renders these as "Version <version>
+            // (<shortVersion>)", which is why the revision goes in shortVersion.
+            About: {
+              version: build.version,
+              shortVersion: build.revision,
+            },
+          },
+        },
+        { item: "Separator" },
+        { item: "Quit" },
+      ],
     },
     {
       text: "File",
@@ -78,23 +98,33 @@ function labelFor(path: string, homeDirectory: string): string {
 
 export class NativeApplicationMenu {
   private readonly fileSystem: FileSystemPort;
+  private readonly buildRevision: string;
   // Read at click time rather than captured when the menu is built, so a menu
   // set before onMenuSelect still reaches the handlers registered later.
   private handlers?: MenuSelectionHandlers;
   // The menu this instance last set, under the resource id Menu.new() gave it.
   private current?: Menu;
 
-  constructor(fileSystem: FileSystemPort) {
+  constructor(fileSystem: FileSystemPort, buildRevision: string) {
     this.fileSystem = fileSystem;
+    this.buildRevision = buildRevision;
   }
 
   async setRecentBoards(paths: readonly string[]): Promise<void> {
-    const home = await this.fileSystem.homeDirectory();
+    const [home, version] = await Promise.all([
+      this.fileSystem.homeDirectory(),
+      getVersion(),
+    ]);
     const menu = await Menu.new({
-      items: buildApplicationMenu(paths, home, {
-        newBoard: () => this.handlers?.newBoard(),
-        openRecent: (path) => this.handlers?.openRecent(path),
-      }),
+      items: buildApplicationMenu(
+        paths,
+        home,
+        { version, revision: this.buildRevision },
+        {
+          newBoard: () => this.handlers?.newBoard(),
+          openRecent: (path) => this.handlers?.openRecent(path),
+        },
+      ),
     });
     const replaced = await menu.setAsAppMenu();
     const created = this.current;
