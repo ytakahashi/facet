@@ -9,6 +9,7 @@ import {
   clampSelectionIndex,
   nextSelectionIndex,
 } from "../../shared/cardSearchSelection.ts";
+import { resolveResultListShortcut } from "../../shared/shortcuts/resultListShortcut.ts";
 
 interface InsertCardLinkDialogProps {
   board: Board;
@@ -74,24 +75,22 @@ export function InsertCardLinkDialog({
   }
 
   function handleKeyDown(event: React.KeyboardEvent) {
-    if (event.nativeEvent.isComposing) return;
+    const shortcut = resolveResultListShortcut(event.nativeEvent);
+    if (shortcut === undefined) return;
 
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      setSelectedIndex(
-        nextSelectionIndex(
-          activeIndex,
-          results.length,
-          event.key === "ArrowDown" ? 1 : -1,
-        ),
-      );
-      return;
-    }
-    if (event.key === "Enter") {
-      event.preventDefault();
+    event.preventDefault();
+    if (shortcut === "confirm") {
       const hit = results[activeIndex];
       if (hit) selectAndClose(hit.card);
+      return;
     }
+    setSelectedIndex(
+      nextSelectionIndex(
+        activeIndex,
+        results.length,
+        shortcut === "next" ? 1 : -1,
+      ),
+    );
   }
 
   return (

@@ -9,6 +9,7 @@ import {
 import { searchCardContents } from "../../domain/cardContentSearch.ts";
 import { useCardContentReading } from "../context/appContext.ts";
 import { nextSelectionIndex } from "../shared/cardSearchSelection.ts";
+import { resolveResultListShortcut } from "../shared/shortcuts/resultListShortcut.ts";
 import { ContentSearchLine } from "./ContentSearchLine.tsx";
 import { useAsyncRead } from "../shared/useAsyncRead.ts";
 
@@ -99,26 +100,22 @@ export function CardContentSearchDialog({
   }
 
   function handleKeyDown(event: React.KeyboardEvent) {
-    // Enter confirms an IME candidate and arrows move through candidates while
-    // composing, so those keys must not move or open a search result.
-    if (event.nativeEvent.isComposing) return;
+    const shortcut = resolveResultListShortcut(event.nativeEvent);
+    if (shortcut === undefined) return;
 
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      const nextIndex = nextSelectionIndex(
-        activeIndex,
-        results.length,
-        event.key === "ArrowDown" ? 1 : -1,
-      );
-      const hit = results[nextIndex];
-      if (hit) setSelectedPath(hit.card.path);
-      return;
-    }
-    if (event.key === "Enter") {
-      event.preventDefault();
+    event.preventDefault();
+    if (shortcut === "confirm") {
       const hit = results[activeIndex];
       if (hit) selectAndClose(hit.card);
+      return;
     }
+    const nextIndex = nextSelectionIndex(
+      activeIndex,
+      results.length,
+      shortcut === "next" ? 1 : -1,
+    );
+    const hit = results[nextIndex];
+    if (hit) setSelectedPath(hit.card.path);
   }
 
   const queryIsEmpty = query.trim() === "";
