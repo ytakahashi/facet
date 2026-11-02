@@ -9,7 +9,11 @@ import {
 } from "./nativeApplicationMenu.ts";
 
 const newMenu = vi.hoisted(() => vi.fn<typeof Menu.new>());
+const getVersion = vi.hoisted(() => vi.fn<() => Promise<string>>());
 vi.mock("@tauri-apps/api/menu", () => ({ Menu: { new: newMenu } }));
+vi.mock("@tauri-apps/api/app", () => ({ getVersion }));
+
+const build = { version: "1.2.3", revision: "abc1234" };
 
 afterEach(() => {
   vi.resetAllMocks();
@@ -53,6 +57,7 @@ describe("buildApplicationMenu", () => {
         "/Users/me/notes/private.board.yaml",
       ],
       "/Users/me",
+      build,
       handlers,
     );
 
@@ -68,7 +73,7 @@ describe("buildApplicationMenu", () => {
   });
 
   it("shows a disabled placeholder when there is no history", () => {
-    const menu = buildApplicationMenu([], "/Users/me", makeHandlers());
+    const menu = buildApplicationMenu([], "/Users/me", build, makeHandlers());
 
     expect(recentBoardItems(menu)).toEqual([
       { text: "No Recent Boards", enabled: false },
@@ -79,6 +84,7 @@ describe("buildApplicationMenu", () => {
     const menu = buildApplicationMenu(
       ["/Volumes/external/board.yaml"],
       "/Users/me",
+      build,
       makeHandlers(),
     );
 
@@ -89,7 +95,7 @@ describe("buildApplicationMenu", () => {
 
   it("leads the File menu with New Board followed by the Open Recent submenu", () => {
     const handlers = makeHandlers();
-    const menu = buildApplicationMenu([], "/Users/me", handlers);
+    const menu = buildApplicationMenu([], "/Users/me", build, handlers);
 
     const fileItems = fileMenuItems(menu);
     expect(fileItems).toHaveLength(3);
@@ -100,8 +106,22 @@ describe("buildApplicationMenu", () => {
     expect(handlers.newBoard).toHaveBeenCalledOnce();
   });
 
+  it("leads the app menu with About, carrying the version and revision", () => {
+    const menu = buildApplicationMenu([], "/Users/me", build, makeHandlers());
+
+    expect(submenuItems(menu[0])).toEqual([
+      {
+        item: {
+          About: { version: "1.2.3", shortVersion: "abc1234" },
+        },
+      },
+      { item: "Separator" },
+      { item: "Quit" },
+    ]);
+  });
+
   it("includes the standard Edit items for textarea shortcuts", () => {
-    const menu = buildApplicationMenu([], "/Users/me", makeHandlers());
+    const menu = buildApplicationMenu([], "/Users/me", build, makeHandlers());
 
     expect(submenuItems(menu[2])).toEqual([
       { item: "Undo" },
@@ -163,7 +183,10 @@ describe("NativeApplicationMenu", () => {
 
   it("releases every handle of the menus it replaces", async () => {
     const { created, replaced } = stubMenus();
-    const applicationMenu = new NativeApplicationMenu(makeFileSystem());
+    const applicationMenu = new NativeApplicationMenu(
+      makeFileSystem(),
+      "abc1234",
+    );
 
     await applicationMenu.setRecentBoards([]);
     await applicationMenu.setRecentBoards(["/Users/me/a.board.yaml"]);
@@ -180,9 +203,27 @@ describe("NativeApplicationMenu", () => {
     ]);
   });
 
+  it("builds About from the host's version and the given revision", async () => {
+    stubMenus();
+    getVersion.mockResolvedValue("1.2.3");
+    const applicationMenu = new NativeApplicationMenu(
+      makeFileSystem(),
+      "abc1234",
+    );
+
+    await applicationMenu.setRecentBoards([]);
+
+    expect(submenuItems(builtItems()[0])[0]).toMatchObject({
+      item: { About: { version: "1.2.3", shortVersion: "abc1234" } },
+    });
+  });
+
   it("routes clicks to handlers registered after the menu was set", async () => {
     stubMenus();
-    const applicationMenu = new NativeApplicationMenu(makeFileSystem());
+    const applicationMenu = new NativeApplicationMenu(
+      makeFileSystem(),
+      "abc1234",
+    );
     await applicationMenu.setRecentBoards([
       "/Users/me/notes/development.board.yaml",
     ]);

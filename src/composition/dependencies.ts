@@ -44,7 +44,10 @@ import { createWorkspaceStore } from "../presentation/store/workspaceStore.ts";
 const fileSystem = new HostFileSystemAdapter();
 const boardRepository = new YamlBoardRepository(fileSystem);
 const configRepository = new YamlConfigRepository(fileSystem);
-const applicationMenu = new NativeApplicationMenu(fileSystem);
+const applicationMenu = new NativeApplicationMenu(
+  fileSystem,
+  __BUILD_REVISION__,
+);
 const contextMenu = new NativeContextMenu();
 const clipboard = new WebClipboard();
 const finder = new HostFinder();
