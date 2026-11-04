@@ -4,7 +4,11 @@ import type { Card } from "../../domain/card.ts";
 import { UseCaseError } from "../../usecase/useCaseError.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import type { BoardStoreDeps } from "./boardStore.ts";
-import { canRefreshBoard, createBoardStore } from "./boardStore.ts";
+import {
+  canDuplicateCard,
+  canRefreshBoard,
+  createBoardStore,
+} from "./boardStore.ts";
 
 // Every dependency is required by the store, but a given test only cares about
 // one or two of them. Spelling out only those keeps each test's setup about
@@ -13,6 +17,10 @@ function makeDeps(overrides: Partial<BoardStoreDeps> = {}): BoardStoreDeps {
   return {
     openBoard: vi.fn(),
     saveBoard: vi.fn().mockResolvedValue("revision-next"),
+    duplicateMarkdownCard: vi.fn(),
+    isCardSaving: () => false,
+    hasUnsavedCardChanges: () => false,
+    confirmDuplicateSavedCard: vi.fn().mockResolvedValue(true),
     createMarkdownCard: vi.fn(),
     addExistingMarkdownCard: vi.fn(),
     relocateMarkdownCard: vi.fn(),
@@ -2996,4 +3004,242 @@ describe("createBoardStore", () => {
       board: expect.objectContaining({ name: "Local edit" }),
     });
   });
+
+  describe("duplicateCard", () => {
+    const source: Card = {
+      path: "a.md",
+      absolutePath: "/board/a.md",
+      displayTitle: "A",
+      labels: [],
+      fileState: "available",
+    };
+    const copied: Card = {
+      ...source,
+      path: "a_copy.md",
+      absolutePath: "/board/a_copy.md",
+    };
+    function setup(overrides: Partial<BoardStoreDeps> = {}) {
+      const board = makeBoard();
+      board.columns[0].cards = [source, { ...source, path: "b.md" }];
+      const deps = makeDeps({
+        openBoard: async () => loaded(board),
+        duplicateMarkdownCard: vi.fn().mockResolvedValue(copied),
+        onFilesChanged: vi.fn(),
+        ...overrides,
+      });
+      return { store: createBoardStore(deps), deps };
+    }
+
+    it("inserts after the source, notifies Files and queues a board save", async () => {
+      const { store, deps } = setup();
+      await store.getState().openBoard("/board/board.yaml");
+      await expect(store.getState().duplicateCard("a.md")).resolves.toEqual(
+        copied,
+      );
+      expect(
+        store.getState().board!.columns[0].cards.map((card) => card.path),
+      ).toEqual(["a.md", "a_copy.md", "b.md"]);
+      expect(deps.duplicateMarkdownCard).toHaveBeenCalledWith({
+        boardPath: "/board/board.yaml",
+        card: source,
+        reservedPaths: ["a.md", "b.md"],
+      });
+      expect(deps.onFilesChanged).toHaveBeenCalledWith(["/board/a_copy.md"]);
+      expect(deps.saveBoard).toHaveBeenCalled();
+    });
+
+    it("blocks a write that began after the menu was shown", async () => {
+      const { store, deps } = setup({
+        isCardSaving: () => true,
+        hasUnsavedCardChanges: () => true,
+      });
+      await store.getState().openBoard("/board/board.yaml");
+      await expect(
+        store.getState().duplicateCard("a.md"),
+      ).rejects.toMatchObject({
+        code: "card.save-in-progress",
+      });
+      expect(deps.duplicateMarkdownCard).not.toHaveBeenCalled();
+      expect(deps.confirmDuplicateSavedCard).not.toHaveBeenCalled();
+    });
+
+    it("keeps the board unchanged when copying fails", async () => {
+      const { store, deps } = setup({
+        duplicateMarkdownCard: vi
+          .fn()
+          .mockRejectedValue(new UseCaseError("card.create-failed")),
+      });
+      await store.getState().openBoard("/board/board.yaml");
+      const board = store.getState().board;
+      await expect(
+        store.getState().duplicateCard("a.md"),
+      ).rejects.toMatchObject({
+        code: "card.create-failed",
+      });
+      expect(store.getState().board).toBe(board);
+      expect(deps.onFilesChanged).not.toHaveBeenCalled();
+    });
+
+    it("uses the source's latest position after asynchronous copying", async () => {
+      const pending = deferred<Card>();
+      const { store } = setup({ duplicateMarkdownCard: () => pending.promise });
+      await store.getState().openBoard("/board/board.yaml");
+      const operation = store.getState().duplicateCard("a.md");
+      store.getState().moveCardToColumn("a.md", "done");
+      pending.resolve(copied);
+      await operation;
+      expect(
+        store.getState().board!.columns[1].cards.map((card) => card.path),
+      ).toEqual(["a.md", "a_copy.md"]);
+    });
+
+    it.each(["remove", "reload", "collision"])(
+      "preserves the created file and reports failed registration after %s",
+      async (change) => {
+        const pending = deferred<Card>();
+        const { store, deps } = setup({
+          duplicateMarkdownCard: () => pending.promise,
+        });
+        await store.getState().openBoard("/board/board.yaml");
+        const operation = store.getState().duplicateCard("a.md");
+        if (change === "remove")
+          await store.getState().removeCard("a.md", { deleteFile: false });
+        if (change === "reload")
+          await store.getState().openBoard("/board/board.yaml");
+        if (change === "collision")
+          store.setState({
+            board: {
+              ...store.getState().board!,
+              columns: [
+                { id: "doing", name: "Doing", cards: [source, copied] },
+              ],
+            },
+          });
+        pending.resolve(copied);
+        await expect(operation).rejects.toMatchObject({
+          code: "card.duplicate-registration-failed",
+          details: { path: "a_copy.md" },
+        });
+        expect(deps.onFilesChanged).toHaveBeenCalledWith(["/board/a_copy.md"]);
+        expect(deps.deleteMarkdown).not.toHaveBeenCalled();
+      },
+    );
+    it("copies without confirmation when the target has no unsaved changes", async () => {
+      const { store, deps } = setup();
+      await store.getState().openBoard("/board/board.yaml");
+      await store.getState().duplicateCard("a.md");
+      expect(deps.confirmDuplicateSavedCard).not.toHaveBeenCalled();
+    });
+
+    it("inserts a duplicate of the saved card when the user confirms", async () => {
+      const { store, deps } = setup({
+        hasUnsavedCardChanges: (path) => path === "a.md",
+        confirmDuplicateSavedCard: vi.fn().mockResolvedValue(true),
+      });
+      await store.getState().openBoard("/board/board.yaml");
+
+      const result = await store.getState().duplicateCard("a.md");
+
+      expect(deps.confirmDuplicateSavedCard).toHaveBeenCalledOnce();
+      expect(deps.duplicateMarkdownCard).toHaveBeenCalledOnce();
+      expect(result).toEqual(copied);
+      expect(store.getState().board!.columns[0].cards).toEqual([
+        source,
+        copied,
+        expect.objectContaining({ path: "b.md" }),
+      ]);
+      expect(deps.onFilesChanged).toHaveBeenCalledWith(["/board/a_copy.md"]);
+      expect(deps.saveBoard).toHaveBeenCalled();
+    });
+
+    it("leaves files and the board unchanged when the user cancels duplication", async () => {
+      const { store, deps } = setup({
+        hasUnsavedCardChanges: (path) => path === "a.md",
+        confirmDuplicateSavedCard: vi.fn().mockResolvedValue(false),
+      });
+      await store.getState().openBoard("/board/board.yaml");
+      const before = store.getState().board;
+
+      const result = await store.getState().duplicateCard("a.md");
+
+      expect(deps.confirmDuplicateSavedCard).toHaveBeenCalledOnce();
+      expect(result).toBeUndefined();
+      expect(store.getState().board).toBe(before);
+      expect(deps.duplicateMarkdownCard).not.toHaveBeenCalled();
+      expect(deps.onFilesChanged).not.toHaveBeenCalled();
+      expect(deps.saveBoard).not.toHaveBeenCalled();
+    });
+
+    it("does not prompt for another card's unsaved draft", async () => {
+      const { store, deps } = setup({
+        hasUnsavedCardChanges: (path) => path === "b.md",
+      });
+      await store.getState().openBoard("/board/board.yaml");
+      await store.getState().duplicateCard("a.md");
+      expect(deps.confirmDuplicateSavedCard).not.toHaveBeenCalled();
+      expect(deps.duplicateMarkdownCard).toHaveBeenCalledOnce();
+    });
+
+    it("does not stack confirmations on repeated selection", async () => {
+      const answer = deferred<boolean>();
+      const { store, deps } = setup({
+        hasUnsavedCardChanges: () => true,
+        confirmDuplicateSavedCard: vi.fn(() => answer.promise),
+      });
+      await store.getState().openBoard("/board/board.yaml");
+      const first = store.getState().duplicateCard("a.md");
+      await store.getState().duplicateCard("a.md");
+      expect(deps.confirmDuplicateSavedCard).toHaveBeenCalledOnce();
+      expect(deps.duplicateMarkdownCard).not.toHaveBeenCalled();
+      answer.resolve(true);
+      await first;
+      expect(deps.duplicateMarkdownCard).toHaveBeenCalledOnce();
+    });
+
+    it.each(["remove", "reload", "save"])(
+      "rechecks the target before creating a file after %s during confirmation",
+      async (change) => {
+        const answer = deferred<boolean>();
+        let saving = false;
+        const { store, deps } = setup({
+          hasUnsavedCardChanges: () => true,
+          confirmDuplicateSavedCard: () => answer.promise,
+          isCardSaving: () => saving,
+        });
+        await store.getState().openBoard("/board/board.yaml");
+        const operation = store.getState().duplicateCard("a.md");
+        if (change === "remove")
+          await store.getState().removeCard("a.md", { deleteFile: false });
+        if (change === "reload")
+          await store.getState().openBoard("/board/board.yaml");
+        if (change === "save") saving = true;
+        answer.resolve(true);
+        await expect(operation).rejects.toMatchObject({
+          code:
+            change === "save" ? "card.save-in-progress" : "card.board-changed",
+        });
+        expect(deps.duplicateMarkdownCard).not.toHaveBeenCalled();
+      },
+    );
+  });
+});
+
+describe("canDuplicateCard", () => {
+  it.each([
+    ["available", "/board/a.md", false, true],
+    ["available", "/board/a.md", true, false],
+    ["missing", "/board/a.md", false, false],
+  ] as const)(
+    "combines file copyability and saving (%s, %s, %s)",
+    (fileState, absolutePath, saving, expected) => {
+      const card: Card = {
+        path: "a.md",
+        displayTitle: "A",
+        labels: [],
+        fileState,
+        absolutePath,
+      };
+      expect(canDuplicateCard(card, saving)).toBe(expected);
+    },
+  );
 });

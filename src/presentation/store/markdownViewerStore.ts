@@ -95,6 +95,18 @@ export function isMarkdownDirty(
   return state.draft !== undefined && state.draft !== state.content;
 }
 
+// Draft ownership follows the same path identity as board card operations.
+export function hasUnsavedChanges(
+  state: Pick<MarkdownViewerState, "selectedPath" | "draft" | "content">,
+  path: string,
+): boolean {
+  return (
+    state.selectedPath !== undefined &&
+    isSameCardPath(state.selectedPath, path) &&
+    isMarkdownDirty(state)
+  );
+}
+
 // Whether a write for this specific card is still in flight. Deleting the file
 // while one is pending would let the write land afterwards and recreate the
 // file the user just deleted, so the delete flow blocks on this rather than

@@ -3,6 +3,7 @@ import type { Card, CardFileState } from "./card.ts";
 import {
   createCardReference,
   isCardFileBroken,
+  isCardFileCopyable,
   relocateCardReference,
   resolveCardTitle,
   retitleCard,
@@ -247,4 +248,26 @@ describe("isCardFileBroken", () => {
   it("treats a card whose path does not resolve as broken", () => {
     expect(isCardFileBroken(makeCard("unresolvable"))).toBe(true);
   });
+});
+
+describe("isCardFileCopyable", () => {
+  it.each([
+    ["available", "/board/a.md", true],
+    ["available", undefined, false],
+    ["missing", "/board/a.md", false],
+    ["unreadable", "/board/a.md", false],
+    ["unresolvable", undefined, false],
+  ] as const)(
+    "checks file state and resolved path (%s, %s)",
+    (fileState, absolutePath, expected) => {
+      const card: Card = {
+        path: "a.md",
+        displayTitle: "A",
+        labels: [],
+        fileState,
+        absolutePath,
+      };
+      expect(isCardFileCopyable(card)).toBe(expected);
+    },
+  );
 });

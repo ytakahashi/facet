@@ -11,6 +11,7 @@ import {
   findCardByPath,
   findCardLocation,
   findLabelDefinition,
+  insertCardAfter,
   LabelAlreadyExistsError,
   moveCard as moveCardDomain,
   moveColumn as moveColumnDomain,
@@ -29,6 +30,7 @@ import {
   setLabelColor as setLabelColorDomain,
 } from "../../domain/board.ts";
 import type { Card } from "../../domain/card.ts";
+import { isCardFileCopyable } from "../../domain/card.ts";
 import type { FileRevision } from "../../domain/fileSystemPort.ts";
 import type { LabelColor } from "../../domain/label.ts";
 import {
@@ -39,6 +41,7 @@ import {
 } from "../../domain/cardFile.ts";
 import { isSameCardPath, normalizeCardPath } from "../../domain/boardPath.ts";
 import type { AddExistingMarkdownCardInput } from "../../usecase/addExistingMarkdownCard.ts";
+import type { DuplicateMarkdownCardInput } from "../../usecase/duplicateMarkdownCard.ts";
 import type { CreateBoardInput } from "../../usecase/createBoard.ts";
 import type { CreateMarkdownCardInput } from "../../usecase/createMarkdownCard.ts";
 import type { RelocateMarkdownCardInput } from "../../usecase/relocateMarkdownCard.ts";
@@ -88,6 +91,7 @@ export interface BoardState {
   setLabelColor: (name: string, color: LabelColor) => void;
   removeLabel: (name: string) => void;
   moveLabel: (name: string, toIndex: number) => void;
+  duplicateCard: (path: string) => Promise<Card | undefined>;
   addNewCard: (input: NewCardInput) => Promise<Card>;
   addExistingCard: (input: ExistingCardInput) => Promise<Card>;
   relocateCard: (cardPath: string, absolutePath: string) => Promise<Card>;
@@ -107,6 +111,10 @@ export interface BoardState {
   refreshBoard: () => Promise<void>;
   reloadBoard: () => Promise<void>;
   overwriteBoard: () => Promise<void>;
+}
+
+export function canDuplicateCard(card: Card, isSaving: boolean): boolean {
+  return isCardFileCopyable(card) && !isSaving;
 }
 
 export function canRefreshBoard(
@@ -190,6 +198,10 @@ export type DeleteMarkdown = (path: string) => Promise<void>;
 export interface BoardStoreDeps {
   openBoard: OpenBoard;
   saveBoard: SaveBoard;
+  duplicateMarkdownCard: (input: DuplicateMarkdownCardInput) => Promise<Card>;
+  isCardSaving: (path: string) => boolean;
+  hasUnsavedCardChanges: (path: string) => boolean;
+  confirmDuplicateSavedCard: () => Promise<boolean>;
   createMarkdownCard: CreateMarkdownCard;
   addExistingMarkdownCard: AddExistingMarkdownCard;
   relocateMarkdownCard: RelocateMarkdownCard;
@@ -203,6 +215,10 @@ export interface BoardStoreDeps {
 }
 
 export function createBoardStore({
+  duplicateMarkdownCard,
+  isCardSaving,
+  hasUnsavedCardChanges,
+  confirmDuplicateSavedCard,
   openBoard,
   saveBoard,
   createMarkdownCard,
@@ -685,6 +701,61 @@ export function createBoardStore({
           return;
         set({ board: nextBoard });
         queueSave(path, nextBoard);
+      },
+      duplicateCard: async (cardPath: string) => {
+        const initial = get();
+        if (
+          !initial.board ||
+          !initial.path ||
+          !findCardByPath(initial.board, cardPath)
+        )
+          throw new UseCaseError("card.board-changed");
+        if (isCardSaving(cardPath))
+          throw new UseCaseError("card.save-in-progress");
+        if (hasUnsavedCardChanges(cardPath)) {
+          if (!(await confirmation.ask(confirmDuplicateSavedCard))) return;
+        }
+        // A native confirmation is asynchronous. Resolve the source and guards
+        // again before I/O, so a yes cannot act on a reloaded board or a new save.
+        const ready = get();
+        const card = ready.board && findCardByPath(ready.board, cardPath);
+        if (
+          !ready.board ||
+          !card ||
+          ready.path !== initial.path ||
+          ready.loadGeneration !== initial.loadGeneration
+        )
+          throw new UseCaseError("card.board-changed");
+        if (isCardSaving(card.path))
+          throw new UseCaseError("card.save-in-progress");
+        if (!isCardFileCopyable(card))
+          throw new UseCaseError("card.load-failed", { path: card.path });
+        const copied = await duplicateMarkdownCard({
+          boardPath: initial.path,
+          card,
+          reservedPaths: ready.board.columns.flatMap((column) =>
+            column.cards.map((item) => item.path),
+          ),
+        });
+        if (copied.absolutePath) onFilesChanged([copied.absolutePath]);
+        const current = get();
+        // Keep a created file if registration becomes impossible; deleting it could
+        // destroy an external edit made while the operation was awaiting I/O.
+        if (
+          !current.board ||
+          current.path !== initial.path ||
+          current.loadGeneration !== initial.loadGeneration ||
+          !findCardLocation(current.board, card.path) ||
+          containsCardPath(current.board, copied.path)
+        ) {
+          throw new UseCaseError("card.duplicate-registration-failed", {
+            path: copied.path,
+          });
+        }
+        const nextBoard = insertCardAfter(current.board, card.path, copied);
+        set({ board: nextBoard });
+        queueSave(initial.path, nextBoard);
+        return copied;
       },
       addNewCard: async (input: NewCardInput) => {
         const initial = get();

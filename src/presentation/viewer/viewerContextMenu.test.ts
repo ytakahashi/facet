@@ -22,6 +22,8 @@ describe("buildViewerContextMenu", () => {
     const refresh = vi.fn();
     const entries = buildViewerContextMenu(card, board, true, {
       refresh,
+      duplicateCard: vi.fn(),
+      canDuplicateCard: true,
       copyText: vi.fn(),
       reveal: vi.fn(),
       moveToColumn: vi.fn(),
@@ -42,6 +44,8 @@ describe("buildViewerContextMenu", () => {
   it("disables Reload Markdown when refreshing is unavailable", () => {
     const entries = buildViewerContextMenu(card, board, false, {
       refresh: vi.fn(),
+      duplicateCard: vi.fn(),
+      canDuplicateCard: true,
       copyText: vi.fn(),
       reveal: vi.fn(),
       moveToColumn: vi.fn(),

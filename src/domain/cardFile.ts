@@ -112,3 +112,14 @@ export function resolveNewMarkdownPath(
   }
   return { absolutePath, relativePath: relative.path, fileName };
 }
+
+// Strip only a .md extension, case-insensitively. Board loading does not
+// validate extensions, so a hand-edited board can reference foo.markdown;
+// copying it as foo.markdown_copy.md is intentional and acceptable.
+export function duplicateMarkdownFileName(
+  path: string,
+  copyNumber: number,
+): string {
+  const stem = fileNameOf(path).replace(/\.md$/i, "");
+  return `${stem}_copy${copyNumber === 1 ? "" : `_${copyNumber}`}.md`;
+}

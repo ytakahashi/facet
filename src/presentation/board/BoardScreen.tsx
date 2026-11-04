@@ -25,6 +25,7 @@ import { buildBoardContextMenu } from "./boardContextMenus.ts";
 import { buildCardContextMenu } from "../shared/cardContextMenu.ts";
 import { isInsideDialog } from "../shared/isInsideDialog.ts";
 import { isTextEditingTarget } from "../shared/isTextEditingTarget.ts";
+import { useCardDuplication } from "../shared/useCardDuplication.ts";
 import { useMenuActions } from "../shared/useMenuActions.ts";
 import { DeleteCardDialog } from "./DeleteCardDialog.tsx";
 import { KanbanBoard } from "../kanban/KanbanBoard.tsx";
@@ -50,6 +51,7 @@ export function BoardScreen({ board }: { board: Board }) {
   const renameBoard = useBoardStore((state) => state.renameBoard);
   const moveCardToColumn = useBoardStore((state) => state.moveCardToColumn);
   const { copyText, reveal } = useMenuActions();
+  const { duplicateCard, canDuplicateCard } = useCardDuplication();
   const contextMenu = useContextMenu();
   const saveError = useBoardStore((state) => state.saveError);
   const refreshError = useBoardStore((state) => state.refreshError);
@@ -158,6 +160,8 @@ export function BoardScreen({ board }: { board: Board }) {
       buildCardContextMenu(card, board, {
         copyText,
         reveal,
+        duplicateCard: () => duplicateCard(card.path),
+        canDuplicateCard: canDuplicateCard(card),
         moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
       }),
     );

@@ -4,6 +4,8 @@ import type { Card } from "../../domain/card.ts";
 import type { ContextMenuEntry } from "../context/appContext.ts";
 
 export interface CardContextMenuActions {
+  duplicateCard: () => void;
+  canDuplicateCard: boolean;
   copyText: (text: string) => void;
   reveal: (path: string) => void;
   moveToColumn: (columnId: string) => void;
@@ -49,6 +51,12 @@ export function buildCardContextMenu(
       },
     },
     { kind: "separator" },
+    {
+      kind: "item",
+      label: "Duplicate Card",
+      enabled: actions.canDuplicateCard,
+      onSelect: actions.duplicateCard,
+    },
     {
       kind: "submenu",
       label: "Move to",

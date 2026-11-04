@@ -35,7 +35,10 @@ describe("buildCardContextMenu", () => {
     const copyText = vi.fn();
     const reveal = vi.fn();
     const moveToColumn = vi.fn();
+    const duplicateCard = vi.fn();
     const entries = buildCardContextMenu(card, board, {
+      duplicateCard,
+      canDuplicateCard: true,
       copyText,
       reveal,
       moveToColumn,
@@ -47,8 +50,11 @@ describe("buildCardContextMenu", () => {
       "separator",
       "item",
       "separator",
+      "item",
       "submenu",
     ]);
+    select(entries, "Duplicate Card");
+    expect(duplicateCard).toHaveBeenCalledOnce();
     select(entries, "Copy Path");
     select(entries, "Copy Absolute Path");
     expect(copyText).toHaveBeenNthCalledWith(1, "notes/card.md");
@@ -56,7 +62,7 @@ describe("buildCardContextMenu", () => {
     expect(copyText).toHaveBeenCalledTimes(2);
     select(entries, "Reveal in Finder");
     expect(reveal).toHaveBeenCalledWith("/board/notes/card.md");
-    const move = entries[5];
+    const move = entries[6];
     if (move.kind !== "submenu") throw new Error("no Move to submenu");
     expect(
       move.entries.map((entry) => entry.kind === "item" && entry.label),
@@ -77,7 +83,13 @@ describe("buildCardContextMenu", () => {
     const entries = buildCardContextMenu(
       unresolved,
       { ...board, columns: [{ ...board.columns[0], cards: [unresolved] }] },
-      { copyText, reveal: vi.fn(), moveToColumn: vi.fn() },
+      {
+        duplicateCard: vi.fn(),
+        canDuplicateCard: true,
+        copyText,
+        reveal: vi.fn(),
+        moveToColumn: vi.fn(),
+      },
     );
 
     expect(entries[0]).toMatchObject({ label: "Copy Path", enabled: true });
@@ -89,7 +101,7 @@ describe("buildCardContextMenu", () => {
       label: "Reveal in Finder",
       enabled: false,
     });
-    expect(entries[5]).toEqual({
+    expect(entries[6]).toEqual({
       kind: "submenu",
       label: "Move to",
       entries: [],
@@ -102,11 +114,31 @@ describe("buildCardContextMenu", () => {
     const entries = buildCardContextMenu(
       missing,
       { ...board, columns: [{ ...board.columns[0], cards: [missing] }] },
-      { copyText: vi.fn(), reveal, moveToColumn: vi.fn() },
+      {
+        duplicateCard: vi.fn(),
+        canDuplicateCard: true,
+        copyText: vi.fn(),
+        reveal,
+        moveToColumn: vi.fn(),
+      },
     );
 
     expect(entries[3]).toMatchObject({ enabled: true });
     select(entries, "Reveal in Finder");
     expect(reveal).toHaveBeenCalledWith("/board/notes/card.md");
+  });
+  it("uses the supplied duplication availability", () => {
+    const entries = buildCardContextMenu(card, board, {
+      duplicateCard: vi.fn(),
+      canDuplicateCard: false,
+      copyText: vi.fn(),
+      reveal: vi.fn(),
+      moveToColumn: vi.fn(),
+    });
+    expect(
+      entries.find(
+        (entry) => entry.kind === "item" && entry.label === "Duplicate Card",
+      ),
+    ).toMatchObject({ enabled: false });
   });
 });

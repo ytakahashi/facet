@@ -7,6 +7,7 @@ import { WebClipboard } from "../infrastructure/webClipboard.ts";
 import { YamlBoardRepository } from "../infrastructure/yamlBoardRepository.ts";
 import { YamlConfigRepository } from "../infrastructure/yamlConfigRepository.ts";
 import { getHomeDirectory, listDirectory } from "../usecase/browseDirectory.ts";
+import { duplicateMarkdownCard } from "../usecase/duplicateMarkdownCard.ts";
 import { copyToClipboard } from "../usecase/copyToClipboard.ts";
 import { createBoard } from "../usecase/createBoard.ts";
 import { createBoardDirectory } from "../usecase/createBoardDirectory.ts";
@@ -34,7 +35,11 @@ import { createBoardViewStore } from "../presentation/store/boardViewStore.ts";
 import { createDirectoryStore } from "../presentation/store/directoryStore.ts";
 import { createFileAdditionStore } from "../presentation/store/fileAdditionStore.ts";
 import { createFilterStore } from "../presentation/store/filterStore.ts";
-import { createMarkdownViewerStore } from "../presentation/store/markdownViewerStore.ts";
+import {
+  createMarkdownViewerStore,
+  hasUnsavedChanges,
+  isCardSaving,
+} from "../presentation/store/markdownViewerStore.ts";
 import { createNewBoardDialogStore } from "../presentation/store/newBoardDialogStore.ts";
 import { createPaneLayoutStore } from "../presentation/store/paneLayoutStore.ts";
 import { createRecentBoardsStore } from "../presentation/store/recentBoardsStore.ts";
@@ -79,6 +84,15 @@ function createBoardSession(): BoardSession {
     },
     saveBoard: (path, board, expectedRevision) =>
       saveBoard(path, board, expectedRevision, { boardRepository }),
+    duplicateMarkdownCard: (input) =>
+      duplicateMarkdownCard(input, { fileSystem }),
+    isCardSaving: (path) => isCardSaving(markdownViewer.getState(), path),
+    hasUnsavedCardChanges: (path) =>
+      hasUnsavedChanges(markdownViewer.getState(), path),
+    confirmDuplicateSavedCard: () =>
+      confirmAction(
+        "This card has unsaved changes. Duplicate the saved version? Unsaved changes will not be included in the copy, and your draft will remain in the editor.",
+      ),
     createMarkdownCard: (input) => createMarkdownCard(input, { fileSystem }),
     addExistingMarkdownCard: (input) =>
       addExistingMarkdownCard(input, { fileSystem }),
@@ -98,29 +112,30 @@ function createBoardSession(): BoardSession {
         "Overwrite changes made outside Facet? The board shown in Facet will replace them.",
       ),
   });
+  const markdownViewer = createMarkdownViewerStore(
+    (path) => viewMarkdown(path, { fileSystem }),
+    (path, content, expectedRevision) =>
+      saveMarkdown(path, content, expectedRevision, { fileSystem }),
+    () => confirmAction("Discard unsaved changes to this Markdown file?"),
+    (conflict) =>
+      confirmAction(
+        conflict === "gone"
+          ? "Recreate this Markdown file at its previous path? The draft shown in Facet will be written there."
+          : "Overwrite changes made outside Facet? The draft shown in Facet will replace them.",
+      ),
+    // Only this session's board follows. Another tab showing the same file
+    // keeps its title until that board is refreshed.
+    (cardPath, content) =>
+      boardStore.getState().syncCardTitle(cardPath, content),
+    (paths) => directoryStore.getState().invalidateFiles(paths),
+  );
   return {
     directoryStore,
     fileAddition: createFileAdditionStore(boardStore),
     boardView: createBoardViewStore(),
     boardStore,
     filterStore: createFilterStore(),
-    markdownViewer: createMarkdownViewerStore(
-      (path) => viewMarkdown(path, { fileSystem }),
-      (path, content, expectedRevision) =>
-        saveMarkdown(path, content, expectedRevision, { fileSystem }),
-      () => confirmAction("Discard unsaved changes to this Markdown file?"),
-      (conflict) =>
-        confirmAction(
-          conflict === "gone"
-            ? "Recreate this Markdown file at its previous path? The draft shown in Facet will be written there."
-            : "Overwrite changes made outside Facet? The draft shown in Facet will replace them.",
-        ),
-      // Only this session's board follows. Another tab showing the same file
-      // keeps its title until that board is refreshed.
-      (cardPath, content) =>
-        boardStore.getState().syncCardTitle(cardPath, content),
-      (paths) => directoryStore.getState().invalidateFiles(paths),
-    ),
+    markdownViewer,
   };
 }
 

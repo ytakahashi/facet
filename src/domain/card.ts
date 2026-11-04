@@ -27,6 +27,10 @@ export function isCardFileBroken(card: Card): boolean {
   return card.fileState !== "available";
 }
 
+export function isCardFileCopyable(card: Card): boolean {
+  return card.fileState === "available" && card.absolutePath !== undefined;
+}
+
 export function resolveCardTitle(
   titleOverride: string | undefined,
   markdownText: string | undefined,

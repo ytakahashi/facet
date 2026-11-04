@@ -25,6 +25,7 @@ import {
 import { toUiError } from "../errors/toUiError.ts";
 import { isInsideDialog } from "../shared/isInsideDialog.ts";
 import { isTextEditingTarget } from "../shared/isTextEditingTarget.ts";
+import { useCardDuplication } from "../shared/useCardDuplication.ts";
 import { useMenuActions } from "../shared/useMenuActions.ts";
 import {
   canRefreshMarkdown,
@@ -175,6 +176,7 @@ export function MarkdownViewer() {
   const clipboard = useClipboard();
   const contextMenu = useContextMenu();
   const { copyText, reveal } = useMenuActions();
+  const { duplicateCard, canDuplicateCard } = useCardDuplication();
   const showAlert = useShowAlert();
   // Reports the failure here and still rejects, so the code block keeps
   // showing "Copy" rather than claiming the text was copied.
@@ -313,6 +315,8 @@ export function MarkdownViewer() {
       buildViewerContextMenu(card, board, canRefresh, {
         copyText,
         reveal,
+        duplicateCard: () => duplicateCard(card.path),
+        canDuplicateCard: canDuplicateCard(card),
         moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
         refresh: () => void refreshMarkdown(),
       }),
