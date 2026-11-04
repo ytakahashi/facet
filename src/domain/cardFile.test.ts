@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
+  duplicateMarkdownFileName,
   initialMarkdown,
   normalizeMarkdownFileName,
   resolveExistingMarkdownPath,
@@ -157,5 +158,19 @@ describe("resolveNewMarkdownPath", () => {
     expect(act).toThrow(
       expect.objectContaining({ kind: "outside-board-directory" }),
     );
+  });
+});
+
+describe("duplicateMarkdownFileName", () => {
+  it.each([
+    ["notes/foo.md", 1, "foo_copy.md"],
+    ["foo.bar.md", 1, "foo.bar_copy.md"],
+    ["foo.MD", 1, "foo_copy.md"],
+    ["foo.Md", 2, "foo_copy_2.md"],
+    ["notes/foo.md", 10, "foo_copy_10.md"],
+    ["foo.markdown", 1, "foo.markdown_copy.md"],
+    ["foo_copy.md", 1, "foo_copy_copy.md"],
+  ])("names a copy of %s with sequence %s", (path, number, expected) => {
+    expect(duplicateMarkdownFileName(path, number)).toBe(expected);
   });
 });

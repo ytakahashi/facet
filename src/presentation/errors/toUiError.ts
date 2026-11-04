@@ -47,6 +47,15 @@ export function toUiError(error: unknown): UiError {
     // wording stays independent of which operation was interrupted.
     case "card.board-changed":
       return { message: "The board changed. Reopen the board and try again." };
+    case "card.save-in-progress":
+      return {
+        message:
+          "Wait for this Markdown file to finish saving, then try again.",
+      };
+    case "card.duplicate-registration-failed":
+      return {
+        message: `The copy was created${atPath(path)}, but its registration could not be completed because the board changed. Check the board and Files for the copy.`,
+      };
     case "card.create-failed":
       return { message: `Failed to create the Markdown file${atPath(path)}.` };
     case "card.file-already-exists":

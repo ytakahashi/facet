@@ -14,6 +14,8 @@ export type UseCaseErrorCode =
   | "card.already-on-board"
   | "card.board-changed"
   | "card.create-failed"
+  | "card.save-in-progress"
+  | "card.duplicate-registration-failed"
   | "card.file-already-exists"
   | "card.file-is-a-directory"
   | "card.file-name-required"

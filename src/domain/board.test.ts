@@ -14,6 +14,7 @@ import {
   findCardByPath,
   findCardLocation,
   findLabelDefinition,
+  insertCardAfter,
   LabelAlreadyExistsError,
   moveCard,
   moveColumn,
@@ -1142,5 +1143,52 @@ describe("createEmptyBoard", () => {
     const act = () => createEmptyBoard("   ");
 
     expect(act).toThrow("Board name must not be empty");
+  });
+});
+
+describe("insertCardAfter", () => {
+  const first = makeCard({ path: "first.md" });
+  const last = makeCard({ path: "last.md" });
+  const secondColumnCard = makeCard({ path: "second.md" });
+  const copy = makeCard({ path: "copy.md" });
+  function board() {
+    return makeBoard({
+      columns: [
+        makeColumn({ id: "first", cards: [first, last] }),
+        makeColumn({ id: "second", cards: [secondColumnCard] }),
+      ],
+    });
+  }
+
+  it.each([
+    ["first.md", 0, ["first.md", "copy.md", "last.md"]],
+    ["last.md", 0, ["first.md", "last.md", "copy.md"]],
+    ["second.md", 1, ["second.md", "copy.md"]],
+  ])(
+    "inserts after %s without modifying the input or other columns",
+    (source, columnIndex, expected) => {
+      const original = board();
+      const before = structuredClone(original);
+      const result = insertCardAfter(original, source, copy);
+      expect(
+        result.columns[columnIndex].cards.map((card) => card.path),
+      ).toEqual(expected);
+      expect(result.columns[1 - columnIndex]).toBe(
+        original.columns[1 - columnIndex],
+      );
+      expect(original).toEqual(before);
+    },
+  );
+
+  it("rejects an unknown source", () => {
+    expect(() => insertCardAfter(board(), "unknown.md", copy)).toThrow(
+      "Unknown card: unknown.md",
+    );
+  });
+
+  it("rejects an equivalent path already used in another column", () => {
+    expect(() =>
+      insertCardAfter(board(), first.path, { ...copy, path: "SECOND.md" }),
+    ).toThrow(CardAlreadyExistsError);
   });
 });

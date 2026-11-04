@@ -7,6 +7,7 @@ import {
   canRefreshMarkdown,
   createMarkdownViewerStore as createMarkdownViewerStoreImplementation,
   isCardSaving,
+  hasUnsavedChanges,
 } from "./markdownViewerStore.ts";
 
 function createMarkdownViewerStore(
@@ -1537,4 +1538,23 @@ describe("createMarkdownViewerStore", () => {
       });
     });
   });
+});
+
+describe("hasUnsavedChanges", () => {
+  it.each([
+    [undefined, "saved", "draft", "notes/a.md", false],
+    ["notes/b.md", "saved", "draft", "notes/a.md", false],
+    ["notes/a.md", "saved", "draft", "notes/a.md", true],
+    ["notes/a.md", "saved", "saved", "notes/a.md", false],
+    ["notes/a.md", "saved", undefined, "notes/a.md", false],
+    ["notes/a.md", "saved", "", "notes/a.md", true],
+    ["Notes/Café.md", "saved", "draft", "notes/Cafe\u0301.md", true],
+  ])(
+    "checks draft ownership and dirtiness (%s, %s, %s, %s)",
+    (selectedPath, content, draft, path, expected) => {
+      expect(hasUnsavedChanges({ selectedPath, content, draft }, path)).toBe(
+        expected,
+      );
+    },
+  );
 });

@@ -159,6 +159,32 @@ export function addCard(board: Board, columnId: string, card: Card): Board {
   return { ...board, columns };
 }
 
+export function insertCardAfter(
+  board: Board,
+  sourcePath: string,
+  card: Card,
+): Board {
+  const location = findCardLocation(board, sourcePath);
+  if (!location) throw new Error(`Unknown card: ${sourcePath}`);
+  if (containsCardPath(board, card.path))
+    throw new CardAlreadyExistsError(card.path);
+  return {
+    ...board,
+    columns: board.columns.map((column) =>
+      column.id !== location.columnId
+        ? column
+        : {
+            ...column,
+            cards: [
+              ...column.cards.slice(0, location.index + 1),
+              card,
+              ...column.cards.slice(location.index + 1),
+            ],
+          },
+    ),
+  };
+}
+
 // Swaps the card in place, keeping its column and position: pointing a card at
 // another file changes what it references, not where it sits on the board.
 // A path change is checked against the rest of the board because the path is a

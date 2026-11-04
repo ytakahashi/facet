@@ -266,4 +266,20 @@ describe("toUiError", () => {
     );
     consoleError.mockRestore();
   });
+
+  it("explains copy guards and a created file that could not be registered", () => {
+    expect(toUiError(new UseCaseError("card.save-in-progress"))).toEqual({
+      message: "Wait for this Markdown file to finish saving, then try again.",
+    });
+    expect(
+      toUiError(
+        new UseCaseError("card.duplicate-registration-failed", {
+          path: "notes/a_copy.md",
+        }),
+      ),
+    ).toEqual({
+      message:
+        "The copy was created at notes/a_copy.md, but its registration could not be completed because the board changed. Check the board and Files for the copy.",
+    });
+  });
 });

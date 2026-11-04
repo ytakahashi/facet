@@ -3,7 +3,10 @@ import type { Card } from "../../domain/card.ts";
 import { useBoardStore, useMarkdownViewer } from "../context/appContext.ts";
 import type { UiError } from "../errors/toUiError.ts";
 import { toUiError } from "../errors/toUiError.ts";
-import { isCardSaving, isMarkdownDirty } from "../store/markdownViewerStore.ts";
+import {
+  isCardSaving,
+  hasUnsavedChanges,
+} from "../store/markdownViewerStore.ts";
 
 interface DeleteCardDialogProps {
   card: Card;
@@ -23,8 +26,8 @@ export function DeleteCardDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const removeCard = useBoardStore((state) => state.removeCard);
   const discardCard = useMarkdownViewer((state) => state.discardCard);
-  const hasUnsavedChanges = useMarkdownViewer(
-    (state) => state.selectedPath === card.path && isMarkdownDirty(state),
+  const hasUnsavedDraft = useMarkdownViewer((state) =>
+    hasUnsavedChanges(state, card.path),
   );
   // A save started before this dialog opened can still be in flight (the modal
   // blocks the Save button, not a write already on its way). Deleting now
@@ -126,7 +129,7 @@ export function DeleteCardDialog({
             <span>will be deleted. This cannot be undone.</span>
           </p>
         )}
-        {hasUnsavedChanges && (
+        {hasUnsavedDraft && (
           <p className="delete-card-dialog__note">
             Unsaved changes to this card will be discarded.
           </p>
