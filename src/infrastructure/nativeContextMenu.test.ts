@@ -47,6 +47,10 @@ describe("buildContextMenu", () => {
     expect(nested).toHaveBeenCalledOnce();
   });
 
+  it("maps a copy entry to the host's predefined Copy item", () => {
+    expect(buildContextMenu([{ kind: "copy" }])).toEqual([{ item: "Copy" }]);
+  });
+
   it("gives a disabled item no action", () => {
     const menu = buildContextMenu([
       { kind: "item", label: "Unavailable", enabled: false, onSelect: vi.fn() },

@@ -8,7 +8,8 @@ import {
 export type ContextMenuEntry =
   | { kind: "item"; label: string; enabled: boolean; onSelect: () => void }
   | { kind: "submenu"; label: string; entries: readonly ContextMenuEntry[] }
-  | { kind: "separator" };
+  | { kind: "separator" }
+  | { kind: "copy" };
 
 export type ContextMenuItem =
   | MenuItemOptions
@@ -35,6 +36,11 @@ export function buildContextMenu(
     switch (entry.kind) {
       case "separator":
         return { item: "Separator" };
+      case "copy":
+        // The host's own Copy goes to the web view that holds the selection,
+        // so the pasteboard gets what Cmd+C would put there, formatting
+        // included. The selection's text alone would lose that.
+        return { item: "Copy" };
       case "submenu":
         // An empty submenu would open onto nothing, so it is shown as a
         // disabled item instead.

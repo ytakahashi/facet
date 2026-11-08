@@ -39,7 +39,8 @@ export interface FinderRevealing {
 export type ContextMenuEntry =
   | { kind: "item"; label: string; enabled: boolean; onSelect: () => void }
   | { kind: "submenu"; label: string; entries: readonly ContextMenuEntry[] }
-  | { kind: "separator" };
+  | { kind: "separator" }
+  | { kind: "copy" };
 
 // A native menu at the mouse pointer, so it is only for menus opened by a
 // pointer event. Nothing reports a menu dismissed without a choice, so show()
