@@ -21,6 +21,7 @@ describe("buildViewerContextMenu", () => {
   it("prepends Reload Markdown and invokes refresh", () => {
     const refresh = vi.fn();
     const entries = buildViewerContextMenu(card, board, true, {
+      canCopySelection: false,
       refresh,
       duplicateCard: vi.fn(),
       canDuplicateCard: true,
@@ -43,6 +44,7 @@ describe("buildViewerContextMenu", () => {
 
   it("disables Reload Markdown when refreshing is unavailable", () => {
     const entries = buildViewerContextMenu(card, board, false, {
+      canCopySelection: false,
       refresh: vi.fn(),
       duplicateCard: vi.fn(),
       canDuplicateCard: true,
@@ -52,5 +54,23 @@ describe("buildViewerContextMenu", () => {
     });
 
     expect(entries[0]).toMatchObject({ enabled: false });
+  });
+
+  it("leads with Copy when the selection can be copied", () => {
+    const entries = buildViewerContextMenu(card, board, true, {
+      canCopySelection: true,
+      refresh: vi.fn(),
+      duplicateCard: vi.fn(),
+      canDuplicateCard: true,
+      copyText: vi.fn(),
+      reveal: vi.fn(),
+      moveToColumn: vi.fn(),
+    });
+
+    expect(entries.slice(0, 3)).toMatchObject([
+      { kind: "copy" },
+      { kind: "separator" },
+      { kind: "item", label: "Reload Markdown" },
+    ]);
   });
 });

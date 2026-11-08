@@ -52,6 +52,7 @@ import {
 } from "./viewerWidth.ts";
 import { resolveViewerShortcut } from "../shared/shortcuts/viewerShortcut.ts";
 import { buildViewerContextMenu } from "./viewerContextMenu.ts";
+import { isPointInsideSelection } from "./isPointInsideSelection.ts";
 import { FindBar } from "./find/FindBar.tsx";
 import { useMarkdownFind } from "./find/useMarkdownFind.ts";
 
@@ -313,6 +314,11 @@ export function MarkdownViewer() {
     event.preventDefault();
     contextMenu.show(
       buildViewerContextMenu(card, board, canRefresh, {
+        canCopySelection: isPointInsideSelection(
+          window.getSelection(),
+          event.clientX,
+          event.clientY,
+        ),
         copyText,
         reveal,
         duplicateCard: () => duplicateCard(card.path),

@@ -7,6 +7,7 @@ import {
 } from "../shared/cardContextMenu.ts";
 
 export interface ViewerContextMenuActions extends CardContextMenuActions {
+  canCopySelection: boolean;
   refresh: () => void;
 }
 
@@ -17,6 +18,9 @@ export function buildViewerContextMenu(
   actions: ViewerContextMenuActions,
 ): ContextMenuEntry[] {
   return [
+    ...(actions.canCopySelection
+      ? ([{ kind: "copy" }, { kind: "separator" }] as const)
+      : []),
     {
       kind: "item",
       label: "Reload Markdown",
