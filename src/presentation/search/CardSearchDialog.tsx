@@ -14,6 +14,7 @@ import {
   clampSelectionIndex,
   nextSelectionIndex,
 } from "../shared/cardSearchSelection.ts";
+import { useDialogBackdropDismiss } from "../shared/useDialogBackdropDismiss.ts";
 import { resolveResultListShortcut } from "../shared/shortcuts/resultListShortcut.ts";
 import {
   buildCardSearchModel,
@@ -58,6 +59,7 @@ export function CardSearchDialog({
   onSelect,
 }: CardSearchDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const backdropDismiss = useDialogBackdropDismiss(onClose);
   const selectedRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -144,6 +146,7 @@ export function CardSearchDialog({
       // Held on the dialog rather than on the input so the keys keep working
       // if focus ever leaves the input, and Escape stays with onCancel.
       onKeyDown={handleKeyDown}
+      {...backdropDismiss}
       onCancel={(event) => {
         event.preventDefault();
         onClose();
