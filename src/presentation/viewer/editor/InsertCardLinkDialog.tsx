@@ -9,6 +9,7 @@ import {
   clampSelectionIndex,
   nextSelectionIndex,
 } from "../../shared/cardSearchSelection.ts";
+import { useDialogBackdropDismiss } from "../../shared/useDialogBackdropDismiss.ts";
 import { resolveResultListShortcut } from "../../shared/shortcuts/resultListShortcut.ts";
 
 interface InsertCardLinkDialogProps {
@@ -33,6 +34,7 @@ export function InsertCardLinkDialog({
   onSelect,
 }: InsertCardLinkDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const backdropDismiss = useDialogBackdropDismiss(onClose);
   const selectedRef = useRef<HTMLLIElement>(null);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -98,6 +100,7 @@ export function InsertCardLinkDialog({
       ref={dialogRef}
       className="card-search-dialog"
       onKeyDown={handleKeyDown}
+      {...backdropDismiss}
       onCancel={(event) => {
         event.preventDefault();
         onClose();

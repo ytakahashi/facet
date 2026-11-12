@@ -9,6 +9,7 @@ import {
 import { searchCardContents } from "../../domain/cardContentSearch.ts";
 import { useCardContentReading } from "../context/appContext.ts";
 import { nextSelectionIndex } from "../shared/cardSearchSelection.ts";
+import { useDialogBackdropDismiss } from "../shared/useDialogBackdropDismiss.ts";
 import { resolveResultListShortcut } from "../shared/shortcuts/resultListShortcut.ts";
 import { ContentSearchLine } from "./ContentSearchLine.tsx";
 import { useAsyncRead } from "../shared/useAsyncRead.ts";
@@ -39,6 +40,7 @@ export function CardContentSearchDialog({
 }: CardContentSearchDialogProps) {
   const { read } = useCardContentReading();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const backdropDismiss = useDialogBackdropDismiss(onClose);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedRef = useRef<HTMLLIElement>(null);
   const [query, setQuery] = useState("");
@@ -125,6 +127,7 @@ export function CardContentSearchDialog({
       ref={dialogRef}
       className="card-search-dialog card-content-search-dialog"
       onKeyDown={handleKeyDown}
+      {...backdropDismiss}
       onCancel={(event) => {
         event.preventDefault();
         onClose();
