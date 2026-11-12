@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Card } from "../../domain/card.ts";
 import type { LabelColor, LabelDefinition } from "../../domain/label.ts";
 import { LabelCreateForm } from "./LabelCreateForm.tsx";
+import { filterLabels } from "./filterLabels.ts";
 
 interface LabelPickerDialogProps {
   card: Card;
@@ -27,27 +28,48 @@ export function LabelPickerDialog({
   onManageLabels,
 }: LabelPickerDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const filterRef = useRef<HTMLInputElement>(null);
+  const titleId = useId();
+  const [query, setQuery] = useState("");
+  const visibleLabels = filterLabels(labels, query);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    else if (!open && dialog.open) dialog.close();
+    if (open && !dialog.open) {
+      // Reset only on reopening; Manage Labels stacks above this open picker
+      // and must preserve the query when it returns.
+      setQuery("");
+      dialog.showModal();
+      filterRef.current?.focus();
+    } else if (!open && dialog.open) dialog.close();
   }, [open]);
 
   return (
     <dialog
       ref={dialogRef}
       className="label-picker-dialog"
+      aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();
         onClose();
       }}
       onClose={onClose}
     >
-      <h2>Labels</h2>
+      <div className="label-picker-dialog__header">
+        <h2 id={titleId}>Labels</h2>
+        <input
+          ref={filterRef}
+          className="label-picker-dialog__filter"
+          type="text"
+          aria-label="Filter labels"
+          placeholder="Filter labels…"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
       <ul className="label-picker-dialog__list">
-        {labels.map((label) => (
+        {visibleLabels.map((label) => (
           <li key={label.name} className="label-picker-dialog__item">
             <label className="label-picker-dialog__checkbox">
               <input
@@ -66,6 +88,11 @@ export function LabelPickerDialog({
           </li>
         ))}
       </ul>
+      {visibleLabels.length === 0 && (
+        <p className="label-picker-dialog__empty" role="status">
+          {labels.length === 0 ? "No labels yet" : "No labels match"}
+        </p>
+      )}
       {open && <LabelCreateForm onCreateLabel={onCreateLabel} />}
       <div className="label-picker-dialog__actions">
         <button type="button" onClick={onManageLabels}>
