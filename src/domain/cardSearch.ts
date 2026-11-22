@@ -1,5 +1,5 @@
 import type { Board } from "./board.ts";
-import { isSameCardPath } from "./boardPath.ts";
+import { fileNameOf, isSameCardPath } from "./boardPath.ts";
 import type { Card } from "./card.ts";
 import { canonicalSearchQuery, canonicalSearchText } from "./searchText.ts";
 
@@ -19,35 +19,48 @@ export interface CardSearchHit {
 // Board order (columns, then cards within a column) is the result order. It
 // is the order already on screen, and the same query always produces the
 // same list.
-//
-// An empty query matches every card rather than none, so opening the search
-// gives something to scroll through before anything is typed.
-export function searchCardsByTitle(
-  board: Board,
-  query: string,
-): CardSearchHit[] {
+function listBoardCardHits(board: Board): CardSearchHit[] {
   const hits: CardSearchHit[] = [];
   for (const column of board.columns) {
     for (const card of column.cards) {
       hits.push({ card, columnId: column.id, columnName: column.name });
     }
   }
-  return filterCardHitsByTitle(hits, query);
+  return hits;
+}
+
+export function searchCardsByTitleOrFileName(
+  board: Board,
+  query: string,
+): CardSearchHit[] {
+  return filterCardHitsByTitleOrFileName(listBoardCardHits(board), query);
 }
 
 // Filtering preserves the caller's order, including MRU order for recent cards.
-export function filterCardHitsByTitle(
+export function filterCardHitsByTitleOrFileName(
   hits: readonly CardSearchHit[],
   query: string,
 ): CardSearchHit[] {
   const normalizedQuery = canonicalSearchQuery(query);
+  // An empty query gives the dialog its full list before anything is typed.
+  if (normalizedQuery === "") return [...hits];
   return hits.filter(
-    (hit) =>
-      normalizedQuery === "" ||
-      // Keeping whitespace at the title's edges does not affect containment:
-      // the query's own edge whitespace has already been removed above.
-      canonicalSearchText(hit.card.displayTitle).includes(normalizedQuery),
+    ({ card }) =>
+      matchesTitle(card, normalizedQuery) ||
+      canonicalSearchText(fileNameStem(card.path)).includes(normalizedQuery),
   );
+}
+
+function matchesTitle(card: Card, normalizedQuery: string): boolean {
+  // The query's edge whitespace is already removed, so title padding cannot
+  // affect the containment check.
+  return canonicalSearchText(card.displayTitle).includes(normalizedQuery);
+}
+
+function fileNameStem(path: string): string {
+  const fileName = fileNameOf(path);
+  const extensionStart = fileName.lastIndexOf(".");
+  return extensionStart > 0 ? fileName.slice(0, extensionStart) : fileName;
 }
 
 // Resolves recently opened paths against the board as it is now: a history

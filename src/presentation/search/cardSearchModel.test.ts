@@ -10,7 +10,7 @@ import {
 import {
   type CardSearchHit,
   listRecentCardHits,
-  searchCardsByTitle,
+  searchCardsByTitleOrFileName,
 } from "../../domain/cardSearch.ts";
 import { nextSelectionIndex } from "../shared/cardSearchSelection.ts";
 import { buildCardSearchModel } from "./cardSearchModel.ts";
@@ -53,7 +53,7 @@ function build(
   return buildCardSearchModel({
     mode: "search",
     query,
-    results: searchCardsByTitle(board, query),
+    results: searchCardsByTitleOrFileName(board, query),
     recent,
     currentPath,
   });
@@ -247,7 +247,7 @@ describe("buildCardSearchModel in recent mode", () => {
     return buildCardSearchModel({
       mode: "recent",
       query,
-      results: searchCardsByTitle(board, query),
+      results: searchCardsByTitleOrFileName(board, query),
       recent,
       currentPath,
     });
@@ -286,15 +286,21 @@ describe("buildCardSearchModel in recent mode", () => {
     expect(optionPaths(buildRecent(recentOf(c, b)))).toEqual(["C.md", "B.md"]);
   });
 
-  it("filters titles without changing MRU order or making current selectable", () => {
+  it("filters titles and filenames without changing MRU order or making current selectable", () => {
     const recent = recentOf(c, b, a).map((hit) => ({
       ...hit,
-      card: { ...hit.card, displayTitle: `${hit.card.displayTitle} notes` },
+      card:
+        hit.card === b
+          ? { ...hit.card, path: "b-notes.md" }
+          : { ...hit.card, displayTitle: `${hit.card.displayTitle} notes` },
     }));
-    const model = buildRecent(recent, "b.MD", " NOTES ");
+    const model = buildRecent(recent, "B-NOTES.MD", " NOTES ");
 
     expect(sectionPaths(model)).toEqual([
-      { kind: "recent", rows: ["option:C.md", "current:B.md", "option:A.md"] },
+      {
+        kind: "recent",
+        rows: ["option:C.md", "current:b-notes.md", "option:A.md"],
+      },
     ]);
     expect(optionPaths(model)).toEqual(["C.md", "A.md"]);
     expect(model.options.map((row) => row.optionIndex)).toEqual([0, 1]);

@@ -33,7 +33,7 @@ type Expectation =
 const expectations: Record<ShortcutId, readonly Expectation[]> = {
   "switch-tab": [{ resolve: resolveTabShortcut, result: 0 }],
   "show-help": [{ resolve: resolveHelpShortcut, result: true }],
-  "search-titles": [{ resolve: resolveBoardSearchShortcut, result: "title" }],
+  "search-cards": [{ resolve: resolveBoardSearchShortcut, result: "title" }],
   "search-contents": [
     {
       resolve: resolveBoardSearchShortcut,

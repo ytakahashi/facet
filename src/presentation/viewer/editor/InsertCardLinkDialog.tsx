@@ -4,7 +4,7 @@ import { isSameCardPath } from "../../../domain/boardPath.ts";
 import { isLinkableCardPath } from "../../../domain/cardLink.ts";
 import type { Card as CardModel } from "../../../domain/card.ts";
 import { isCardFileBroken } from "../../../domain/card.ts";
-import { searchCardsByTitle } from "../../../domain/cardSearch.ts";
+import { searchCardsByTitleOrFileName } from "../../../domain/cardSearch.ts";
 import {
   clampSelectionIndex,
   nextSelectionIndex,
@@ -40,7 +40,7 @@ export function InsertCardLinkDialog({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const results = useMemo(
     () =>
-      searchCardsByTitle(board, query).filter(
+      searchCardsByTitleOrFileName(board, query).filter(
         (hit) =>
           isLinkableCardPath(hit.card.path) &&
           !isSameCardPath(hit.card.path, fromPath),
@@ -118,7 +118,7 @@ export function InsertCardLinkDialog({
             results.length > 0 ? optionId(activeIndex) : undefined
           }
           aria-label="Insert a link to a card"
-          placeholder="Insert a link to a card"
+          placeholder="Search cards by title or filename"
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
