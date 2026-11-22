@@ -8,7 +8,7 @@ import {
 } from "../../domain/cardFilter.ts";
 import {
   type CardSearchHit,
-  searchCardsByTitle,
+  searchCardsByTitleOrFileName,
 } from "../../domain/cardSearch.ts";
 import {
   clampSelectionIndex,
@@ -44,10 +44,10 @@ const SECTION_LABELS: Record<CardSearchSectionKind, string> = {
   results: "Results",
 };
 
-// Finds a card by title and opens it, wherever it sits on the board and
-// whether or not a filter is currently hiding it. Unlike the filter sidebar,
-// this changes nothing about the board: it is a way to reach a card, not a
-// statement about which cards belong on screen.
+// Finds a card by title or filename and opens it, wherever it sits on the
+// board and whether or not a filter is currently hiding it. Unlike the filter
+// sidebar, this changes nothing about the board: it is a way to reach a card,
+// not a statement about which cards belong on screen.
 export function CardSearchDialog({
   mode,
   board,
@@ -64,7 +64,7 @@ export function CardSearchDialog({
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const results = useMemo(
-    () => (mode === "search" ? searchCardsByTitle(board, query) : []),
+    () => (mode === "search" ? searchCardsByTitleOrFileName(board, query) : []),
     [board, query, mode],
   );
   const model = useMemo(
@@ -101,7 +101,9 @@ export function CardSearchDialog({
   }, [activeIndex, model, open]);
 
   const inputLabel =
-    mode === "recent" ? "Filter recent cards" : "Search cards by title";
+    mode === "recent"
+      ? "Filter recent cards"
+      : "Search cards by title or filename";
   const emptyMessage =
     mode === "search"
       ? "No cards match"

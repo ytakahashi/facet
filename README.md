@@ -19,7 +19,7 @@ A local-first Markdown kanban desktop app for macOS.
 - Browse board cards, unregistered Markdown files, and directories in the Files
   view; right-click an unregistered file to add it to a column
 - Filter by label, or hide whole columns from view
-- Search card titles or Markdown contents
+- Search cards by title or filename, or search their Markdown contents
 - Create and open boards from the menu bar, including recently opened ones
 
 ## In the editor

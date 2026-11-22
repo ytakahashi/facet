@@ -1,7 +1,7 @@
 import { isSameCardPath } from "../../domain/boardPath.ts";
 import {
   type CardSearchHit,
-  filterCardHitsByTitle,
+  filterCardHitsByTitleOrFileName,
 } from "../../domain/cardSearch.ts";
 import { canonicalSearchQuery } from "../../domain/searchText.ts";
 
@@ -50,7 +50,7 @@ export interface CardSearchModel {
 export interface CardSearchModelInput {
   mode: CardSearchMode;
   query: string;
-  // Board-order title search results for the query. Ignored in recent mode,
+  // Board-order search results for the query. Ignored in recent mode,
   // which never looks beyond the history.
   results: readonly CardSearchHit[];
   // Recently opened cards, most recent first, already resolved on the board.
@@ -104,7 +104,7 @@ export function buildCardSearchModel({
   const isCurrent = (hit: CardSearchHit) =>
     currentPath !== undefined && isSameCardPath(hit.card.path, currentPath);
   if (mode === "recent") {
-    const hits = filterCardHitsByTitle(recent, query);
+    const hits = filterCardHitsByTitleOrFileName(recent, query);
     return {
       sections:
         hits.length === 0

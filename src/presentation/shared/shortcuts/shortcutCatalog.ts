@@ -1,7 +1,7 @@
 export type ShortcutId =
   | "switch-tab"
   | "show-help"
-  | "search-titles"
+  | "search-cards"
   | "search-contents"
   | "toggle-filters"
   | "close-viewer"
@@ -66,8 +66,8 @@ export const shortcutGroups: readonly ShortcutGroup[] = [
         combos: [{ key: "[", command: true }],
       },
       {
-        id: "search-titles",
-        description: "Search card titles",
+        id: "search-cards",
+        description: "Search card titles and filenames",
         combos: [{ key: "p", command: true }],
       },
       {
