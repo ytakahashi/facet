@@ -151,20 +151,42 @@ export function BoardScreen({ board }: { board: Board }) {
     setIsDeleteCardOpen(true);
   }
 
+  function cardMenuEntries(
+    card: Card,
+    moveToColumn: (columnId: string) => void,
+  ) {
+    return buildCardContextMenu(card, board, {
+      copyText,
+      reveal,
+      duplicateCard: () => duplicateCard(card.path),
+      canDuplicateCard: canDuplicateCard(card),
+      moveToColumn,
+    });
+  }
+
   function handleCardContextMenu(card: Card, event: MouseEvent<HTMLElement>) {
     if (isTextEditingTarget(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
-
     contextMenu.show(
-      buildCardContextMenu(card, board, {
-        copyText,
-        reveal,
-        duplicateCard: () => duplicateCard(card.path),
-        canDuplicateCard: canDuplicateCard(card),
-        moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
-      }),
+      cardMenuEntries(card, (columnId) =>
+        moveCardToColumn(card.path, columnId),
+      ),
     );
+  }
+
+  function handleOpenCardMenu(
+    card: Card,
+    trigger: HTMLButtonElement,
+    moveToColumn: (columnId: string) => void,
+  ) {
+    // WebKit does not necessarily focus a button on a pointer click.
+    trigger.focus({ preventScroll: true });
+    const { left, bottom } = trigger.getBoundingClientRect();
+    contextMenu.show(cardMenuEntries(card, moveToColumn), {
+      x: left,
+      y: bottom,
+    });
   }
 
   function handleBoardContextMenu(event: MouseEvent<HTMLDivElement>) {
@@ -262,6 +284,7 @@ export function BoardScreen({ board }: { board: Board }) {
           onDeleteCard={openDeleteCard}
           onRepairCard={openMissingCard}
           onCardContextMenu={handleCardContextMenu}
+          onOpenCardMenu={handleOpenCardMenu}
         />
       )}
       {mode === "table" && (

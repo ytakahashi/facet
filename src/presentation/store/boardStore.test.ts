@@ -276,7 +276,10 @@ describe("createBoardStore", () => {
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
-    useBoardStore.getState().moveCardToColumn("a.md", "done");
+    expect(useBoardStore.getState().moveCardToColumn("a.md", "done")).toEqual({
+      columnId: "doing",
+      index: 1,
+    });
     await vi.waitFor(() =>
       expect(useBoardStore.getState().isSaving).toBe(false),
     );
@@ -301,9 +304,10 @@ describe("createBoardStore", () => {
     );
     await useBoardStore.getState().openBoard("/board/development.board.yaml");
 
-    useBoardStore.getState().moveCardToColumn("gone.md", "done");
-    useBoardStore.getState().moveCardToColumn("a.md", "removed");
-    useBoardStore.getState().moveCardToColumn("a.md", "doing");
+    const { moveCardToColumn } = useBoardStore.getState();
+    expect(moveCardToColumn("gone.md", "done")).toBeUndefined();
+    expect(moveCardToColumn("a.md", "removed")).toBeUndefined();
+    expect(moveCardToColumn("a.md", "doing")).toBeUndefined();
 
     expect(useBoardStore.getState().board).toBe(board);
     expect(saveBoard).not.toHaveBeenCalled();
