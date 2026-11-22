@@ -4,12 +4,13 @@ import {
   type PredefinedMenuItemOptions,
   type SubmenuOptions,
 } from "@tauri-apps/api/menu";
-
-export type ContextMenuEntry =
-  | { kind: "item"; label: string; enabled: boolean; onSelect: () => void }
-  | { kind: "submenu"; label: string; entries: readonly ContextMenuEntry[] }
-  | { kind: "separator" }
-  | { kind: "copy" };
+import { LogicalPosition } from "@tauri-apps/api/dpi";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import type {
+  ContextMenu,
+  ContextMenuEntry,
+  ContextMenuPosition,
+} from "../domain/contextMenuPort.ts";
 
 export type ContextMenuItem =
   | MenuItemOptions
@@ -55,30 +56,49 @@ export function buildContextMenu(
   });
 }
 
-export class NativeContextMenu {
+// On macOS, Tauri places a popup relative to the window's content view, which
+// spans the title bar, while viewport coordinates start below it. The content
+// view's height (innerSize) minus the webview's height is that bar: about 32px
+// in a window, and 0 in full screen. outerSize equals innerSize here, so the
+// difference between those two does not measure it.
+async function titleBarHeight(): Promise<number> {
+  const appWindow = getCurrentWindow();
+  const [inner, scale] = await Promise.all([
+    appWindow.innerSize(),
+    appWindow.scaleFactor(),
+  ]);
+  return Math.max(0, inner.height / scale - globalThis.innerHeight);
+}
+
+export class NativeContextMenu implements ContextMenu {
   private current?: Menu;
 
   // Fire-and-forget: a chosen entry's action is the only outcome, and a
   // dismissed menu reports nothing to wait for.
   //
-  // The menu opens at the mouse pointer. Every context menu here is opened by
-  // a right click, so that is where the pointer is. Passing the event's
-  // clientX/clientY instead puts the menu one title-bar height too high: the
-  // host measures from the top of the window's content view, which includes
-  // the title bar, while client coordinates start below it.
-  show(entries: readonly ContextMenuEntry[]): void {
-    void this.open(entries).catch((error) => {
+  // An explicit position is shifted down by the title bar (see titleBarHeight).
+  // Without one the menu opens at the pointer, which needs no correction.
+  show(entries: readonly ContextMenuEntry[], at?: ContextMenuPosition): void {
+    void this.open(entries, at).catch((error) => {
       console.warn("Failed to show the context menu:", error);
     });
   }
 
-  private async open(entries: readonly ContextMenuEntry[]): Promise<void> {
+  private async open(
+    entries: readonly ContextMenuEntry[],
+    at?: ContextMenuPosition,
+  ): Promise<void> {
     const menu = await Menu.new({ items: buildContextMenu(entries) });
     const previous = this.current;
     this.current = menu;
     // The menu shown before is no longer on screen; release its host
     // resources. A click it had not yet delivered is dropped with it.
     await previous?.close();
-    await menu.popup();
+    if (at) {
+      const offset = await titleBarHeight();
+      await menu.popup(new LogicalPosition(at.x, at.y + offset));
+    } else {
+      await menu.popup();
+    }
   }
 }

@@ -1,18 +1,27 @@
 import type { Menu } from "@tauri-apps/api/menu";
+import { LogicalPosition } from "@tauri-apps/api/dpi";
+import type { ContextMenuEntry } from "../domain/contextMenuPort.ts";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import {
   buildContextMenu,
-  type ContextMenuEntry,
   type ContextMenuItem,
   NativeContextMenu,
 } from "./nativeContextMenu.ts";
 
 const newMenu = vi.hoisted(() => vi.fn<typeof Menu.new>());
 vi.mock("@tauri-apps/api/menu", () => ({ Menu: { new: newMenu } }));
+const appWindow = vi.hoisted(() => ({
+  innerSize: vi.fn(),
+  scaleFactor: vi.fn(),
+}));
+vi.mock("@tauri-apps/api/window", () => ({
+  getCurrentWindow: () => appWindow,
+}));
 
 afterEach(() => {
   vi.resetAllMocks();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 function item(label: string, onSelect = vi.fn()): ContextMenuEntry {
@@ -107,6 +116,47 @@ describe("NativeContextMenu", () => {
 
     await vi.waitFor(() => expect(menus[0]?.popup).toHaveBeenCalled());
     expect(menus[0].popup).toHaveBeenCalledWith();
+  });
+
+  // Physical content-view height and scale from Tauri, viewport height from
+  // the webview.
+  function stubWindow(
+    contentHeight: number,
+    scale: number,
+    viewportHeight: number,
+  ) {
+    appWindow.innerSize.mockResolvedValue({
+      width: 2400,
+      height: contentHeight,
+    });
+    appWindow.scaleFactor.mockResolvedValue(scale);
+    vi.stubGlobal("innerHeight", viewportHeight);
+  }
+
+  it("moves an explicit position below the title bar, in logical pixels", async () => {
+    const menus = stubMenus();
+    stubWindow(1600, 2, 768);
+
+    new NativeContextMenu().show([item("Only")], { x: 120.5, y: 84 });
+
+    await vi.waitFor(() =>
+      expect(menus[0]?.popup).toHaveBeenCalledWith(
+        new LogicalPosition(120.5, 116),
+      ),
+    );
+  });
+
+  it("passes an explicit position unchanged when the window has no title bar", async () => {
+    const menus = stubMenus();
+    stubWindow(1898, 2, 949);
+
+    new NativeContextMenu().show([item("Only")], { x: 120.5, y: 84 });
+
+    await vi.waitFor(() =>
+      expect(menus[0]?.popup).toHaveBeenCalledWith(
+        new LogicalPosition(120.5, 84),
+      ),
+    );
   });
 
   it("releases the previous menu when another is shown", async () => {

@@ -74,7 +74,10 @@ export interface BoardState {
   openBoard: (path: string) => Promise<void>;
   createBoard: (input: CreateBoardInput) => Promise<string>;
   moveCard: (from: CardLocation, to: CardLocation) => void;
-  moveCardToColumn: (cardPath: string, columnId: string) => void;
+  moveCardToColumn: (
+    cardPath: string,
+    columnId: string,
+  ) => CardLocation | undefined;
   moveColumn: (columnId: string, toIndex: number) => void;
   addColumn: (name: string) => void;
   renameBoard: (name: string) => void;
@@ -490,14 +493,15 @@ export function createBoardStore({
         queueSave(path, nextBoard);
       },
       moveCardToColumn: (cardPath: string, columnId: string) => {
-        const { board } = get();
-        if (!board) return;
+        const { board, path } = get();
+        if (!board || !path) return;
         // Native menu selection is asynchronous: the card may have moved or
         // disappeared since the menu opened, so use its path to locate it now.
         const from = findCardLocation(board, cardPath);
         if (!from || from.columnId === columnId) return;
         if (!board.columns.some((column) => column.id === columnId)) return;
         get().moveCard(from, { columnId, index: Infinity });
+        return from;
       },
       moveColumn: (columnId: string, toIndex: number) => {
         const { board, path } = get();

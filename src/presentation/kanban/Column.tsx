@@ -34,6 +34,7 @@ interface ColumnProps {
   onDeleteCard: (card: CardModel) => void;
   onRepairCard: (card: CardModel) => void;
   onCardContextMenu: (card: CardModel, event: MouseEvent<HTMLElement>) => void;
+  onOpenCardMenu: (card: CardModel, trigger: HTMLButtonElement) => void;
   onRename: (columnId: string, name: string) => void;
   onRemove: (columnId: string) => void;
 }
@@ -47,6 +48,7 @@ export function Column({
   onDeleteCard,
   onRepairCard,
   onCardContextMenu,
+  onOpenCardMenu,
   onRename,
   onRemove,
 }: ColumnProps) {
@@ -156,6 +158,7 @@ export function Column({
     <div
       ref={columnRef}
       className={className}
+      data-column-id={column.id}
       onContextMenu={handleContextMenu}
     >
       <ColumnHeader
@@ -177,6 +180,7 @@ export function Column({
             onDelete={onDeleteCard}
             onRepair={onRepairCard}
             onCardContextMenu={onCardContextMenu}
+            onOpenCardMenu={onOpenCardMenu}
           />
         ))}
         {/* A card dropped into a hidden column vanishes on the spot, so the

@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import type { StoreApi, UseBoundStore } from "zustand";
 import type { Card } from "../../domain/card.ts";
+import type { ContextMenu } from "../../domain/contextMenuPort.ts";
 import type { DirEntry } from "../../domain/fileSystemPort.ts";
 import type { CardContentReadResult } from "../../usecase/readCardContents.ts";
 import type { BoardState } from "../store/boardStore.ts";
@@ -36,18 +37,7 @@ export interface FinderRevealing {
   reveal(path: string): Promise<void>;
 }
 
-export type ContextMenuEntry =
-  | { kind: "item"; label: string; enabled: boolean; onSelect: () => void }
-  | { kind: "submenu"; label: string; entries: readonly ContextMenuEntry[] }
-  | { kind: "separator" }
-  | { kind: "copy" };
-
-// A native menu at the mouse pointer, so it is only for menus opened by a
-// pointer event. Nothing reports a menu dismissed without a choice, so show()
-// returns nothing to wait for: a chosen entry's onSelect is the only outcome.
-export interface ContextMenu {
-  show(entries: readonly ContextMenuEntry[]): void;
-}
+export type { ContextMenuEntry } from "../../domain/contextMenuPort.ts";
 
 // App-wide services share one context: adding one requires a field and a hook,
 // not another provider. Board-specific stores have their own context so a

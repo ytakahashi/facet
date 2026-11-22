@@ -26,6 +26,7 @@ interface CardProps {
   onDelete: (card: CardModel) => void;
   onRepair: (card: CardModel) => void;
   onCardContextMenu: (card: CardModel, event: MouseEvent<HTMLElement>) => void;
+  onOpenCardMenu: (card: CardModel, trigger: HTMLButtonElement) => void;
 }
 
 export function Card({
@@ -36,6 +37,7 @@ export function Card({
   onDelete,
   onRepair,
   onCardContextMenu,
+  onOpenCardMenu,
 }: CardProps) {
   const isSelected = useMarkdownViewer(
     (state) => state.selectedPath === card.path,
@@ -91,30 +93,19 @@ export function Card({
     <div
       ref={ref}
       className={classNames.join(" ")}
+      tabIndex={-1}
       // A broken card has nothing to show in the viewer, so its click goes to
       // the repair dialog instead of a load error the user cannot act on.
-      onClick={() => (isBroken ? onRepair(card) : void selectCard(card))}
+      onClick={(event) => {
+        // Start sequential focus inside this card after a pointer selection.
+        event.currentTarget.focus({ preventScroll: true });
+        if (isBroken) onRepair(card);
+        else void selectCard(card);
+      }}
       onContextMenu={(event) => onCardContextMenu(card, event)}
     >
-      {/* Revealed on hover/focus-within (see App.css) rather than shown on
-          every card, which would put a row of × down each column. It stays in
-          the DOM either way, so it is still reachable by keyboard. Starting a
-          drag from it just drags the card, which is harmless. */}
-      <button
-        type="button"
-        className="card__delete"
-        aria-label={`Delete ${card.displayTitle}`}
-        title="Delete card"
-        onClick={(event) => {
-          // The card itself opens the Markdown on click.
-          event.stopPropagation();
-          onDelete(card);
-        }}
-      >
-        ×
-      </button>
-      {/* Not a button: the badge only states what the board observed when it
-          loaded this card, so it carries no action of its own. */}
+      {/* WebKit can start Tab navigation at the clicked descendant even when
+          the card itself has focus. Keep all card content before its actions. */}
       {isBroken && (
         <span className="card__missing" title={missingHint(card.fileState)}>
           Missing
@@ -135,6 +126,36 @@ export function Card({
           ))}
         </div>
       )}
+      <button
+        type="button"
+        className="card__menu"
+        data-card-menu-path={card.path}
+        aria-label={`Actions for ${card.displayTitle}`}
+        aria-haspopup="menu"
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenCardMenu(card, event.currentTarget);
+        }}
+      >
+        …
+      </button>
+      {/* Revealed on hover/focus-within (see App.css) rather than shown on
+          every card, which would put a row of × down each column. It stays in
+          the DOM either way, so it is still reachable by keyboard. Starting a
+          drag from it just drags the card, which is harmless. */}
+      <button
+        type="button"
+        className="card__delete"
+        aria-label={`Delete ${card.displayTitle}`}
+        title="Delete card"
+        onClick={(event) => {
+          // The card itself opens the Markdown on click.
+          event.stopPropagation();
+          onDelete(card);
+        }}
+      >
+        ×
+      </button>
     </div>
   );
 }
