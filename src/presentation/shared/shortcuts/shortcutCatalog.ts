@@ -6,6 +6,7 @@ export type ShortcutId =
   | "toggle-filters"
   | "close-viewer"
   | "previous-card"
+  | "move-card"
   | "toggle-mode"
   | "toggle-labels"
   | "save"
@@ -22,6 +23,7 @@ export type ShortcutId =
 
 export interface KeyCombo {
   key: string;
+  option?: boolean;
   shift?: boolean;
   command?: boolean;
   label?: string;
@@ -64,6 +66,14 @@ export const shortcutGroups: readonly ShortcutGroup[] = [
         id: "previous-card",
         description: "Switch to previous card",
         combos: [{ key: "[", command: true }],
+      },
+      {
+        id: "move-card",
+        description: "Move selected card up / down",
+        combos: [
+          { key: "ArrowUp", option: true, context: "in board view" },
+          { key: "ArrowDown", option: true, context: "in board view" },
+        ],
       },
       {
         id: "search-cards",
@@ -188,8 +198,10 @@ const keySymbols: Readonly<Record<string, string>> = {
   ArrowDown: "↓",
 };
 
+// Modifiers follow the order macOS menus show them in.
 export function formatKeyCombo(combo: KeyCombo): string[] {
   return [
+    ...(combo.option ? ["⌥"] : []),
     ...(combo.shift ? ["⇧"] : []),
     ...(combo.command ? ["⌘"] : []),
     combo.label ?? keySymbols[combo.key] ?? combo.key.toUpperCase(),

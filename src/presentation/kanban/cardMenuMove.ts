@@ -7,6 +7,7 @@ import {
   type CardFilterCriteria,
   filterColumnCards,
 } from "../../domain/cardFilter.ts";
+import { describeCardPosition } from "./cardMoveAnnouncement.ts";
 
 export interface CardMenuMove {
   cardPath: string;
@@ -23,9 +24,11 @@ export function describeCardMenuMove(
 ): CardMenuMove | undefined {
   const to = findCardLocation(board, cardPath);
   if (!to) return undefined;
-  const destination = board.columns.find((column) => column.id === to.columnId);
-  if (!destination) return undefined;
-  const card = destination.cards[to.index];
+  const card = board.columns.find((column) => column.id === to.columnId)?.cards[
+    to.index
+  ];
+  const message = describeCardPosition(board, to);
+  if (!card || !message) return undefined;
   const source = board.columns.find((column) => column.id === from.columnId);
   const visible = source ? filterColumnCards(source, criteria) : [];
   // After removal the following card occupies the old slot. If no visible
@@ -37,6 +40,6 @@ export function describeCardMenuMove(
     cardPath: card.path,
     sourceColumnId: from.columnId,
     fallbackCardPath: fallback?.card.path,
-    message: `Moved ${card.displayTitle} to ${destination.name}, position ${to.index + 1} of ${destination.cards.length}.`,
+    message,
   };
 }

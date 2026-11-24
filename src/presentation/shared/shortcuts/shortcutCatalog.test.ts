@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vite-plus/test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 import { resolveBoardSearchShortcut } from "./boardSearchShortcut.ts";
+import { resolveCardMoveShortcut } from "./cardMoveShortcut.ts";
 import { resolveEditorShortcut } from "./editorShortcut.ts";
 import { resolveFilterSidebarShortcut } from "./filterSidebarShortcut.ts";
 import { resolveFindShortcut } from "./findShortcut.ts";
@@ -16,9 +24,10 @@ function eventFor(combo: KeyCombo) {
     shiftKey: combo.shift ?? false,
     metaKey: combo.command ?? false,
     ctrlKey: false,
-    altKey: false,
+    altKey: combo.option ?? false,
     keyCode: 0,
     isComposing: false,
+    target: null,
   };
 }
 
@@ -43,6 +52,10 @@ const expectations: Record<ShortcutId, readonly Expectation[]> = {
   "toggle-filters": [{ resolve: resolveFilterSidebarShortcut, result: true }],
   "close-viewer": [{ resolve: resolveViewerShortcut, result: "close" }],
   "previous-card": [{ resolve: resolvePreviousCardShortcut, result: true }],
+  "move-card": [
+    { resolve: resolveCardMoveShortcut, result: "up" },
+    { resolve: resolveCardMoveShortcut, result: "down" },
+  ],
   "toggle-mode": [{ resolve: resolveViewerShortcut, result: "toggle-mode" }],
   "toggle-labels": [
     { resolve: resolveViewerShortcut, result: "toggle-labels" },
@@ -69,6 +82,15 @@ const expectations: Record<ShortcutId, readonly Expectation[]> = {
 const entries = shortcutGroups.flatMap((group) => group.entries);
 
 describe("shortcutGroups", () => {
+  // Tests run without a DOM, and resolvers that check the event target test
+  // it against Element. A null target is never an instance of it.
+  beforeEach(() => {
+    vi.stubGlobal("Element", class {});
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("has unique IDs matching the complete expectation table", () => {
     const ids = entries.map((entry) => entry.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -87,6 +109,16 @@ describe("shortcutGroups", () => {
 });
 
 describe("formatKeyCombo", () => {
+  it("orders Option before Shift and Command", () => {
+    expect(
+      formatKeyCombo({
+        key: "ArrowUp",
+        option: true,
+        shift: true,
+        command: true,
+      }),
+    ).toEqual(["⌥", "⇧", "⌘", "↑"]);
+  });
   it("orders Shift before Command and uppercases letters", () => {
     expect(formatKeyCombo({ key: "f", shift: true, command: true })).toEqual([
       "⇧",
