@@ -2,13 +2,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import type { Board } from "../../domain/board.ts";
+import { type Board, findCardLocation } from "../../domain/board.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
 import {
   useBoardSession,
   useBoardStore,
   useFilterStore,
 } from "../context/appContext.ts";
+import { resolveCardMoveShortcut } from "../shared/shortcuts/cardMoveShortcut.ts";
 import { buildLabelDisplay } from "../labels/labelDisplay.ts";
 import { resolveColumnMove } from "./resolveColumnMove.ts";
 import { resolveMove } from "./resolveMove.ts";
@@ -16,8 +17,20 @@ import { Column } from "./Column.tsx";
 import { AddCardDialog } from "./AddCardDialog.tsx";
 import { AddColumn } from "./AddColumn.tsx";
 import { describeCardMenuMove, type CardMenuMove } from "./cardMenuMove.ts";
+import { resolveCardStep } from "./cardKeyboardMove.ts";
+import { describeCardPosition } from "./cardMoveAnnouncement.ts";
 
 const MOVE_ANNOUNCEMENT_DELAY_MS = 500;
+
+interface KeyboardMove {
+  cardPath: string;
+  focused: Element | null;
+}
+
+// Compared by identity, so repeating the same text still announces it again.
+interface MoveAnnouncement {
+  message: string;
+}
 
 interface KanbanBoardProps {
   board: Board;
@@ -39,7 +52,7 @@ export function KanbanBoard({
   onOpenCardMenu,
 }: KanbanBoardProps) {
   const columnsRef = useRef<HTMLDivElement>(null);
-  const { boardStore, filterStore } = useBoardSession();
+  const { boardStore, filterStore, markdownViewer } = useBoardSession();
   const moveCard = useBoardStore((state) => state.moveCard);
   const moveColumn = useBoardStore((state) => state.moveColumn);
   const renameColumn = useBoardStore((state) => state.renameColumn);
@@ -52,7 +65,10 @@ export function KanbanBoard({
   const [addToColumnId, setAddToColumnId] = useState<string>();
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [menuMove, setMenuMove] = useState<CardMenuMove>();
-  const [announcedMove, setAnnouncedMove] = useState<CardMenuMove>();
+  const [keyboardMove, setKeyboardMove] = useState<KeyboardMove>();
+  const [pendingAnnouncement, setPendingAnnouncement] =
+    useState<MoveAnnouncement>();
+  const [announcement, setAnnouncement] = useState<MoveAnnouncement>();
   const labelDisplay = useMemo(
     () => buildLabelDisplay(board.labels),
     [board.labels],
@@ -70,9 +86,73 @@ export function KanbanBoard({
         from,
         filterStore.getState().criteria,
       );
-      if (move) setMenuMove(move);
+      if (!move) return;
+      setMenuMove(move);
+      setPendingAnnouncement({ message: move.message });
     });
   }
+
+  // Option-Up/Down moves the card selected in the viewer within its column.
+  // Everything is read at key time rather than subscribed to, so moving does
+  // not re-register this listener.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const direction = resolveCardMoveShortcut(event);
+      if (!direction) return;
+      // Claimed once recognised, so the keys never fall through to scrolling
+      // when the move is declined below.
+      event.preventDefault();
+      // A held key would carry the card past where the user meant to stop.
+      if (event.repeat) return;
+      if (document.querySelector("dialog[open]")) return;
+      const { selectedPath } = markdownViewer.getState();
+      const { board: currentBoard } = boardStore.getState();
+      if (!selectedPath || !currentBoard) return;
+      const step = resolveCardStep(
+        currentBoard,
+        selectedPath,
+        direction,
+        filterStore.getState().criteria,
+      );
+      if (!step) return;
+      const focused = document.activeElement;
+      boardStore.getState().moveCard(step.from, step.to);
+      const nextBoard = boardStore.getState().board;
+      const to = nextBoard && findCardLocation(nextBoard, selectedPath);
+      if (!nextBoard || !to) return;
+      const card = nextBoard.columns.find((c) => c.id === to.columnId)?.cards[
+        to.index
+      ];
+      const message = describeCardPosition(nextBoard, to);
+      if (!card || !message) return;
+      setKeyboardMove({ cardPath: card.path, focused });
+      setPendingAnnouncement({ message });
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [boardStore, filterStore, markdownViewer]);
+
+  useLayoutEffect(() => {
+    const columns = columnsRef.current;
+    if (!columns || !keyboardMove) return;
+    const { cardPath, focused } = keyboardMove;
+    // React reorders a keyed list by reinserting nodes, and reinserting the
+    // node that holds focus drops it to the body. Put it back after commit.
+    if (
+      focused instanceof HTMLElement &&
+      focused.isConnected &&
+      document.activeElement !== focused
+    ) {
+      focused.focus({ preventScroll: true });
+    }
+    Array.from(
+      columns.querySelectorAll<HTMLButtonElement>("[data-card-menu-path]"),
+    )
+      .find((menu) => menu.dataset.cardMenuPath === cardPath)
+      ?.closest(".card")
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [keyboardMove]);
 
   useLayoutEffect(() => {
     const columns = columnsRef.current;
@@ -101,14 +181,16 @@ export function KanbanBoard({
   }, [menuMove]);
 
   useEffect(() => {
-    if (!menuMove) return;
-    // Give VoiceOver time to announce the restored focus before the new position.
+    if (!pendingAnnouncement) return;
+    // Give VoiceOver time to announce the restored focus before the new
+    // position. A move within the delay restarts it, so a run of moves
+    // announces only the last position.
     const timer = window.setTimeout(
-      () => setAnnouncedMove(menuMove),
+      () => setAnnouncement(pendingAnnouncement),
       MOVE_ANNOUNCEMENT_DELAY_MS,
     );
     return () => window.clearTimeout(timer);
-  }, [menuMove]);
+  }, [pendingAnnouncement]);
 
   // Dragging near an edge scrolls the column row, so a card can be carried to
   // a destination that is off-screen when the drag starts. That row is the
@@ -165,7 +247,7 @@ export function KanbanBoard({
         <AddColumn />
       </div>
       <div className="kanban-board__move-status" role="status">
-        {announcedMove === menuMove ? announcedMove?.message : ""}
+        {announcement === pendingAnnouncement ? announcement?.message : ""}
       </div>
       {boardPath && addToColumnId && (
         <AddCardDialog
