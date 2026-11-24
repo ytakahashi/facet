@@ -12,6 +12,7 @@ import { StartScreen } from "./shell/StartScreen.tsx";
 import { TabBar } from "./shell/TabBar.tsx";
 import { ShortcutHelpButton } from "./shell/ShortcutHelpButton.tsx";
 import { ShortcutHelpDialog } from "./shell/ShortcutHelpDialog.tsx";
+import { useModalEscape } from "./shared/modalEscape.ts";
 import "./App.css";
 
 function BoardView() {
@@ -46,6 +47,7 @@ function BoardView() {
 }
 
 function App() {
+  useModalEscape();
   const tabs = useWorkspace((state) => state.tabs);
   const activeTabId = useWorkspace((state) => state.activeTabId);
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
