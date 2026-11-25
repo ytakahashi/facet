@@ -121,18 +121,20 @@ export function CardDirectoryView({
               </span>
             )}
           </button>
-          <span className="card-directory__column">{column.name}</span>
-          <div className="card__labels">
-            {orderCardLabels(card.labels, labelDisplay.positions).map(
-              (label) => (
-                <span
-                  key={label}
-                  className={`card__label card__label--${labelDisplay.colors.get(label) ?? "neutral"}`}
-                >
-                  {label}
-                </span>
-              ),
-            )}
+          <div className="card-directory__meta">
+            <span className="card-directory__column">{column.name}</span>
+            <div className="card__labels">
+              {orderCardLabels(card.labels, labelDisplay.positions).map(
+                (label) => (
+                  <span
+                    key={label}
+                    className={`card__label card__label--${labelDisplay.colors.get(label) ?? "neutral"}`}
+                  >
+                    {label}
+                  </span>
+                ),
+              )}
+            </div>
           </div>
           <button
             type="button"

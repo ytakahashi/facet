@@ -2955,6 +2955,9 @@ body.is-pane-resizing * {
 }
 
 .card-directory {
+  /* The width query below hides the column and labels when the viewer pane
+     leaves the list too narrow to show them beside the name. */
+  container: card-directory / inline-size;
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -2973,13 +2976,55 @@ body.is-pane-resizing * {
   padding-left: 20px;
 }
 
+/* Rows stay on one line at any pane width: the name and title truncate (the
+   full path is in the row's title attribute), and fit-content caps the column
+   and labels at half the row so they cannot squeeze the name away. Below the
+   container query further down, the column and labels are hidden instead. */
 .card-directory__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) fit-content(50%) auto;
+  grid-template-areas: "name meta delete";
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* File rows have no delete button, so they drop its track and gap. */
+.card-directory__file {
+  grid-template-columns: minmax(0, 1fr) fit-content(50%);
+  grid-template-areas: "name meta";
+}
+
+.card-directory__open,
+.card-directory__file > .card-directory__name {
+  grid-area: name;
+}
+
+.card-directory__meta,
+.card-directory__unregistered {
+  grid-area: meta;
+}
+
+.card-directory__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+@container card-directory (width < 24rem) {
+  .card-directory__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name delete";
+  }
+
+  .card-directory__meta {
+    display: none;
+  }
 }
 
 .card-directory__row:hover,
@@ -3000,13 +3045,21 @@ body.is-pane-resizing * {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  overflow-wrap: anywhere;
 }
 
 .card-directory__open {
-  flex: 1;
   min-width: 0;
   padding: 0;
+  overflow: hidden;
+}
+
+.card-directory__name,
+.card-directory__subtitle,
+.card-directory__unregistered {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-directory__directory {
@@ -3014,13 +3067,17 @@ body.is-pane-resizing * {
   width: 100%;
   padding: 8px;
   border-radius: 4px;
+  overflow-wrap: anywhere;
 }
 
 .card-directory__filename {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
+}
+
+.card-directory__filename .card__missing {
+  flex-shrink: 0;
 }
 
 .card-directory__subtitle {
@@ -3035,7 +3092,9 @@ body.is-pane-resizing * {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   color: var(--color-text);
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-directory .card__missing,
@@ -3044,7 +3103,7 @@ body.is-pane-resizing * {
 }
 
 .card-directory__delete {
-  flex-shrink: 0;
+  grid-area: delete;
   width: 20px;
   height: 20px;
   padding: 0;
