@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { resolveInlineEditShortcut } from "../shared/shortcuts/inlineEditShortcut.ts";
 
 interface BoardNameProps {
   name: string;
@@ -38,10 +39,11 @@ export function BoardName({ name, onRename }: BoardNameProps) {
         onChange={(event) => setDraft(event.target.value)}
         onBlur={commit}
         onKeyDown={(event) => {
-          if (event.key === "Enter") commit();
+          const shortcut = resolveInlineEditShortcut(event.nativeEvent);
+          if (shortcut === "commit") commit();
           // Escape unmounts the input before its blur handler could run,
           // so the draft is discarded without committing.
-          if (event.key === "Escape") setIsEditing(false);
+          if (shortcut === "cancel") setIsEditing(false);
         }}
         onFocus={(event) => event.currentTarget.select()}
         autoFocus

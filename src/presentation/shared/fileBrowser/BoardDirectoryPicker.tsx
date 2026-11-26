@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useDirectoryBrowsing } from "../../context/appContext.ts";
 import type { UiError } from "../../errors/toUiError.ts";
 import { toUiError } from "../../errors/toUiError.ts";
+import { resolveInlineEditShortcut } from "../shortcuts/inlineEditShortcut.ts";
 import { useDirectoryListing } from "./useDirectoryListing.ts";
 import {
   joinPath,
@@ -81,7 +82,7 @@ export function BoardDirectoryPicker({
             value={newDirectoryName}
             onChange={(event) => setNewDirectoryName(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
+              if (resolveInlineEditShortcut(event.nativeEvent) === "commit") {
                 event.preventDefault();
                 void handleCreateDirectory();
               }

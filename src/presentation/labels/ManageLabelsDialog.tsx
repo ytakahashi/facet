@@ -15,6 +15,7 @@ import { type Board, countCardsByLabel } from "../../domain/board.ts";
 import type { LabelColor, LabelDefinition } from "../../domain/label.ts";
 import { toUiError } from "../errors/toUiError.ts";
 import type { LabelDragData } from "../shared/dragData.ts";
+import { resolveInlineEditShortcut } from "../shared/shortcuts/inlineEditShortcut.ts";
 import { LabelColorSwatchGrid } from "./LabelColorSwatchGrid.tsx";
 import { LabelCreateForm } from "./LabelCreateForm.tsx";
 import { resolveLabelMove } from "./resolveLabelMove.ts";
@@ -259,8 +260,9 @@ function ManageLabelRow({
               if (!skipBlurRename.current) commitRename();
             }}
             onKeyDown={(event) => {
-              if (event.key === "Enter") commitRename();
-              if (event.key === "Escape") {
+              const shortcut = resolveInlineEditShortcut(event.nativeEvent);
+              if (shortcut === "commit") commitRename();
+              if (shortcut === "cancel") {
                 // Cancels the rename only; the dialog stays open.
                 event.preventDefault();
                 event.stopPropagation();
