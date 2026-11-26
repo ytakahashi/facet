@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import { useState } from "react";
 import type { Column as ColumnModel } from "../../domain/board.ts";
+import { resolveInlineEditShortcut } from "../shared/shortcuts/inlineEditShortcut.ts";
 
 interface ColumnHeaderProps {
   column: ColumnModel;
@@ -104,10 +105,11 @@ function ColumnNameInput({
       onChange={(event) => setDraft(event.target.value)}
       onBlur={() => onCommit(draft)}
       onKeyDown={(event) => {
-        if (event.key === "Enter") onCommit(draft);
+        const shortcut = resolveInlineEditShortcut(event.nativeEvent);
+        if (shortcut === "commit") onCommit(draft);
         // Escape unmounts the input before its blur handler could run, so the
         // draft is discarded without committing.
-        if (event.key === "Escape") onCancel();
+        if (shortcut === "cancel") onCancel();
       }}
       onFocus={(event) => event.currentTarget.select()}
       autoFocus

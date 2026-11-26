@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Card } from "../../domain/card.ts";
+import { resolveInlineEditShortcut } from "../shared/shortcuts/inlineEditShortcut.ts";
 
 interface CardTitleProps {
   card: Card;
@@ -41,10 +42,11 @@ export function CardTitle({ card, onRename }: CardTitleProps) {
         onChange={(event) => setDraft(event.target.value)}
         onBlur={commit}
         onKeyDown={(event) => {
-          if (event.key === "Enter") commit();
+          const shortcut = resolveInlineEditShortcut(event.nativeEvent);
+          if (shortcut === "commit") commit();
           // Escape unmounts the input before its blur handler could run,
           // so the draft is discarded without committing.
-          if (event.key === "Escape") setIsEditing(false);
+          if (shortcut === "cancel") setIsEditing(false);
         }}
         onFocus={(event) => event.currentTarget.select()}
         autoFocus
