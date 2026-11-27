@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
-import type { Board, CardLocation } from "../../domain/board.ts";
+import type {
+  Board,
+  CardColumnEdge,
+  CardLocation,
+} from "../../domain/board.ts";
 import {
   addCard as addCardDomain,
   addColumn as addColumnDomain,
@@ -77,6 +81,11 @@ export interface BoardState {
   moveCardToColumn: (
     cardPath: string,
     columnId: string,
+  ) => CardLocation | undefined;
+  moveCardToColumnEdge: (
+    cardPath: string,
+    expectedColumnId: string,
+    edge: CardColumnEdge,
   ) => CardLocation | undefined;
   moveColumn: (columnId: string, toIndex: number) => void;
   addColumn: (name: string) => void;
@@ -492,7 +501,7 @@ export function createBoardStore({
         set({ board: nextBoard });
         queueSave(path, nextBoard);
       },
-      moveCardToColumn: (cardPath: string, columnId: string) => {
+      moveCardToColumn: (cardPath, columnId) => {
         const { board, path } = get();
         if (!board || !path) return;
         // Native menu selection is asynchronous: the card may have moved or
@@ -501,6 +510,22 @@ export function createBoardStore({
         if (!from || from.columnId === columnId) return;
         if (!board.columns.some((column) => column.id === columnId)) return;
         get().moveCard(from, { columnId, index: Infinity });
+        return from;
+      },
+      moveCardToColumnEdge: (cardPath, expectedColumnId, edge) => {
+        const { board, path } = get();
+        if (!board || !path) return;
+        const from = findCardLocation(board, cardPath);
+        // "This column" refers to the column where the menu was opened.
+        if (!from || from.columnId !== expectedColumnId) return;
+        const column = board.columns.find(({ id }) => id === from.columnId);
+        if (!column) return;
+        const edgeIndex = edge === "top" ? 0 : column.cards.length - 1;
+        if (from.index === edgeIndex) return;
+        get().moveCard(from, {
+          columnId: from.columnId,
+          index: edge === "top" ? 0 : Infinity,
+        });
         return from;
       },
       moveColumn: (columnId: string, toIndex: number) => {

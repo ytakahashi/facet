@@ -293,7 +293,54 @@ describe("createBoardStore", () => {
     expect(saveBoard).toHaveBeenCalledTimes(1);
   });
 
-  it("ignores a stale card, missing destination, or current column", async () => {
+  it.each([
+    { edge: "top", order: ["a.md", "before.md", "after.md"] },
+    { edge: "bottom", order: ["before.md", "after.md", "a.md"] },
+  ] as const)(
+    "moves a card to the $edge of its current column and saves once",
+    async ({ edge, order }) => {
+      const board = makeBoard();
+      const column = board.columns[0];
+      const card = column.cards[0];
+      const boardWithNeighbors = {
+        ...board,
+        columns: [
+          {
+            ...column,
+            cards: [
+              { ...card, path: "before.md" },
+              card,
+              { ...card, path: "after.md" },
+            ],
+          },
+          board.columns[1],
+        ],
+      };
+      const saveBoard = vi.fn().mockResolvedValue("revision-2");
+      const store = createBoardStore(
+        makeDeps({
+          openBoard: async () => loaded(boardWithNeighbors),
+          saveBoard,
+        }),
+      );
+      await store.getState().openBoard("/board/development.board.yaml");
+
+      const { moveCardToColumnEdge } = store.getState();
+      expect(moveCardToColumnEdge("a.md", "done", edge)).toBeUndefined();
+      expect(moveCardToColumnEdge("a.md", "doing", edge)).toEqual({
+        columnId: "doing",
+        index: 1,
+      });
+      expect(moveCardToColumnEdge("a.md", "doing", edge)).toBeUndefined();
+      await vi.waitFor(() => expect(store.getState().isSaving).toBe(false));
+      expect(
+        store.getState().board?.columns[0].cards.map(({ path }) => path),
+      ).toEqual(order);
+      expect(saveBoard).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("ignores stale moves and moves that leave the card in place", async () => {
     const board = makeBoard();
     const saveBoard = vi.fn().mockResolvedValue("revision-2");
     const useBoardStore = createBoardStore(
