@@ -152,6 +152,9 @@ export function MarkdownViewer() {
   const boardPath = useBoardStore((state) => state.path);
   const renameCard = useBoardStore((state) => state.renameCard);
   const moveCardToColumn = useBoardStore((state) => state.moveCardToColumn);
+  const moveCardToColumnEdge = useBoardStore(
+    (state) => state.moveCardToColumnEdge,
+  );
   const addCardLabel = useBoardStore((state) => state.addCardLabel);
   const removeCardLabel = useBoardStore((state) => state.removeCardLabel);
   const createLabel = useBoardStore((state) => state.createLabel);
@@ -324,6 +327,8 @@ export function MarkdownViewer() {
         duplicateCard: () => duplicateCard(card.path),
         canDuplicateCard: canDuplicateCard(card),
         moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
+        moveToColumnEdge: (expectedColumnId, edge) =>
+          moveCardToColumnEdge(card.path, expectedColumnId, edge),
         refresh: () => void refreshMarkdown(),
       }),
     );

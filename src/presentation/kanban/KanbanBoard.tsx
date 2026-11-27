@@ -2,7 +2,11 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { type Board, findCardLocation } from "../../domain/board.ts";
+import {
+  type Board,
+  type CardLocation,
+  findCardLocation,
+} from "../../domain/board.ts";
 import type { Card as CardModel } from "../../domain/card.ts";
 import {
   useBoardSession,
@@ -10,6 +14,7 @@ import {
   useFilterStore,
 } from "../context/appContext.ts";
 import { resolveCardMoveShortcut } from "../shared/shortcuts/cardMoveShortcut.ts";
+import type { CardContextMenuMoveActions } from "../shared/cardContextMenu.ts";
 import { buildLabelDisplay } from "../labels/labelDisplay.ts";
 import { resolveColumnMove } from "./resolveColumnMove.ts";
 import { resolveMove } from "./resolveMove.ts";
@@ -40,7 +45,7 @@ interface KanbanBoardProps {
   onOpenCardMenu: (
     card: CardModel,
     trigger: HTMLButtonElement,
-    moveToColumn: (columnId: string) => void,
+    moveActions: CardContextMenuMoveActions,
   ) => void;
 }
 
@@ -75,8 +80,8 @@ export function KanbanBoard({
   );
 
   function handleOpenCardMenu(card: CardModel, trigger: HTMLButtonElement) {
-    onOpenCardMenu(card, trigger, (columnId) => {
-      const from = boardStore.getState().moveCardToColumn(card.path, columnId);
+    const { moveCardToColumn, moveCardToColumnEdge } = boardStore.getState();
+    function reportMove(from: CardLocation | undefined) {
       if (!from) return;
       const nextBoard = boardStore.getState().board;
       if (!nextBoard) return;
@@ -89,6 +94,12 @@ export function KanbanBoard({
       if (!move) return;
       setMenuMove(move);
       setPendingAnnouncement({ message: move.message });
+    }
+    onOpenCardMenu(card, trigger, {
+      moveToColumn: (columnId) =>
+        reportMove(moveCardToColumn(card.path, columnId)),
+      moveToColumnEdge: (expectedColumnId, edge) =>
+        reportMove(moveCardToColumnEdge(card.path, expectedColumnId, edge)),
     });
   }
 
@@ -172,7 +183,7 @@ export function KanbanBoard({
       ) ??
       sourceColumn?.querySelector<HTMLButtonElement>(".column__add-card");
     if (!button) return;
-    // Cards remount across columns, so restore focus after React commits.
+    // Moving a card can drop focus, so restore it after React commits.
     (button.closest(".card") ?? button).scrollIntoView({
       block: "nearest",
       inline: "nearest",

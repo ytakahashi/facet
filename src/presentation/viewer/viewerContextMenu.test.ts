@@ -28,6 +28,7 @@ describe("buildViewerContextMenu", () => {
       copyText: vi.fn(),
       reveal: vi.fn(),
       moveToColumn: vi.fn(),
+      moveToColumnEdge: vi.fn(),
     });
 
     expect(entries[0]).toMatchObject({
@@ -51,6 +52,7 @@ describe("buildViewerContextMenu", () => {
       copyText: vi.fn(),
       reveal: vi.fn(),
       moveToColumn: vi.fn(),
+      moveToColumnEdge: vi.fn(),
     });
 
     expect(entries[0]).toMatchObject({ enabled: false });
@@ -65,6 +67,7 @@ describe("buildViewerContextMenu", () => {
       copyText: vi.fn(),
       reveal: vi.fn(),
       moveToColumn: vi.fn(),
+      moveToColumnEdge: vi.fn(),
     });
 
     expect(entries.slice(0, 3)).toMatchObject([

@@ -22,7 +22,10 @@ import type { CardSearchMode } from "../search/cardSearchModel.ts";
 import { CardDirectoryView } from "../directory/CardDirectoryView.tsx";
 import { CardTable } from "../table/CardTable.tsx";
 import { buildBoardContextMenu } from "./boardContextMenus.ts";
-import { buildCardContextMenu } from "../shared/cardContextMenu.ts";
+import {
+  buildCardContextMenu,
+  type CardContextMenuMoveActions,
+} from "../shared/cardContextMenu.ts";
 import { isInsideDialog } from "../shared/isInsideDialog.ts";
 import { isTextEditingTarget } from "../shared/isTextEditingTarget.ts";
 import { useCardDuplication } from "../shared/useCardDuplication.ts";
@@ -50,6 +53,9 @@ function isOnBoard(board: Board): (path: string) => boolean {
 export function BoardScreen({ board }: { board: Board }) {
   const renameBoard = useBoardStore((state) => state.renameBoard);
   const moveCardToColumn = useBoardStore((state) => state.moveCardToColumn);
+  const moveCardToColumnEdge = useBoardStore(
+    (state) => state.moveCardToColumnEdge,
+  );
   const { copyText, reveal } = useMenuActions();
   const { duplicateCard, canDuplicateCard } = useCardDuplication();
   const contextMenu = useContextMenu();
@@ -153,14 +159,14 @@ export function BoardScreen({ board }: { board: Board }) {
 
   function cardMenuEntries(
     card: Card,
-    moveToColumn: (columnId: string) => void,
+    moveActions: CardContextMenuMoveActions,
   ) {
     return buildCardContextMenu(card, board, {
       copyText,
       reveal,
       duplicateCard: () => duplicateCard(card.path),
       canDuplicateCard: canDuplicateCard(card),
-      moveToColumn,
+      ...moveActions,
     });
   }
 
@@ -169,21 +175,23 @@ export function BoardScreen({ board }: { board: Board }) {
     event.preventDefault();
     event.stopPropagation();
     contextMenu.show(
-      cardMenuEntries(card, (columnId) =>
-        moveCardToColumn(card.path, columnId),
-      ),
+      cardMenuEntries(card, {
+        moveToColumn: (columnId) => moveCardToColumn(card.path, columnId),
+        moveToColumnEdge: (expectedColumnId, edge) =>
+          moveCardToColumnEdge(card.path, expectedColumnId, edge),
+      }),
     );
   }
 
   function handleOpenCardMenu(
     card: Card,
     trigger: HTMLButtonElement,
-    moveToColumn: (columnId: string) => void,
+    moveActions: CardContextMenuMoveActions,
   ) {
     // WebKit does not necessarily focus a button on a pointer click.
     trigger.focus({ preventScroll: true });
     const { left, bottom } = trigger.getBoundingClientRect();
-    contextMenu.show(cardMenuEntries(card, moveToColumn), {
+    contextMenu.show(cardMenuEntries(card, moveActions), {
       x: left,
       y: bottom,
     });

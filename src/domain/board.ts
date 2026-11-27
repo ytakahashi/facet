@@ -25,6 +25,8 @@ export interface CardLocation {
   index: number;
 }
 
+export type CardColumnEdge = "top" | "bottom";
+
 // The version this app writes into newly created board files. Loading keeps
 // whatever version an existing file declares; only creation needs to know
 // the current schema version.
